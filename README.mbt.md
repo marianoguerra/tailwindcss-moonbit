@@ -19,6 +19,74 @@ async test {
 The implementation is independent MoonBit code. `tools/oracle/` contains a
 development-only differential runner pinned to the original npm package.
 
+## Using it
+
+The compiler is exposed three ways. In every case candidate discovery is the
+**caller's** responsibility: pass the class names you want generated. This
+package does not scan content files (HTML/JS/templates) for classes; `@source`
+directives are parsed and surfaced via `Compiler::sources()` for hosts that want
+to scan themselves.
+
+### As a MoonBit library
+
+`compile(css, options?)` resolves `@import`s through an async
+`StylesheetLoader`; `compile_sync(css, options?)` does the same through a
+`SyncStylesheetLoader`. Both return a reusable `Compiler`; call `build` with
+candidate class names (candidates accumulate across calls). Use `compile_sync`
+on hosts without an async runtime — notably the **wasm-gc** backend.
+
+```mbt check
+///|
+test {
+  let loader = @tailwindcss.MemoryStylesheetLoader::new(
+    files=[("base.css", "@theme { --color-black: #000; }")],
+  )
+  let compiler = @tailwindcss.compile_sync(
+    "@import \"base.css\"; @tailwind utilities;",
+    options=@tailwindcss.CompileOptions::new(sync_loader=loader),
+  )
+  let css = compiler.build(["flex"])
+  assert_true(css.contains("display: flex"))
+}
+```
+
+### As a native CLI
+
+`cmd/tailwindcss` is a native executable:
+
+```sh
+moon build --target native cmd/tailwindcss
+tailwindcss -i input.css -o output.css -c candidates.txt --polyfills 3
+```
+
+`-i/--input` is the entry CSS (its `@import`s resolve against the filesystem via
+`loader/fs`), `-c/--candidates` is a newline-separated class-name file (optional),
+`-o/--output` defaults to stdout, and `--polyfills` is `0..3` (default all). Run
+`tailwindcss --help` for the full listing. A `--batch` sub-mode backs the
+differential test harness.
+
+### As a JS / Wasm-gc library
+
+The `ffi` package exports `compile_css_json` (structured, in-memory) and
+`compile_css` (inline CSS only) for the `js`, `wasm`, and `wasm-gc` backends.
+`@import` resolution is **in-memory only**: pass the imported files as a
+`{ path: content }` map. `compile_css_json` takes a JSON request and returns a
+JSON `{ ok, css }` / `{ ok, error }` result:
+
+```json
+{
+  "css": "@import \"base.css\"; @tailwind utilities;",
+  "candidates": ["flex", "hover:bg-black"],
+  "imports": { "base.css": "@theme { --color-black: #000; }" },
+  "from": "input.css",
+  "polyfills": 3
+}
+```
+
+`ffi/js/` ships an ergonomic, dependency-free wrapper (`compile({ input,
+candidates, imports, ... })`); see `ffi/js/README.md` for the build and usage
+steps.
+
 ## Current compiler surface
 
 The package currently covers:

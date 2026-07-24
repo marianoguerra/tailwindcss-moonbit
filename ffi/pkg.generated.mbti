@@ -1,0 +1,16 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mariano/tailwindcss/ffi"
+
+// Values
+pub fn compile_css(String, String) -> String
+
+pub fn compile_css_json(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

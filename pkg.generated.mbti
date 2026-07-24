@@ -16,6 +16,8 @@ pub const POLYFILL_NONE : Int = 0
 
 pub async fn compile(String, options? : CompileOptions) -> Compiler
 
+pub fn compile_sync(String, options? : CompileOptions) -> Compiler raise CompileError
+
 // Errors
 pub(all) suberror CompileError {
   InvalidCss(String)
@@ -25,15 +27,17 @@ pub(all) suberror CompileError {
   UnsupportedJsCompatibility(String)
   InvalidApplyCandidate(String)
 } derive(Eq, @debug.Debug)
+pub impl Show for CompileError
 
 // Types and methods
 pub struct CompileOptions {
   base : String
   from : String?
   loader : &StylesheetLoader?
+  sync_loader : &SyncStylesheetLoader?
   polyfills : Int
 }
-pub fn CompileOptions::new(base? : String, from? : String, loader? : &StylesheetLoader, polyfills? : Int) -> Self
+pub fn CompileOptions::new(base? : String, from? : String, loader? : &StylesheetLoader, sync_loader? : &SyncStylesheetLoader, polyfills? : Int) -> Self
 
 pub struct Compiler {
   input : String
@@ -67,6 +71,7 @@ pub struct MemoryStylesheetLoader {
 pub fn MemoryStylesheetLoader::add(Self, String, String) -> Unit
 pub fn MemoryStylesheetLoader::new(files? : Array[(String, String)]) -> Self
 pub impl StylesheetLoader for MemoryStylesheetLoader
+pub impl SyncStylesheetLoader for MemoryStylesheetLoader
 
 pub(all) struct Source {
   base : String
@@ -81,5 +86,9 @@ type SourceSpan derive(Eq, @debug.Debug)
 // Traits
 pub(open) trait StylesheetLoader {
   async fn load(Self, String, String) -> LoadedStylesheet raise CompileError
+}
+
+pub(open) trait SyncStylesheetLoader {
+  fn load(Self, String, String) -> LoadedStylesheet raise CompileError
 }
 

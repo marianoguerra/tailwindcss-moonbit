@@ -10,6 +10,21 @@ pub(all) suberror CompileError {
 } derive(Eq, Debug)
 
 ///|
+/// Human-readable rendering, used when reporting failures back to a host.
+pub impl Show for CompileError with output(self, logger) {
+  let message = match self {
+    InvalidCss(detail) => "InvalidCss(\{detail})"
+    MissingStylesheetLoader(detail) => "MissingStylesheetLoader(\{detail})"
+    StylesheetNotFound(path) => "StylesheetNotFound(\{path})"
+    ImportCycle(paths) => "ImportCycle(\{paths.join(" -> ")})"
+    UnsupportedJsCompatibility(detail) =>
+      "UnsupportedJsCompatibility(\{detail})"
+    InvalidApplyCandidate(detail) => "InvalidApplyCandidate(\{detail})"
+  }
+  logger.write_string(message)
+}
+
+///|
 /// A stylesheet returned by a `StylesheetLoader`.
 pub(all) struct LoadedStylesheet {
   content : String
@@ -19,8 +34,22 @@ pub(all) struct LoadedStylesheet {
 
 ///|
 /// Asynchronous host interface used to resolve CSS `@import` directives.
+///
+/// Use this with `compile` when resolution needs real I/O (for example the
+/// native filesystem loader). For hosts without an async runtime — notably the
+/// wasm-gc backend — implement `SyncStylesheetLoader` and call `compile_sync`.
 pub(open) trait StylesheetLoader {
   async fn load(Self, id : String, base : String) -> LoadedStylesheet raise CompileError
+}
+
+///|
+/// Synchronous host interface used to resolve CSS `@import` directives.
+///
+/// This is the counterpart of `StylesheetLoader` for `compile_sync`. It suits
+/// in-memory resolution (see `MemoryStylesheetLoader`, which implements both
+/// traits) and any host that cannot drive an async runtime, such as wasm-gc.
+pub(open) trait SyncStylesheetLoader {
+  load(Self, id : String, base : String) -> LoadedStylesheet raise CompileError
 }
 
 ///|
@@ -45,18 +74,23 @@ pub struct CompileOptions {
   base : String
   from : String?
   loader : &StylesheetLoader?
+  sync_loader : &SyncStylesheetLoader?
   polyfills : Int
 }
 
 ///|
 /// Construct compile options while preserving the defaults of `compile(css)`.
+///
+/// `loader` resolves `@import`s for the async `compile`; `sync_loader` does the
+/// same for `compile_sync`. Supply whichever matches the entry point in use.
 pub fn CompileOptions::new(
   base? : String = "",
   from? : String,
   loader? : &StylesheetLoader,
+  sync_loader? : &SyncStylesheetLoader,
   polyfills? : Int = POLYFILL_ALL,
 ) -> CompileOptions {
-  { base, from, loader, polyfills }
+  { base, from, loader, sync_loader, polyfills }
 }
 
 ///|

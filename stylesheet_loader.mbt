@@ -73,14 +73,32 @@ pub fn MemoryStylesheetLoader::add(
 }
 
 ///|
-pub impl StylesheetLoader for MemoryStylesheetLoader with fn load(
-  self,
-  id,
-  base,
-) {
+fn MemoryStylesheetLoader::resolve(
+  self : MemoryStylesheetLoader,
+  id : String,
+  base : String,
+) -> LoadedStylesheet raise CompileError {
   let path = resolve_path(base, id)
   match self.files.get(path) {
     Some(content) => { content, path, base: dirname(path) }
     None => raise StylesheetNotFound(path)
   }
+}
+
+///|
+pub impl StylesheetLoader for MemoryStylesheetLoader with fn load(
+  self,
+  id,
+  base,
+) {
+  self.resolve(id, base)
+}
+
+///|
+pub impl SyncStylesheetLoader for MemoryStylesheetLoader with fn load(
+  self,
+  id,
+  base,
+) {
+  self.resolve(id, base)
 }

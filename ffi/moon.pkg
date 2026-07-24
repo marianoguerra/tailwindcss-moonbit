@@ -1,14 +1,18 @@
 import {
   "mariano/tailwindcss" @tw,
-  "moonbitlang/async" @async,
   "moonbitlang/core/string",
+  "moonbitlang/core/json",
 }
 
-supported_targets = "-all+js+wasm"
+supported_targets = "-all+js+wasm+wasm-gc"
 
 options(
   link: {
-    "js": { "exports": [ "compile_css" ], "format": "esm" },
-    "wasm": { "exports": [ "compile_css" ] },
+    "js": {
+      "exports": [ "compile_css", "compile_css_json" ],
+      "format": "esm",
+    },
+    "wasm": { "exports": [ "compile_css", "compile_css_json" ] },
+    "wasm-gc": { "exports": [ "compile_css", "compile_css_json" ] },
   },
 )

@@ -107,6 +107,9 @@ fn theme_rule_nodes(
 
 ///|
 /// Parse a Tailwind CSS v4 stylesheet and return a reusable compiler.
+///
+/// Resolves `@import`s through the async `options.loader`. Hosts without an
+/// async runtime (e.g. wasm-gc) should use `compile_sync` instead.
 pub async fn compile(
   css : String,
   options? : CompileOptions = CompileOptions::new(),
@@ -125,6 +128,47 @@ pub async fn compile(
   } else {
     css
   }
+  compile_from_ast(resolved_ast, effective_css, options)
+}
+
+///|
+/// Synchronous variant of `compile`, resolving `@import`s through
+/// `options.sync_loader`.
+///
+/// This is the entry point for hosts that cannot drive an async runtime, most
+/// notably the wasm-gc backend. Behaviour is otherwise identical to `compile`;
+/// `MemoryStylesheetLoader` implements the required `SyncStylesheetLoader`.
+pub fn compile_sync(
+  css : String,
+  options? : CompileOptions = CompileOptions::new(),
+) -> Compiler raise CompileError {
+  let ast = parse_css(css)
+  let resolved_ast = if contains_import(ast) {
+    guard options.sync_loader is Some(loader) else {
+      raise MissingStylesheetLoader("@import requires a stylesheet loader")
+    }
+    resolve_imports_sync(ast, loader, options.base, [])
+  } else {
+    ast
+  }
+  let effective_css = if contains_import(ast) {
+    render_css_nodes(resolved_ast)
+  } else {
+    css
+  }
+  compile_from_ast(resolved_ast, effective_css, options)
+}
+
+///|
+/// Shared, fully synchronous tail of `compile`/`compile_sync`: everything after
+/// `@import` resolution. `resolved_ast` has had its imports inlined and
+/// `effective_css` is its rendered form (or the original `css` when there were
+/// no imports).
+fn compile_from_ast(
+  resolved_ast : Array[CssNode],
+  effective_css : String,
+  options : CompileOptions,
+) -> Compiler raise CompileError {
   reject_javascript_directives(resolved_ast)
   let theme = parse_theme(effective_css)
   // Theme values may themselves call compile-time functions (e.g. upstream's

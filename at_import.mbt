@@ -296,3 +296,75 @@ async fn resolve_imports(
   }
   output
 }
+
+///|
+/// Synchronous counterpart of `resolve_imports`, driving a `SyncStylesheetLoader`.
+///
+/// Behaves identically to `resolve_imports`; kept in lockstep with it. Used by
+/// `compile_sync` so hosts without an async runtime (e.g. wasm-gc) can still
+/// resolve in-memory `@import`s.
+fn resolve_imports_sync(
+  nodes : ArrayView[CssNode],
+  loader : &SyncStylesheetLoader,
+  base : String,
+  stack : Array[String],
+) -> Array[CssNode] raise CompileError {
+  let output : Array[CssNode] = []
+  for node in nodes {
+    match node {
+      AtRule(name~, params~, nodes=None, span~) =>
+        if !is_import_at_rule(name) {
+          output.push(node)
+        } else {
+          match parse_import_spec(params) {
+            None => output.push(node)
+            Some(spec) => {
+              let loaded = loader.load(spec.id, base)
+              if stack.contains(loaded.path) {
+                let cycle = stack.copy()
+                cycle.push(loaded.path)
+                raise ImportCycle(cycle)
+              }
+              let imported = parse_css(loaded.content)
+              let next_stack = stack.copy()
+              next_stack.push(loaded.path)
+              let resolved = resolve_imports_sync(
+                imported,
+                loader,
+                loaded.base,
+                next_stack,
+              )
+              let is_reference = spec.reference ||
+                name.to_lower() == "@reference"
+              if spec.theme_only && !only_theme_nodes(resolved) {
+                raise InvalidCss(
+                  "Files imported with `@import \"…\" theme(reference)` must only contain `@theme` blocks.",
+                )
+              }
+              let resolved = if is_reference {
+                keep_reference_nodes(mark_reference_theme(resolved))
+              } else {
+                resolved
+              }
+              let scoped : Array[CssNode] = [
+                Context(values={ "base": loaded.base }, nodes=resolved, span~),
+              ]
+              for child in wrap_import_conditions(scoped, spec, span) {
+                output.push(child)
+              }
+            }
+          }
+        }
+      Rule(selector~, nodes~, span~) => {
+        let children = resolve_imports_sync(nodes, loader, base, stack)
+        output.push(Rule(selector~, nodes=children, span~))
+      }
+      AtRule(name~, params~, nodes=Some(nodes), span~) => {
+        let children = resolve_imports_sync(nodes, loader, base, stack)
+        output.push(AtRule(name~, params~, nodes=Some(children), span~))
+      }
+      _ => output.push(node)
+    }
+  }
+  output
+}
