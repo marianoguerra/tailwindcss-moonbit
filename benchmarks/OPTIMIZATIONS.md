@@ -167,9 +167,35 @@ by machine warm-up drift:
 (Earlier vs-stale-baseline runs wrongly showed margaui *regressing* +2% — pure thermal
 drift. Lesson: A/B under identical conditions, not against a stale baseline.)
 
+## Fresh CPU profile (after opt 5) — the dominant cost
+
+Native allocation profiling now SIGSEGVs the moon-pprof hook (the opt-2 module-level
+constants allocate during static init, which the hook mishandles). Switched to CPU
+profiling via the wasm-gc GuestProfiler (`moon-pprof profile --wasm-gc`) on a
+dispatch-isolating workload (all 440 stress candidates vs minimal `@tailwind
+utilities;`, 40 compiles). Top self-time:
+
+| self time | function |
+|--:|---|
+| **55.3%** | **`Eq::equal`** (string equality) |
+| 6.9% | `FixedArray::unsafe_blit_from_string` (string copy) |
+| 4.0% | `boyer_moore_horspool_find` (substring search) |
+| 2.5% | `is_trailing_surrogate` · 2.2% `string_literal` · 1.5% `has_prefix` |
+
+**Over half the CPU is string equality.** Root cause: `static_utility` (utilities.mbt)
+is a `match name { "literal" => … }` with **280 arms**, which MoonBit compiles to a
+linear chain of up to 280 `String == String` checks — run for *every* candidate.
+(~10 other `match name` blocks add more.) This is the next dominant lever.
+
+Proposed fix (opt 6): replace the 280-arm static match with a single
+`Map[String, Array[Declaration]]` built once at startup → O(1) hash lookup per
+candidate instead of O(280) string compares. Expected to remove a large fraction of
+the 55%. Bigger/riskier change (280 arms) — do carefully, validate with the diff
+harness + a back-to-back A/B.
+
 ## Queued (not yet done)
 
+- **opt 6: hash-map `static_utility`** (the 280-arm string match — biggest remaining win).
 - Hoist / gate the remaining smaller per-call utility tables (paired_size, grid, …).
 - Avoid rendering the whole AST twice for the pre/post-flatten `!=` comparison
   (compiler.mbt:203–204) — compare structurally instead.
-- Re-profile to find the next dominant cost (see the fresh profile below).
