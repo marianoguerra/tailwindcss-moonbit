@@ -50,10 +50,13 @@ jobs:
             --generate-notes \
             --verify-tag
 
-  # --- JS library -> npm -----------------------------------------------------
+  # --- JS library -> npm (trusted publishing / OIDC, no token) ---------------
   npm:
     needs: create-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # upload the JS asset to the Release
+      id-token: write   # mint the OIDC token npm trusted publishing exchanges
     steps:
       - uses: actions/checkout@v4
       - name: Install MoonBit
@@ -67,12 +70,18 @@ jobs:
           cp _build/js/release/build/ffi/ffi.js ffi/js/ffi.js
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22   # trusted publishing requires Node >= 22.14.0
           registry-url: https://registry.npmjs.org
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest   # trusted publishing requires npm >= 11.5.1
+      # No NODE_AUTH_TOKEN: auth is via the OIDC id-token above. Requires a
+      # trusted publisher configured for this package at npmjs.com
+      # (repo: marianoguerra/tailwindcss-moonbit, workflow: release.yml).
+      # For the very first publish the package must already exist on npm, so
+      # bootstrap it once (manual `npm publish` or a one-off token) before this
+      # tokenless job can take over.
       - name: Publish to npm
         working-directory: ffi/js
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish
       - name: Attach JS module to Release
         env:
@@ -151,6 +160,10 @@ jobs:
   mooncakes:
     needs: gate
     runs-on: ubuntu-latest
+    # MOONCAKES_TOKEN is an Environment secret scoped to this environment.
+    # Create an environment named `release` (Settings -> Environments) holding
+    # MOONCAKES_TOKEN; add branch/tag protection rules there if desired.
+    environment: release
     steps:
       - uses: actions/checkout@v4
       - name: Install MoonBit
