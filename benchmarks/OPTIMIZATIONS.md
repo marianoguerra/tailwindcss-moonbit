@@ -403,13 +403,39 @@ fraction of a `build`, which is dominated by candidate rendering, `compose_style
 and the full output render (all still per-build). Neither native nor wasm-gc improves
 beyond noise, so reverted.
 
+### 12. Hoist the theme-usage fixed-point's repeated interpolation — KEPT ✅
+
+`theme_rule_nodes` discovers which theme variables are used, including a fixed-point
+that closes over `var(...)` references between theme values. That inner loop ran
+`value.contains("var(\{theme_variable_name(theme, dependency)}")` for **every
+(used × dependency) pair on every iteration** — recomputing `theme_variable_name`
+and re-interpolating the `"var(--x"` search string each time (O(V²) throwaway string
+allocations for the full theme). Precomputed each non-meta variable's `"var(<name>"`
+search string once into a parallel array and reused it in both the initial scan and
+the fixed-point. Semantics identical (same `contains`, same prefix behavior, same
+order); the combined `usage` string is kept because `render_generated_properties`
+needs its byte positions. `moon check --target all`, 57/57 tests, 85/85 differential
+cases.
+
+Five-trial warm median A/B against commit `c28e87f`, same session, back-to-back:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−16.7%** (12.64→10.53ms) | −0.1% (min −16.3%) | −21.5% |
+| stress | **−24.0%** (26.75→20.34ms) | **−16.6%** (36.85→30.75ms) | −19.2% |
+| margaui| **−17.7%** (87.75→72.20ms) | **−13.0%** (129.18→112.39ms) | −8.7% |
+
+A large, universal win on the theme-heavy full-import workloads — matches the
+profile (interpolation `Show::output` + `String::contains` were top costs). Kept.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
 and update this order after each result. Do not begin the next proposal until the
 current one is kept and committed or reverted and documented.
 
-**11 — done (reverted, no measurable win).** Next: proposal 12.
+**11 — done (reverted, no measurable win). 12 — done (KEPT, native −17..−24%).**
+Next: proposal 13.
 
 ### Proposal 11 — Cache build-invariant base stylesheet work
 

@@ -37,15 +37,24 @@ fn theme_rule_nodes(
   if theme.is_empty() {
     return []
   }
-  let used : Map[String, Unit] = Map([])
+  // Precompute each non-meta theme variable's `var(<name>` search string ONCE.
+  // Previously the fixed-point below recomputed `theme_variable_name` and
+  // re-interpolated the search string for every (used × dependency) pair on every
+  // iteration — O(V²) throwaway string allocations for a full theme.
+  let names : Array[String] = []
+  let searches : Array[String] = []
   for name, _ in theme {
     if name.has_prefix(theme_meta_prefix) {
       continue
     }
-    let variable = theme_variable_name(theme, name)
-    if theme.contains(theme_meta("static", name)) ||
-      generated_css.contains("var(\{variable}") {
-      used[name] = ()
+    names.push(name)
+    searches.push("var(" + theme_variable_name(theme, name))
+  }
+  let used : Map[String, Unit] = Map([])
+  for i in 0..<names.length() {
+    if theme.contains(theme_meta("static", names[i])) ||
+      generated_css.contains(searches[i]) {
+      used[names[i]] = ()
     }
   }
   // A used variable may reference another one, which then has to be emitted
@@ -55,13 +64,12 @@ fn theme_rule_nodes(
     for name, _ in used {
       match theme.get(name) {
         Some(value) =>
-          for dependency, _ in theme {
-            if !dependency.has_prefix(theme_meta_prefix) &&
-              !used.contains(dependency) &&
-              value.contains("var(\{theme_variable_name(theme, dependency)}") {
-              if !additions.contains(dependency) {
-                additions.push(dependency)
-              }
+          for i in 0..<names.length() {
+            let dependency = names[i]
+            if !used.contains(dependency) &&
+              !additions.contains(dependency) &&
+              value.contains(searches[i]) {
+              additions.push(dependency)
             }
           }
         None => ()
