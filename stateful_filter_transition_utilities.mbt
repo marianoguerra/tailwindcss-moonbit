@@ -34,24 +34,28 @@ fn filter_value(
 }
 
 ///|
+/// Hoisted to a module-level constant (built once, read-only) — see
+/// `directional_spacing_entries`.
+let filter_roots : Array[(String, String, String, String?, Bool)] = [
+  ("blur", "--blur", "blur", Some("8px"), false),
+  ("brightness", "--brightness", "brightness", None, true),
+  ("contrast", "--contrast", "contrast", None, true),
+  ("grayscale", "--grayscale", "grayscale", Some("100%"), true),
+  ("hue-rotate", "--hue-rotate", "hue-rotate", None, false),
+  ("invert", "--invert", "invert", Some("100%"), true),
+  ("opacity", "--opacity", "opacity", None, true),
+  ("saturate", "--saturate", "saturate", None, true),
+  ("sepia", "--sepia", "sepia", Some("100%"), true),
+]
+
+///|
 fn one_filter_utility(
   theme : Map[String, String],
   name : String,
   backdrop : Bool,
 ) -> Array[Declaration]? {
   let prefix = if backdrop { "backdrop-" } else { "" }
-  let roots : Array[(String, String, String, String?, Bool)] = [
-    ("blur", "--blur", "blur", Some("8px"), false),
-    ("brightness", "--brightness", "brightness", None, true),
-    ("contrast", "--contrast", "contrast", None, true),
-    ("grayscale", "--grayscale", "grayscale", Some("100%"), true),
-    ("hue-rotate", "--hue-rotate", "hue-rotate", None, false),
-    ("invert", "--invert", "invert", Some("100%"), true),
-    ("opacity", "--opacity", "opacity", None, true),
-    ("saturate", "--saturate", "saturate", None, true),
-    ("sepia", "--sepia", "sepia", Some("100%"), true),
-  ]
-  for entry in roots {
+  for entry in filter_roots {
     let (root, theme_namespace, function_name, default_value, percent) = entry
     if root == "opacity" && !backdrop {
       continue

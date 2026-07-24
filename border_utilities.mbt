@@ -79,28 +79,32 @@ fn radius_value(theme : Map[String, String], key : String) -> String? {
 }
 
 ///|
+/// Hoisted to a module-level constant (built once, read-only) — see
+/// `directional_spacing_entries`.
+let radius_entries : Array[(String, Array[String])] = [
+  ("rounded-ss", ["border-start-start-radius"]),
+  ("rounded-se", ["border-start-end-radius"]),
+  ("rounded-ee", ["border-end-end-radius"]),
+  ("rounded-es", ["border-end-start-radius"]),
+  ("rounded-tl", ["border-top-left-radius"]),
+  ("rounded-tr", ["border-top-right-radius"]),
+  ("rounded-br", ["border-bottom-right-radius"]),
+  ("rounded-bl", ["border-bottom-left-radius"]),
+  ("rounded-s", ["border-start-start-radius", "border-end-start-radius"]),
+  ("rounded-e", ["border-start-end-radius", "border-end-end-radius"]),
+  ("rounded-t", ["border-top-left-radius", "border-top-right-radius"]),
+  ("rounded-r", ["border-top-right-radius", "border-bottom-right-radius"]),
+  ("rounded-b", ["border-bottom-right-radius", "border-bottom-left-radius"]),
+  ("rounded-l", ["border-top-left-radius", "border-bottom-left-radius"]),
+  ("rounded", ["border-radius"]),
+]
+
+///|
 fn radius_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
-  let entries : Array[(String, Array[String])] = [
-    ("rounded-ss", ["border-start-start-radius"]),
-    ("rounded-se", ["border-start-end-radius"]),
-    ("rounded-ee", ["border-end-end-radius"]),
-    ("rounded-es", ["border-end-start-radius"]),
-    ("rounded-tl", ["border-top-left-radius"]),
-    ("rounded-tr", ["border-top-right-radius"]),
-    ("rounded-br", ["border-bottom-right-radius"]),
-    ("rounded-bl", ["border-bottom-left-radius"]),
-    ("rounded-s", ["border-start-start-radius", "border-end-start-radius"]),
-    ("rounded-e", ["border-start-end-radius", "border-end-end-radius"]),
-    ("rounded-t", ["border-top-left-radius", "border-top-right-radius"]),
-    ("rounded-r", ["border-top-right-radius", "border-bottom-right-radius"]),
-    ("rounded-b", ["border-bottom-right-radius", "border-bottom-left-radius"]),
-    ("rounded-l", ["border-top-left-radius", "border-bottom-left-radius"]),
-    ("rounded", ["border-radius"]),
-  ]
-  for entry in entries {
+  for entry in radius_entries {
     let (root, properties) = entry
     let key = if name == root {
       ""

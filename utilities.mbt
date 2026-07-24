@@ -497,38 +497,43 @@ fn prefixed_value(name : String, prefix : String) -> String? {
 }
 
 ///|
+/// Hoisted to a module-level constant so it is built once at startup instead of
+/// rebuilt on every candidate (the dispatch scans every utility per candidate).
+/// Read-only lookup table.
+let directional_spacing_entries : Array[(String, Array[String])] = [
+  ("m", ["margin"]),
+  ("mx", ["margin-inline"]),
+  ("my", ["margin-block"]),
+  ("ms", ["margin-inline-start"]),
+  ("me", ["margin-inline-end"]),
+  ("mbs", ["margin-block-start"]),
+  ("mbe", ["margin-block-end"]),
+  ("mt", ["margin-top"]),
+  ("mr", ["margin-right"]),
+  ("mb", ["margin-bottom"]),
+  ("ml", ["margin-left"]),
+  ("p", ["padding"]),
+  ("px", ["padding-inline"]),
+  ("py", ["padding-block"]),
+  ("ps", ["padding-inline-start"]),
+  ("pe", ["padding-inline-end"]),
+  ("pbs", ["padding-block-start"]),
+  ("pbe", ["padding-block-end"]),
+  ("pt", ["padding-top"]),
+  ("pr", ["padding-right"]),
+  ("pb", ["padding-bottom"]),
+  ("pl", ["padding-left"]),
+  ("gap", ["gap"]),
+  ("gap-x", ["column-gap"]),
+  ("gap-y", ["row-gap"]),
+]
+
+///|
 fn directional_spacing(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
-  let entries : Array[(String, Array[String])] = [
-    ("m", ["margin"]),
-    ("mx", ["margin-inline"]),
-    ("my", ["margin-block"]),
-    ("ms", ["margin-inline-start"]),
-    ("me", ["margin-inline-end"]),
-    ("mbs", ["margin-block-start"]),
-    ("mbe", ["margin-block-end"]),
-    ("mt", ["margin-top"]),
-    ("mr", ["margin-right"]),
-    ("mb", ["margin-bottom"]),
-    ("ml", ["margin-left"]),
-    ("p", ["padding"]),
-    ("px", ["padding-inline"]),
-    ("py", ["padding-block"]),
-    ("ps", ["padding-inline-start"]),
-    ("pe", ["padding-inline-end"]),
-    ("pbs", ["padding-block-start"]),
-    ("pbe", ["padding-block-end"]),
-    ("pt", ["padding-top"]),
-    ("pr", ["padding-right"]),
-    ("pb", ["padding-bottom"]),
-    ("pl", ["padding-left"]),
-    ("gap", ["gap"]),
-    ("gap-x", ["column-gap"]),
-    ("gap-y", ["row-gap"]),
-  ]
-  for entry in entries {
+  for entry in directional_spacing_entries {
     let (prefix, properties) = entry
     guard prefixed_value(name, prefix) is Some(raw) else { continue }
     guard resolved_value(theme, raw, "--spacing", true) is Some(value) else {

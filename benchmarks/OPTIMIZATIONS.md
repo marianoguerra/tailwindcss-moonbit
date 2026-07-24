@@ -70,3 +70,25 @@ Warm median delta vs baseline (native / js / wasm-gc):
 
 Biggest wins where utility matching dominates (`many`/`stress`); margaui is
 parse-graph-bound so it moves least.
+
+### 2. Hoist per-call utility tables to module constants (data→code) — KEPT ✅
+
+The dispatch scans every utility for every candidate, so each utility's constant
+lookup table was rebuilt on every candidate — even for candidates it never matches.
+Hoisted the three biggest (profiler allocators #2–#4): `one_filter_utility`'s
+`roots`, `radius_utility`'s entries, and `directional_spacing`'s entries → top-level
+`let` constants built once at startup. Verified read-only (pure literals, iterated
+only). 57 tests + 85 differential cases unchanged.
+
+Warm median delta vs iteration 1 (native / js / wasm-gc):
+
+| workload | native | js | wasm-gc |
+|---|--:|--:|--:|
+| many   | **−6.5%** (1.10→1.03ms) | −0.9% | −1.2% |
+| a-lot  | −0.5% | +0.2% | −1.4% |
+| stress | −1.6% (29.22→28.77ms) | +2.6%* | −0.7% |
+| margaui| −0.1% | +1.0%* | −0.1% |
+
+Small but consistent on native (the stable metric); js deltas marked * are within
+run-to-run noise. These three tables were the bulk of table allocation; the ~12
+smaller utility tables were left (diminishing returns).
