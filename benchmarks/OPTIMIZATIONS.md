@@ -7,6 +7,62 @@ heavy workloads (most stable; tiny tiers are too noisy). `many`/`few` use
 `@tailwind utilities;`; `a-lot`/`stress` use full `@import "tailwindcss"`; margaui
 uses its bundled component graph. Run: `node benchmarks/run.mjs --no-cold`.
 
+## Iteration protocol and acceptance policy
+
+Work on exactly **one numbered proposal at a time**. Do not combine opportunistic
+cleanups with an optimization: a benchmark delta must have one plausible cause.
+
+For every proposal:
+
+1. **Measure the baseline** from the current committed implementation:
+
+   ```sh
+   node benchmarks/run.mjs \
+     --workload many,a-lot,stress,margaui \
+     --targets native,wasm-gc,js,original \
+     --trials 5 --no-cold
+   ```
+
+   Save the result outside `benchmarks/results/` or copy its values into the draft
+   log entry before the post-change run overwrites it. Record the commit, machine,
+   MoonBit version, and benchmark configuration.
+
+2. **Implement only that proposal.** Preserve public behavior and avoid unrelated
+   formatting or refactors.
+
+3. **Validate correctness before timing:**
+
+   ```sh
+   moon check --target all --warn-list +unnecessary_annotation
+   moon test
+   node tools/diff/compare.mjs
+   ```
+
+   A correctness failure rejects the proposal regardless of performance.
+
+4. **Measure again** with the exact baseline command, on the same machine and in
+   the same session/thermal conditions. Compare per-workload medians and mins; use
+   the heavier workloads as the decision signal and treat tiny deltas within
+   run-to-run variance as noise. If the result is close, alternate baseline and
+   candidate builds back-to-back rather than comparing against an older result.
+
+5. **Decide:**
+   - Keep a meaningful, repeatable improvement in **native**, the primary target.
+   - Also keep a meaningful **wasm-gc** improvement when native is neutral within
+     noise and there is no material native regression.
+   - A regression isolated to **JS is acceptable**. JS is a fallback target and
+     the original Tailwind implementation is already available to JavaScript
+     users. Still record the JS delta so the tradeoff remains visible.
+   - Revert when native materially regresses, or when neither native nor wasm-gc
+     improves beyond noise.
+
+6. **Document and commit only when kept.** Append the implementation, correctness
+   results, full native/wasm-gc/JS A/B table, and decision to this file, then commit
+   the implementation, tests, and log together. Stage explicit paths so unrelated
+   working-tree changes are not included. If rejected, revert only the proposal's
+   files and append a concise `REVERTED` entry before committing the benchmark
+   finding when it is useful.
+
 ## Profiling findings (moon-pprof, native allocation profile, `many` workload)
 
 `moon-pprof memprofile-native` on the `many` workload (37 candidates, 17505 total
@@ -271,18 +327,76 @@ Small but **consistent across all three backends** (a portable win, unlike opt 6
 largest on the most parse-bound workload (margaui). Validates the research direction:
 the parse path is where tw-mb trails upstream, and batching copies is the lever.
 
-## Remaining candidate levers (distributed, higher-risk — not attempted)
+### 9. Collect theme from the already-parsed AST — KEPT ✅
 
-- **Deeper parser wins from the research**: zero-copy AST (store `StringView`/(start,end)
-  spans in `CssNode` instead of `.to_owned()` Strings — the moonbitlang/parser model;
-  removes the ~16% string-copy but requires the input to outlive the AST). Non-allocating
-  EOF sentinel instead of `current(): UInt16?`. Both bigger, structural.
+`compile`/`compile_sync` parsed and resolved the stylesheet, rendered it, then
+`parse_theme(effective_css)` parsed that rendered CSS again solely to collect
+`@theme` declarations. Changed theme collection to walk `resolved_ast` directly,
+removing one complete parse per compile. Also materialized `params.split(" ")` once
+per `@theme` block and reused the resulting option array instead of creating four
+separate split iterators.
 
-- **Parser is char-by-char**: `css_parser` `read_until_top_level` does `terminals.contains(c)`
-  per char and writes one char at a time via a fresh view slice. The large/full-import
-  workloads (where tw-mb trails upstream most) are parse-bound, so batching the parser is
-  the likeliest real win — but a sizeable, careful refactor.
-- Replace `Array.contains` linear scans in `compiler.mbt` (used/excluded/additions/
-  generated_footer) with hash sets.
-- Reduce `.to_owned()` string copies via views where the owned copy isn't needed.
-- Avoid rendering the whole AST twice for the pre/post-flatten `!=` (compiler.mbt:203–204).
+The first implementation reused the split iterator itself, which exposed an
+important correctness detail: MoonBit `Iter` values are consumed by traversal.
+The differential gate caught the resulting lost `reference`/`static` options in
+four cases. Materializing the iterator with `.to_array()` fixed the issue. Final
+validation: `moon check --target all`, 57/57 tests, and 85/85 differential cases.
+
+Five-trial warm median A/B against commit `4b1ac20`, same session and machine:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| many | 966.7→962.3µs (−0.5%) | 1.896→1.918ms (+1.1%) | 2.536→2.528ms (−0.3%) |
+| a-lot | 13.084→12.756ms (**−2.5%**) | 19.121→18.592ms (**−2.8%**) | 33.422→32.360ms (**−3.2%**) |
+| stress | 27.293→27.013ms (**−1.0%**) | 39.649→38.887ms (**−1.9%**) | 70.596→69.424ms (**−1.7%**) |
+| margaui | 94.081→89.191ms (**−5.2%**) | 140.505→132.311ms (**−5.8%**) | 303.640→288.629ms (**−4.9%**) |
+
+Minima agree on the parse-heavy workloads: native `margaui` −3.0%, wasm-gc
+`margaui` −11.2%, and JS `margaui` −6.5%. The `many` workload has no full import
+graph, so its approximately ±1% movement is treated as noise. Kept for the clear
+and repeatable heavy-workload improvement.
+
+## Ordered proposal queue
+
+Take the first uncompleted proposal, run the complete iteration protocol above,
+and update this order after each result. Do not begin the next proposal until the
+current one is kept and committed or reverted and documented.
+
+### Proposal 10 — Return a change flag from nesting flattening
+
+`compile_from_ast` renders the complete pre-flatten and post-flatten trees only to
+compute `did_flatten`. Have the flatten/merge transformation report whether it
+changed output, then remove those two comparison renders. Avoid using structural
+AST equality as a shortcut unless measurement shows it is cheaper and tests prove
+that source spans cannot create false positives.
+
+### Proposal 11 — Cache build-invariant base stylesheet work
+
+`Compiler::build` repeatedly removes theme nodes and renders the same base
+stylesheet. Precompute the invariant representation during compiler construction
+or retain a reusable theme-free tree/string. Measure both fresh compilation (the
+current benchmark contract) and a small incremental-build workload, because the
+largest benefit may be in repeated `build` calls.
+
+### Proposal 12 — Avoid the combined `usage` string and repeated theme scans
+
+Stop copying `base` and `generated` into one large interpolated string merely for
+property/keyframe/theme usage discovery. First try scanners that accept the two
+strings separately. If that is insufficient, collect used custom properties while
+walking declarations and replace the theme dependency fixed-point's repeated
+whole-string searches with an explicit dependency graph.
+
+### Proposal 13 — Reduce quadratic AST merge/deduplication
+
+Instrument collection sizes first, then optimize the measured hotspot among
+`dedupe_declarations`, recursive `merge_adjacent_at_rules`, and
+`generated_footer.contains`. Prefer stable compact keys over hashing entire
+`CssNode` trees. This proposal must remain one concrete hotspot per iteration.
+
+### Proposal 14 — Deeper zero-copy parser representation
+
+Only after the smaller experiments: evaluate storing `StringView` or `(start, end)`
+spans in parser nodes instead of eagerly owning every substring. This targets the
+profiled string-copy cost but changes AST lifetimes and is therefore the
+highest-risk proposal. Treat the representation change and any non-allocating EOF
+sentinel as separate iterations.

@@ -66,9 +66,9 @@ fn remove_theme_namespace(
 }
 
 ///|
-fn parse_theme(css : String) -> Map[String, String] raise CompileError {
+fn parse_theme(nodes : ArrayView[CssNode]) -> Map[String, String] {
   let theme = default_theme()
-  collect_theme(parse_css(css), theme)
+  collect_theme(nodes, theme)
   theme
 }
 
@@ -89,10 +89,11 @@ fn collect_theme(
       }
       continue
     }
-    let inline = params.split(" ").contains("inline")
-    let reference = params.split(" ").contains("reference")
-    let emit_all = params.split(" ").contains("static")
-    for option in params.split(" ") {
+    let options = params.split(" ").to_array()
+    let inline = options.contains("inline")
+    let reference = options.contains("reference")
+    let emit_all = options.contains("static")
+    for option in options {
       if option.has_prefix("prefix(") && option.has_suffix(")") {
         let prefix = option[7:option.length() - 1].to_owned()
         if prefix != "" {

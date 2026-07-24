@@ -170,7 +170,7 @@ fn compile_from_ast(
   options : CompileOptions,
 ) -> Compiler raise CompileError {
   reject_javascript_directives(resolved_ast)
-  let theme = parse_theme(effective_css)
+  let theme = parse_theme(resolved_ast)
   // Theme values may themselves call compile-time functions (e.g. upstream's
   // `--default-font-family: --theme(--font-sans, initial)`). Resolve them so the
   // emitted `:root` declarations never leak a `--theme()`/`--spacing()` call.
