@@ -212,9 +212,47 @@ match (V8 likes it). The promising alternative is **first-char bucketing** — k
 native/wasm-gc do ~20 compares instead of 280 while js keeps its optimized switches.
 That's a large, careful refactor (grouping 280 arms by first char); not yet attempted.
 
-## Queued (not yet done)
+### 7. First-char-bucketed `static_utility` — REVERTED ❌ (a wash)
 
-- **first-char-bucketed `static_utility`** (backend-neutral version of opt 6).
-- Hoist / gate the remaining smaller per-call utility tables (paired_size, grid, …).
-- Avoid rendering the whole AST twice for the pre/post-flatten `!=` comparison
-  (compiler.mbt:203–204) — compare structurally instead.
+Kept the `match` (so V8 stays fast) but bucketed the 280 arms by first char:
+`match name[0] { 'b' => match name {…b-arms…}, … }` (18 buckets, ~15 arms each). No
+js regression this time — but no meaningful gain either:
+
+| workload | native | js | wasm-gc |
+|---|--:|--:|--:|
+| many   | +0.1% (min −2.7%) | −0.7% | −2.1% (min −7.9%) |
+| stress | +0.2% | +0.2% | −1.0% |
+| margaui| +0.8% | +1.3% | +1.1% |
+
+All within noise except wasm-gc/many. **Why the 55% didn't materialize:** that number
+came from a *dispatch-only synthetic* (minimal CSS, 440 candidates) that stripped out
+all the theme/parse/render work, inflating `static_utility`'s share. Reverted — no gain
+worth added nesting.
+
+## Representative profile (stress with full `@import "tailwindcss"`, wasm-gc CPU)
+
+Re-profiled with the REAL workload (not dispatch-only). Cost is distributed — no single
+dominant lever:
+
+| self time | function | source |
+|--:|---|---|
+| 31.1% | `Eq::equal` | Map-key / `name==root` / Array `.contains` equality (was 55% in synthetic) |
+| 16.0% | `blit_from_string` | string copies — `.to_owned()`, slicing |
+| 7.0% | `String::contains` | substring search |
+| 6.0% | `Map::get` | theme lookups |
+| 5.7% | `Show::output` | string interpolation `"\{}"` (theme-key building) |
+| 4.6% | `boyer_moore_horspool_find` | backs contains/find |
+
+**Lesson:** profile the representative workload, not a synthetic isolate — the isolate
+mis-ranked the bottleneck and sent opt 6/7 chasing a cost that's minor on real input.
+
+## Remaining candidate levers (distributed, higher-risk — not attempted)
+
+- **Parser is char-by-char**: `css_parser` `read_until_top_level` does `terminals.contains(c)`
+  per char and writes one char at a time via a fresh view slice. The large/full-import
+  workloads (where tw-mb trails upstream most) are parse-bound, so batching the parser is
+  the likeliest real win — but a sizeable, careful refactor.
+- Replace `Array.contains` linear scans in `compiler.mbt` (used/excluded/additions/
+  generated_footer) with hash sets.
+- Reduce `.to_owned()` string copies via views where the owned copy isn't needed.
+- Avoid rendering the whole AST twice for the pre/post-flatten `!=` (compiler.mbt:203–204).
