@@ -1,0 +1,6 @@
+{
+  "id": "few",
+  "candidateCount": 4,
+  "cssVariant": "minimal",
+  "source": "cases.json \"static display\""
+}

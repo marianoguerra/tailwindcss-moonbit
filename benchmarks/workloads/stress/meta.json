@@ -1,0 +1,6 @@
+{
+  "id": "stress",
+  "candidateCount": 440,
+  "cssVariant": "full-import",
+  "source": "union of all unique cases.json candidates + full tailwindcss entry"
+}

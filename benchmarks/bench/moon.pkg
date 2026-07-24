@@ -1,0 +1,16 @@
+import {
+  "marianoguerra/tailwindcss" @tw,
+  "moonbitlang/core/bench" @cbench,
+  "moonbitlang/core/env" @env,
+  "moonbitlang/core/string",
+  "moonbitlang/core/json",
+}
+
+// No `supported_targets` restriction: this executable is compiled to native, js,
+// and wasm-gc so the same code path is timed on every backend. It uses only the
+// fully-synchronous `compile_sync` + in-memory `MemoryStylesheetLoader`, so it has
+// no native-only (`x/fs`, `x/sys`, async) dependency.
+//
+// core/bench is aliased `@cbench` because the package directory is itself named
+// `bench`, and the default alias would collide.
+pkgtype(kind: "executable")

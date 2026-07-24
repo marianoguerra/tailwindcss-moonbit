@@ -1,0 +1,44 @@
+{
+  "defaults": {
+    "warmup": 20,
+    "iters": 200,
+    "trials": 3
+  },
+  "workloads": [
+    {
+      "id": "empty",
+      "warmup": 50,
+      "iters": 3000
+    },
+    {
+      "id": "one",
+      "warmup": 50,
+      "iters": 3000
+    },
+    {
+      "id": "few",
+      "warmup": 50,
+      "iters": 2000
+    },
+    {
+      "id": "many",
+      "warmup": 30,
+      "iters": 800
+    },
+    {
+      "id": "a-lot",
+      "warmup": 20,
+      "iters": 300
+    },
+    {
+      "id": "stress",
+      "warmup": 15,
+      "iters": 150
+    },
+    {
+      "id": "margaui",
+      "warmup": 10,
+      "iters": 60
+    }
+  ]
+}

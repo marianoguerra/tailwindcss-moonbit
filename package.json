@@ -4,7 +4,9 @@
   "scripts": {
     "test": "moon test",
     "test:diff": "node tools/diff/compare.mjs",
-    "check": "moon check --target all --warn-list +unnecessary_annotation"
+    "check": "moon check --target all --warn-list +unnecessary_annotation",
+    "bench:gen": "node benchmarks/generate.mjs",
+    "bench": "node benchmarks/run.mjs"
   }
 }
 

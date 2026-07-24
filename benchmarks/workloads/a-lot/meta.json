@@ -1,0 +1,6 @@
+{
+  "id": "a-lot",
+  "candidateCount": 81,
+  "cssVariant": "full-import",
+  "source": "cases.json largest case (81) + full tailwindcss entry"
+}
