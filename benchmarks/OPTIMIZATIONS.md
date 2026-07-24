@@ -380,11 +380,36 @@ Only `a-lot` showed a modest native gain. The representative `stress` and
 optimizer code. This does not clear the acceptance threshold, so the implementation
 was reverted. The two render comparisons remain.
 
+### 11. Cache the build-invariant base render — REVERTED ❌
+
+`build` recomputed `render_css_nodes(remove_theme_nodes_deep(self.stylesheet))`
+(the theme-free base, used only for property/keyframe/theme usage discovery) on
+every call. Added a `base_render : String` field to `Compiler`, computed once at
+construction (guarded by `has_utilities`), and read it in `build`. Correctness
+passed: `moon check --target all`, 57/57 tests, 85/85 differential cases.
+
+Fresh compilation is neutral by construction (the benchmark times compile+build as
+one unit, so the work only moves from `build` into construction). The proposal's
+target is repeated `build` calls, measured with an incremental probe (compile once,
+then 40 timed `build` calls; native, medians):
+
+| workload | baseline (opt10) | cached (opt11) | delta |
+|---|--:|--:|--:|
+| stress  | 23.61ms/build | 23.84ms/build | +1.0% (noise) |
+| margaui | 61.97ms/build | 62.45ms/build | +0.8% (noise) |
+
+No improvement even on the incremental scenario: the base render is a negligible
+fraction of a `build`, which is dominated by candidate rendering, `compose_stylesheet`,
+and the full output render (all still per-build). Neither native nor wasm-gc improves
+beyond noise, so reverted.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
 and update this order after each result. Do not begin the next proposal until the
 current one is kept and committed or reverted and documented.
+
+**11 — done (reverted, no measurable win).** Next: proposal 12.
 
 ### Proposal 11 — Cache build-invariant base stylesheet work
 
