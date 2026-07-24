@@ -27,10 +27,9 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-      - name: Sync dependencies
-        run: moon install
       - name: Test
-        run: moon test
+        run: moon test   # auto-resolves registry deps
+
       - name: Check all targets
         run: moon check --target all
 
@@ -65,7 +64,6 @@ jobs:
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Build JS module
         run: |
-          moon install
           moon build --target js --release ffi
           cp _build/js/release/build/ffi/ffi.js ffi/js/ffi.js
       - uses: actions/setup-node@v4
@@ -103,7 +101,6 @@ jobs:
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Build wasm targets
         run: |
-          moon install
           moon build --target wasm-gc --release ffi
           moon build --target wasm --release ffi
       - name: Attach wasm modules to Release
@@ -139,9 +136,7 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Build native CLI
-        run: |
-          moon install
-          moon build --target native --release cmd/tailwindcss
+        run: moon build --target native --release cmd/tailwindcss
       - name: Package binary
         run: |
           bin="_build/native/release/build/cmd/tailwindcss/tailwindcss.exe"
@@ -178,6 +173,4 @@ jobs:
           printf '{"token":"%s","username":"marianoguerra"}' "$MOONCAKES_TOKEN" \
             > "$HOME/.moon/credentials.json"
       - name: Publish to mooncakes
-        run: |
-          moon install
-          moon publish
+        run: moon publish
