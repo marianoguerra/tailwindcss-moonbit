@@ -50,3 +50,23 @@ _Machine: AMD Ryzen 5 7520U, node v24, moon 0.1.20260713, native release, 3 tria
 ## Iterations
 
 <!-- each optimization appended below -->
+
+### 1. Allocation-free `prefixed_value` — KEPT ✅
+
+The hottest allocation site (36% of allocs in `many`). It built a `"\{prefix}-"`
+marker string on every call (~192 calls/candidate) just to run `has_prefix`, then
+sliced. Rewrote it to check the `-` separator (O(1)) and `has_prefix(prefix)`
+directly — no marker allocation. Semantics identical (57 tests + 85 differential
+cases still pass).
+
+Warm median delta vs baseline (native / js / wasm-gc):
+
+| workload | native | js | wasm-gc |
+|---|--:|--:|--:|
+| many   | **−33.6%** (1.66→1.10ms) | −31.8% | −21.8% |
+| a-lot  | −6.7% (14.63→13.65ms) | −6.6% | −4.7% |
+| stress | **−15.9%** (34.73→29.22ms) | −11.9% | −10.2% |
+| margaui| −1.8% (100.67→98.88ms) | −3.0% | −1.7% |
+
+Biggest wins where utility matching dominates (`many`/`stress`); margaui is
+parse-graph-bound so it moves least.

@@ -484,12 +484,16 @@ fn static_utility(name : String) -> Array[Declaration]? {
 
 ///|
 fn prefixed_value(name : String, prefix : String) -> String? {
-  let marker = "\{prefix}-"
-  if name.has_prefix(marker) {
-    Some(name[marker.length():].to_owned())
-  } else {
-    None
+  // Equivalent to `name.has_prefix("\{prefix}-")` but WITHOUT allocating the
+  // `"\{prefix}-"` marker on every call. This helper is the hottest allocation
+  // site in the compile path (~192 calls/candidate), so the per-call marker
+  // string dominated allocations. Check the '-' separator first (O(1)) to reject
+  // most non-matches before the prefix scan.
+  let plen = prefix.length()
+  guard name.length() > plen && name[plen] == '-' && name.has_prefix(prefix) else {
+    return None
   }
+  Some(name[plen + 1:].to_owned())
 }
 
 ///|
