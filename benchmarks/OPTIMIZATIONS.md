@@ -187,15 +187,34 @@ is a `match name { "literal" => … }` with **280 arms**, which MoonBit compiles
 linear chain of up to 280 `String == String` checks — run for *every* candidate.
 (~10 other `match name` blocks add more.) This is the next dominant lever.
 
-Proposed fix (opt 6): replace the 280-arm static match with a single
-`Map[String, Array[Declaration]]` built once at startup → O(1) hash lookup per
-candidate instead of O(280) string compares. Expected to remove a large fraction of
-the 55%. Bigger/riskier change (280 arms) — do carefully, validate with the diff
-harness + a back-to-back A/B.
+### 6. Hash-map `static_utility` (280-arm match → Map) — REVERTED ❌
+
+Replaced the 280-arm `match name` with a module-level `Map[String,
+Array[Declaration]]` built once + an O(1) `.get(name).map(copy)` lookup. Correct (57
+tests + 85 differential cases pass). But the back-to-back A/B shows it's a
+**backend-dependent tradeoff, not a portable win**:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| many   | −3.0% | −3.0% (min −7.6%) | +0.6% |
+| stress | −0.7% | −2.3% | **+19.8%** ❌ |
+| margaui| −1.7% | −0.9% | +0.5% |
+
+The 55% `Eq::equal` was measured on **wasm-gc**. On **js (V8)** the string `match`
+was already heavily optimized (V8's string switch/interning), so MoonBit's `Map.get`
+is *slower* per lookup — and it scales with candidate count, so stress (440 cands)
+regressed ~20% on js while native/wasm-gc improved. A 20% js regression is
+unacceptable for a compiler shipping all three backends → reverted.
+
+Lesson: the dominant cost is **backend-specific**. A portable fix must not replace the
+match (V8 likes it). The promising alternative is **first-char bucketing** — keep the
+`match name` but wrap it in `match name[0] { 'b' => match name {…b-arms…}, … }`, so
+native/wasm-gc do ~20 compares instead of 280 while js keeps its optimized switches.
+That's a large, careful refactor (grouping 280 arms by first char); not yet attempted.
 
 ## Queued (not yet done)
 
-- **opt 6: hash-map `static_utility`** (the 280-arm string match — biggest remaining win).
+- **first-char-bucketed `static_utility`** (backend-neutral version of opt 6).
 - Hoist / gate the remaining smaller per-call utility tables (paired_size, grid, …).
 - Avoid rendering the whole AST twice for the pre/post-flatten `!=` comparison
   (compiler.mbt:203–204) — compare structurally instead.
