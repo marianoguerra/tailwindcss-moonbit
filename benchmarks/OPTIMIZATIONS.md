@@ -92,3 +92,43 @@ Warm median delta vs iteration 1 (native / js / wasm-gc):
 Small but consistent on native (the stable metric); js deltas marked * are within
 run-to-run noise. These three tables were the bulk of table allocation; the ~12
 smaller utility tables were left (diminishing returns).
+
+### 3. Direct StringBuilder writes in the CSS renderer (no interpolation temp) — KEPT ✅
+
+`render_css_node` already used a `StringBuilder` but interpolated a throwaway string
+per node (`out.write_string("\{name}: \{value}")`) before appending. Since
+`render_css_nodes` walks the whole output tree AND is called ~6–8× per compile
+(compiler.mbt even renders the full AST twice just to compare pre/post-flatten),
+that intermediate string was a per-node hot-path allocation. Now each fragment
+(name, `": "`, value, …) is written straight to the builder. 57 tests + 85
+differential cases unchanged.
+
+Warm median delta vs iteration 2 (native / js / wasm-gc):
+
+| workload | native | js | wasm-gc |
+|---|--:|--:|--:|
+| many   | −1.2% | +0.1% | −1.7% |
+| a-lot  | **−3.3%** (13.58→13.13ms) | +0.4% | −2.8% |
+| stress | **−3.8%** (28.77→27.67ms) | −3.9% | −1.7% |
+| margaui| **−3.9%** (98.79→94.93ms) | −0.9% | −2.5% |
+
+Scales with output size (largest on stress/margaui), as expected for a render-path
+change. js gains least (V8 optimizes interpolation well).
+
+## Cumulative (baseline → opt 3, native warm median)
+
+| workload | baseline | now | total |
+|---|--:|--:|--:|
+| many   | 1.66ms  | 1.02ms  | **−38.6%** |
+| a-lot  | 14.63ms | 13.13ms | −10.3% |
+| stress | 34.73ms | 27.67ms | **−20.3%** |
+| margaui| 100.67ms| 94.93ms | −5.7% |
+
+## Queued (not yet done)
+
+- Replace the linear utility dispatch (chain of ~21 `guard util(name) is None else
+  { return util(name) }`, each utility **called twice** on a hit) with prefix
+  pattern matching / a first-char dispatch — the double-call is pure waste on hits.
+- Hoist the remaining ~12 smaller per-call utility tables.
+- Avoid rendering the whole AST twice for the pre/post-flatten `!=` comparison
+  (compiler.mbt:203–204) — compare structurally instead.

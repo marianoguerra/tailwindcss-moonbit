@@ -53,10 +53,16 @@ fn write_indent(out : StringBuilder, indent : Int) -> Unit {
 
 ///|
 fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
+  // Write each fragment directly to the builder instead of interpolating a
+  // throwaway string per node (`"\{name}: \{value}"` allocates before appending).
+  // This function renders every node of the output tree, so for large stylesheets
+  // those intermediate strings were a per-node hot-path allocation.
   match node {
     Declaration(name~, value~, important~, ..) => {
       write_indent(out, indent)
-      out.write_string("\{name}: \{value}")
+      out.write_string(name)
+      out.write_string(": ")
+      out.write_string(value)
       if important {
         out.write_string(" !important")
       }
@@ -64,7 +70,8 @@ fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
     }
     Rule(selector~, nodes~, ..) => {
       write_indent(out, indent)
-      out.write_string("\{selector} {\n")
+      out.write_string(selector)
+      out.write_string(" {\n")
       for child in nodes {
         render_css_node(child, out, indent=indent + 1)
       }
@@ -77,7 +84,8 @@ fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
           write_indent(out, indent)
           out.write_string(name)
           if params != "" {
-            out.write_string(" \{params}")
+            out.write_string(" ")
+            out.write_string(params)
           }
           out.write_string(";\n")
         }
@@ -85,7 +93,8 @@ fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
           write_indent(out, indent)
           out.write_string(name)
           if params != "" {
-            out.write_string(" \{params}")
+            out.write_string(" ")
+            out.write_string(params)
           }
           out.write_string(" {\n")
           for child in children {
@@ -97,7 +106,9 @@ fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
       }
     Comment(value~, ..) => {
       write_indent(out, indent)
-      out.write_string("/*\{value}*/\n")
+      out.write_string("/*")
+      out.write_string(value)
+      out.write_string("*/\n")
     }
     Context(nodes~, ..) =>
       for child in nodes {
