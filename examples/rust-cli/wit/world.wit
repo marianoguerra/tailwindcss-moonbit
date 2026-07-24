@@ -1,0 +1,13 @@
+package tw:compiler@0.1.0;
+
+world compiler {
+  // request/response are JSON strings — see ffi/lib.mbt `compile_css_json`.
+  // request:  { "css": "...", "candidates": [...], "imports": {path:content},
+  //             "base": "", "from": "input.css", "polyfills": 0..3 }
+  // response: { "ok": true, "css": "..." } | { "ok": false, "error": "..." }
+  export compile-css-json: func(request: string) -> string;
+
+  // Convenience inline form (no @import resolution): entry css + a
+  // newline-separated list of candidate class names. Returns generated CSS.
+  export compile-css: func(css: string, candidates: string) -> string;
+}

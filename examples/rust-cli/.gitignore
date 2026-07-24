@@ -1,0 +1,11 @@
+# Rust build output
+/target/
+
+# MoonBit build output
+/component/_build/
+/component/.mooncakes/
+/component/target/
+
+# Component build artifacts (produced by ./build-component.sh)
+/tw-compiler.component.wasm
+/core.embed.wasm

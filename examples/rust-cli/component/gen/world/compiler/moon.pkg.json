@@ -1,0 +1,7 @@
+{
+  "warn-list": "-44",
+  "supported_targets": "wasm",
+  "import": [
+    { "path": "marianoguerra/tailwindcss/ffi", "alias": "ffi" }
+  ]
+}

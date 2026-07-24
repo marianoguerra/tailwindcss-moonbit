@@ -1,0 +1,21 @@
+{
+      "warn-list": "-44",
+      "supported_targets": "wasm",
+      "import": [
+      { "path" : "tw/compiler/gen/world/compiler", "alias" : "compiler" }
+      ],
+      "link": {
+            "wasm": {
+                  "export-memory-name": "memory",
+                  "heap-start-address": 16,
+                  "exports": [
+                  "mbt_ffi_cabi_realloc:cabi_realloc",
+                  "wasmExportCompileCss:compile-css",
+                  "wasmExportCompileCssJson:compile-css-json",
+                  "wasmExportCompileCssJsonPostReturn:cabi_post_compile-css-json",
+                  "wasmExportCompileCssPostReturn:cabi_post_compile-css"
+                  ]
+            }
+      }
+
+}

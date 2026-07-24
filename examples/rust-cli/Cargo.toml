@@ -1,0 +1,17 @@
+[package]
+name = "twc"
+version = "0.1.0"
+edition = "2021"
+description = "Demo CLI that compiles Tailwind classes via the tw-mb WebAssembly component"
+
+[[bin]]
+name = "twc"
+path = "src/main.rs"
+
+[dependencies]
+wasmtime = "38"
+serde_json = "1"
+anyhow = "1"
+
+[profile.release]
+opt-level = 2
