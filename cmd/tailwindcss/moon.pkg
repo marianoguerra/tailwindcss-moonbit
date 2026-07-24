@@ -1,0 +1,12 @@
+import {
+  "mariano/tailwindcss" @tw,
+  "mariano/tailwindcss/loader/fs" @twfs,
+  "moonbitlang/async",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/sys",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "native"
+
+pkgtype(kind: "executable")

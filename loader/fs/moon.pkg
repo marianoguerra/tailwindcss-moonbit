@@ -1,0 +1,7 @@
+import {
+  "mariano/tailwindcss" @tw,
+  "moonbitlang/async/fs" @afs,
+  "moonbitlang/async/io",
+}
+
+supported_targets = "native"

@@ -1,0 +1,10 @@
+{
+  "name": "tailwindcss-moonbit-development",
+  "private": true,
+  "scripts": {
+    "test": "moon test",
+    "test:diff": "node tools/diff/compare.mjs",
+    "check": "moon check --target all --warn-list +unnecessary_annotation"
+  }
+}
+

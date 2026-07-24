@@ -1,0 +1,454 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "version": "4.3.3",
+    "commit": "c2b24dd15fed1c59dd521bd86082f520c9f5ad0d",
+    "inventoriedTests": [
+      "packages/tailwindcss/src/utilities.test.ts",
+      "packages/tailwindcss/src/variants.test.ts",
+      "packages/tailwindcss/src/index.test.ts",
+      "packages/tailwindcss/src/css-parser.test.ts",
+      "packages/tailwindcss/src/value-parser.test.ts",
+      "packages/tailwindcss/src/selector-parser.test.ts"
+    ]
+  },
+  "features": [
+    {
+      "id": "compile.static-utilities",
+      "source": "utilities.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "compiler_test.mbt"
+      ],
+      "differentialCases": [
+        "static display",
+        "incremental static display",
+        "layout primitive utility",
+        "screen reader utility"
+      ]
+    },
+    {
+      "id": "compile.spacing-and-sizing",
+      "source": "utilities.test.ts",
+      "status": "partial",
+      "moonbitTests": [
+        "compiler_test.mbt"
+      ],
+      "differentialCases": [
+        "spacing",
+        "logical spacing utility",
+        "inset utility",
+        "special sizing utility"
+      ],
+      "reason": "Core spacing, sizing, logical and inset utilities pass; the full upstream unit and fraction matrix is not exhaustively cased."
+    },
+    {
+      "id": "utilities.simple-functional-families",
+      "source": "utilities.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "utilities_simple_test.mbt"
+      ],
+      "differentialCases": [
+        "simple functional utility families",
+        "simple list opacity blend and form utilities"
+      ]
+    },
+    {
+      "id": "compile.colors",
+      "source": "utilities.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "compiler_test.mbt",
+        "typography_border_background_test.mbt"
+      ],
+      "differentialCases": [
+        "theme colors",
+        "interaction color utility",
+        "typography utility families",
+        "border background SVG and color utility families"
+      ]
+    },
+    {
+      "id": "utilities.stateful-custom-properties",
+      "source": "utilities.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "stateful_utilities_test.mbt",
+        "theme_test.mbt"
+      ],
+      "differentialCases": [
+        "stateful transform filter effect gradient transition and interaction utilities"
+      ]
+    },
+    {
+      "id": "compile.arbitrary-values",
+      "source": "candidate.test.ts",
+      "status": "partial",
+      "moonbitTests": [
+        "candidate_wbtest.mbt",
+        "compiler_test.mbt"
+      ],
+      "differentialCases": [
+        "arbitrary values",
+        "negative important and color modifier candidates"
+      ],
+      "reason": "Arbitrary values, CSS variables, math, and type hints pass; the full upstream data-type inference matrix is not exhaustively cased."
+    },
+    {
+      "id": "candidate.parsing-and-canonicalization",
+      "source": "candidate.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "candidate_wbtest.mbt"
+      ],
+      "differentialCases": [
+        "arbitrary values",
+        "negative important and color modifier candidates",
+        "arbitrary named group selector"
+      ]
+    },
+    {
+      "id": "compile.variants",
+      "source": "variants.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "compiler_test.mbt"
+      ],
+      "differentialCases": [
+        "states",
+        "hover responsive and arbitrary variants",
+        "named container query variant",
+        "container query ordering",
+        "group and peer compound variants",
+        "has compound variant",
+        "structured arbitrary selector pseudo function",
+        "arbitrary named group selector",
+        "nth selector clause variant",
+        "aria and data attribute variants",
+        "selector compatible not and in variants",
+        "responsive min max and negation",
+        "extended state variant",
+        "direction variant",
+        "environment media variant",
+        "starting style variant",
+        "arbitrary in ancestor variants",
+        "pseudo element and user validation variants",
+        "nested compound variant capabilities",
+        "direct child selector variants",
+        "equivalent stacked variant ordering",
+        "conditional variant negation",
+        "exact variant ordering across the graph",
+        "variant ordering is candidate order independent",
+        "stacked variant ordering"
+      ]
+    },
+    {
+      "id": "compile.theme-semantics",
+      "source": "index.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "theme_test.mbt",
+        "stylesheet_loader_test.mbt"
+      ],
+      "differentialCases": [
+        "theme emission options",
+        "prefixed theme and candidates",
+        "used theme keyframes",
+        "reference theme import",
+        "theme wildcard reset and dependencies",
+        "functional utility nested theme and variable values"
+      ]
+    },
+    {
+      "id": "directives.apply",
+      "source": "index.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "apply_test.mbt",
+        "directives_test.mbt"
+      ],
+      "differentialCases": [
+        "apply built-in utilities",
+        "apply with variants and nested utility output"
+      ]
+    },
+    {
+      "id": "directives.custom-utility",
+      "source": "index.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "custom_utility_test.mbt",
+        "directives_test.mbt",
+        "apply_test.mbt"
+      ],
+      "differentialCases": [
+        "static custom utility",
+        "functional custom utilities",
+        "functional utility defaults and modifiers",
+        "functional utility ratios",
+        "functional utility nested theme and variable values",
+        "functional utility typed arbitrary hints",
+        "utility and variant directives"
+      ]
+    },
+    {
+      "id": "directives.custom-variant",
+      "source": "variants.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "custom_variant_test.mbt",
+        "directives_test.mbt",
+        "apply_test.mbt"
+      ],
+      "differentialCases": [
+        "selector custom variant",
+        "block custom variants",
+        "multi-selector block custom variant",
+        "nested block custom variant",
+        "nested block custom variant declarations",
+        "custom variant composition",
+        "utility and variant directives"
+      ]
+    },
+    {
+      "id": "directives.css-functions",
+      "source": "index.test.ts",
+      "status": "partial",
+      "moonbitTests": [
+        "css_functions_test.mbt"
+      ],
+      "differentialCases": [
+        "CSS theme and spacing functions",
+        "structured nested CSS value functions"
+      ],
+      "reason": "--spacing(), --alpha(), theme() and --theme() substitution pass; the full nested css-function matrix is not exhaustively cased."
+    },
+    {
+      "id": "directives.import-and-source",
+      "source": "index.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "stylesheet_loader_test.mbt",
+        "source_directive_test.mbt",
+        "import_source_test.mbt"
+      ],
+      "differentialCases": [
+        "relative stylesheet import",
+        "conditional stylesheet import",
+        "inline and negated sources",
+        "import conditions and reference imports",
+        "nested imports resolve relative to each file"
+      ]
+    },
+    {
+      "id": "utilities.layout-grid-and-interaction",
+      "source": "utilities.test.ts",
+      "status": "partial",
+      "moonbitTests": [
+        "compiler_test.mbt"
+      ],
+      "differentialCases": [
+        "hyphenation utility",
+        "text wrapping utility",
+        "aspect ratio utility",
+        "object position utility",
+        "axis overflow utility",
+        "user selection utility",
+        "cursor utility",
+        "numeric grid template utility",
+        "grid flow utility",
+        "grid column span utility",
+        "grid row placement utility"
+      ],
+      "reason": "Common layout, grid, and interaction utilities pass; the full upstream catalogue in this group is not exhaustively cased."
+    },
+    {
+      "id": "parser.css",
+      "source": "css-parser.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "css_parser_wbtest.mbt"
+      ],
+      "differentialCases": [
+        "relative stylesheet import",
+        "conditional stylesheet import"
+      ]
+    },
+    {
+      "id": "parser.value",
+      "source": "value-parser.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "value_parser_wbtest.mbt"
+      ],
+      "differentialCases": [
+        "structured nested CSS value functions",
+        "CSS theme and spacing functions"
+      ]
+    },
+    {
+      "id": "parser.selector",
+      "source": "selector-parser.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "selector_parser_wbtest.mbt"
+      ],
+      "differentialCases": [
+        "structured arbitrary selector pseudo function",
+        "nth selector clause variant",
+        "arbitrary named group selector"
+      ]
+    },
+    {
+      "id": "parser.attribute-selector",
+      "source": "attribute-selector-parser.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "attribute_selector_parser_wbtest.mbt"
+      ],
+      "differentialCases": [
+        "aria and data attribute variants"
+      ]
+    },
+    {
+      "id": "compat.javascript-config",
+      "source": "index.test.ts",
+      "status": "excluded",
+      "reason": "JavaScript configuration loading is outside the public MoonBit compile contract. The compiler reports UnsupportedJsCompatibility for @config and @plugin instead of ignoring them.",
+      "moonbitTests": [
+        "import_source_test.mbt"
+      ],
+      "differentialCases": []
+    },
+    {
+      "id": "compat.javascript-plugins",
+      "source": "index.test.ts",
+      "status": "excluded",
+      "reason": "JavaScript plugins and the JavaScript plugin API are explicitly out of scope. The compiler reports UnsupportedJsCompatibility for @config and @plugin instead of ignoring them.",
+      "moonbitTests": [
+        "import_source_test.mbt"
+      ],
+      "differentialCases": []
+    },
+    {
+      "id": "api.compile-ast-and-design-system",
+      "source": "index.test.ts",
+      "status": "excluded",
+      "reason": "compileAst and design-system/intellisense APIs are outside the required public API.",
+      "moonbitTests": [],
+      "differentialCases": []
+    },
+    {
+      "id": "integration.postcss",
+      "source": "index.test.ts",
+      "status": "excluded",
+      "reason": "PostCSS integration is outside the required public MoonBit API.",
+      "moonbitTests": [],
+      "differentialCases": []
+    },
+    {
+      "id": "utilities.selector-producing",
+      "source": "utilities.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "selector_utilities_test.mbt"
+      ],
+      "differentialCases": [
+        "selector producing space divide and placeholder utilities",
+        "selector producing utilities under variants and important",
+        "generated property ordering across utility families"
+      ]
+    },
+    {
+      "id": "utilities.declaration-expansion",
+      "source": "expand-declaration.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "expand_declaration_wbtest.mbt"
+      ],
+      "differentialCases": [],
+      "whiteBoxOnly": true,
+      "reason": "Upstream calls expandDeclaration from candidate canonicalization, not from compile, so it has no observable effect on built CSS."
+    },
+    {
+      "id": "optimize.ast-and-polyfills",
+      "source": "index.test.ts",
+      "status": "partial",
+      "moonbitTests": [
+        "directives_test.mbt",
+        "optimizer_test.mbt"
+      ],
+      "differentialCases": [
+        "nested stylesheet rules",
+        "declaration dedup and adjacent merging"
+      ],
+      "reason": "Nesting flattening, adjacent rule and at-rule merging, declaration dedup and the @property and color-mix polyfill gates are implemented. Constant folding and calc canonicalization are ported but, as upstream, only reachable from candidate canonicalization."
+    },
+    {
+      "id": "optimize.constant-folding",
+      "source": "constant-fold-declaration.test.ts",
+      "status": "passing",
+      "whiteBoxOnly": true,
+      "moonbitTests": [
+        "calc_folding_wbtest.mbt"
+      ],
+      "differentialCases": [],
+      "reason": "Upstream folds constants and canonicalizes calc() only while comparing candidates, so the result never reaches built CSS."
+    },
+    {
+      "id": "sort.property-and-variant-order",
+      "source": "sort.test.ts",
+      "status": "passing",
+      "moonbitTests": [
+        "compiler_test.mbt"
+      ],
+      "differentialCases": [
+        "exact variant ordering across the graph",
+        "variant ordering is candidate order independent",
+        "stacked variant ordering",
+        "declaration dedup and adjacent merging"
+      ]
+    },
+    {
+      "id": "testing.fuzz-and-property",
+      "source": "internal",
+      "status": "passing",
+      "whiteBoxOnly": true,
+      "moonbitTests": [
+        "property_wbtest.mbt",
+        "incremental_test.mbt",
+        "regression_test.mbt"
+      ],
+      "differentialCases": [],
+      "reason": "Fuzz and property tests assert internal invariants (parsers never panic, rendering is idempotent, candidate order and incremental builds do not change output); they exercise the compiler rather than compare a fixed CSS fixture."
+    }
+  ],
+  "byteForByte": "Every differential case matches the reference byte for byte except for the upstream license banner, which this implementation does not print.",
+  "excludedTestGroups": [
+    {
+      "id": "compat.javascript-config",
+      "source": "index.test.ts",
+      "reason": "JavaScript configuration loading is outside the public MoonBit compile contract. The compiler reports UnsupportedJsCompatibility for @config and @plugin instead of ignoring them."
+    },
+    {
+      "id": "compat.javascript-plugins",
+      "source": "index.test.ts",
+      "reason": "JavaScript plugins and the JavaScript plugin API are explicitly out of scope. The compiler reports UnsupportedJsCompatibility for @config and @plugin instead of ignoring them."
+    },
+    {
+      "id": "api.compile-ast-and-design-system",
+      "source": "index.test.ts",
+      "reason": "compileAst and design-system/intellisense APIs are outside the required public API."
+    },
+    {
+      "id": "integration.postcss",
+      "source": "index.test.ts",
+      "reason": "PostCSS integration is outside the required public MoonBit API."
+    }
+  ],
+  "frozen": {
+    "version": "4.3.3",
+    "commit": "c2b24dd15fed1c59dd521bd86082f520c9f5ad0d"
+  }
+}

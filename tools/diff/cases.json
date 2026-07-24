@@ -1,0 +1,1110 @@
+[
+  {
+    "name": "static display",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "block",
+      "flex",
+      "grid",
+      "hidden"
+    ]
+  },
+  {
+    "name": "incremental static display",
+    "css": "@tailwind utilities;",
+    "builds": [
+      {
+        "name": "initial",
+        "candidates": [
+          "block"
+        ]
+      },
+      {
+        "name": "expanded",
+        "candidates": [
+          "block",
+          "flex",
+          "hidden"
+        ]
+      },
+      {
+        "name": "unchanged",
+        "candidates": [
+          "block",
+          "flex",
+          "hidden"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "spacing",
+    "css": "@theme { --spacing: 0.25rem; } @tailwind utilities;",
+    "candidates": [
+      "m-2",
+      "mx-4",
+      "p-1",
+      "gap-3"
+    ]
+  },
+  {
+    "name": "theme colors",
+    "css": "@theme { --color-brand: #123456; } @tailwind utilities;",
+    "candidates": [
+      "bg-brand",
+      "text-brand",
+      "border-brand"
+    ]
+  },
+  {
+    "name": "states",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "hover:bg-black",
+      "focus:flex",
+      "disabled:hidden"
+    ]
+  },
+  {
+    "name": "arbitrary values",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "w-[13px]",
+      "bg-[#123456]",
+      "[mask-type:luminance]"
+    ]
+  },
+  {
+    "name": "relative stylesheet import",
+    "css": "@import \"theme.css\";\n@tailwind utilities;",
+    "base": "",
+    "files": {
+      "theme.css": "@theme { --color-brand: #123456; }"
+    },
+    "candidates": [
+      "bg-brand"
+    ]
+  },
+  {
+    "name": "negative important and color modifier candidates",
+    "css": "@theme { --spacing: 0.25rem; --color-brand: #123456; }\n@tailwind utilities;",
+    "candidates": [
+      "-m-2",
+      "flex!",
+      "bg-brand/50"
+    ]
+  },
+  {
+    "name": "hover responsive and arbitrary variants",
+    "css": "@theme { --color-black: #000; --breakpoint-sm: 40rem; }\n@tailwind utilities;",
+    "candidates": [
+      "hover:bg-black",
+      "sm:flex",
+      "[&>*]:block"
+    ]
+  },
+  {
+    "name": "apply built-in utilities",
+    "css": "@theme { --spacing: 0.25rem; }\n.foo { @apply flex p-4; }",
+    "candidates": []
+  },
+  {
+    "name": "static custom utility",
+    "css": "@utility tab-4 { tab-size: 4; }\n.editor { @apply tab-4; }\n@tailwind utilities;",
+    "candidates": [
+      "tab-4"
+    ]
+  },
+  {
+    "name": "selector custom variant",
+    "css": "@custom-variant theme-midnight (&:where([data-theme=\"midnight\"] *));\n@tailwind utilities;",
+    "candidates": [
+      "theme-midnight:flex"
+    ]
+  },
+  {
+    "name": "CSS theme and spacing functions",
+    "css": "@theme { --spacing: 0.25rem; --color-brand: #123456; }\n.card { margin: --spacing(4); color: --theme(--color-brand); }",
+    "candidates": []
+  },
+  {
+    "name": "conditional stylesheet import",
+    "css": "@import \"example.css\" layer(utilities) supports(display: grid) print;",
+    "files": {
+      "example.css": "a { color: red; }"
+    },
+    "candidates": []
+  },
+  {
+    "name": "inline and negated sources",
+    "css": "@source inline(\"underline hidden\");\n@source not inline(\"hidden\");\n@tailwind utilities;",
+    "candidates": [
+      "hidden"
+    ]
+  },
+  {
+    "name": "functional custom utilities",
+    "css": "@theme { --tab-size-github: 8; }\n@utility tab-* { tab-size: --value(--tab-size-*); tab-size: --value(integer); tab-size: --value([integer]); }\n.editor { @apply tab-github; }\n@tailwind utilities;",
+    "candidates": [
+      "tab-github",
+      "tab-4",
+      "tab-[8]",
+      "tab-auto"
+    ]
+  },
+  {
+    "name": "functional utility defaults and modifiers",
+    "css": "@utility example-* { value: --value(integer, --default(12)); modifier: --modifier(integer, --default(34)); }\n@tailwind utilities;",
+    "candidates": [
+      "example",
+      "example/1",
+      "example-2",
+      "example-2/3",
+      "example-2/nope"
+    ]
+  },
+  {
+    "name": "functional utility ratios",
+    "css": "@utility custom-aspect-* { ratio: --value(ratio, [ratio]); number: --value(number); }\n@tailwind utilities;",
+    "candidates": [
+      "custom-aspect-1/2",
+      "custom-aspect-[7/9]",
+      "custom-aspect-2"
+    ]
+  },
+  {
+    "name": "functional utility nested theme and variable values",
+    "css": "@theme { --text-xs: 0.75rem; --text-xs--line-height: 1rem; }\n@utility token-* { value: --value([*]); }\n@utility type-* { font-size: --value(--text); line-height: --value(--text-* --line-height); }\n@tailwind utilities;",
+    "candidates": [
+      "token-(--custom-token)",
+      "type-xs"
+    ]
+  },
+  {
+    "name": "functional utility typed arbitrary hints",
+    "css": "@utility typed-* { integer: --value([integer]); color: --value([color]); }\n@tailwind utilities;",
+    "candidates": [
+      "typed-[integer:var(--count)]",
+      "typed-(integer:--other-count)",
+      "typed-[color:var(--paint)]",
+      "typed-[length:var(--size)]"
+    ]
+  },
+  {
+    "name": "block custom variants",
+    "css": "@custom-variant selected { &[data-selected] { @slot; } }\n@custom-variant any-hover { @media (any-hover: hover) { @slot; } }\n@tailwind utilities;",
+    "candidates": [
+      "selected:flex",
+      "any-hover:block"
+    ]
+  },
+  {
+    "name": "multi-selector block custom variant",
+    "css": "@custom-variant hocus { &:hover { @slot; } &:focus { @slot; } }\n@tailwind utilities;",
+    "candidates": [
+      "hocus:flex"
+    ]
+  },
+  {
+    "name": "nested block custom variant",
+    "css": "@custom-variant interactive { @media (hover: hover) { &[data-ready] { &:hover { @slot; } } } }\n@tailwind utilities;",
+    "candidates": [
+      "interactive:flex"
+    ]
+  },
+  {
+    "name": "nested block custom variant declarations",
+    "css": "@custom-variant ready-child { &[data-ready] { outline: 1px solid; & > * { @slot; } } }\n@tailwind utilities;",
+    "candidates": [
+      "ready-child:flex"
+    ]
+  },
+  {
+    "name": "custom variant composition",
+    "css": "@custom-variant hocus { @variant hover { @variant focus { @slot; } } }\n@custom-variant aliased { @variant custom-hover { @slot; } }\n@custom-variant custom-hover (&:hover);\n@tailwind utilities;",
+    "candidates": [
+      "hocus:flex",
+      "aliased:block"
+    ]
+  },
+  {
+    "name": "named container query variant",
+    "css": "@theme { --container-lg: 1024px; }\n@tailwind utilities;",
+    "candidates": [
+      "@lg/sidebar:flex"
+    ]
+  },
+  {
+    "name": "container query ordering",
+    "css": "@theme { --container-lg: 1024px; --container-wide: 1440px; }\n@tailwind utilities;",
+    "candidates": [
+      "@min-[456px]:block",
+      "@wide:flex",
+      "@max-lg:grid"
+    ]
+  },
+  {
+    "name": "group and peer compound variants",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "group-hover:flex",
+      "peer-focus:block"
+    ]
+  },
+  {
+    "name": "has compound variant",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "has-checked:flex"
+    ]
+  },
+  {
+    "name": "structured nested CSS value functions",
+    "css": "@theme { --color-brand: #123456; }\n.example { content: \"theme(--color-brand)\"; color: var(--fallback, --theme(--color-brand)); }",
+    "candidates": []
+  },
+  {
+    "name": "structured arbitrary selector pseudo function",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "[:is(&>*)]:flex"
+    ]
+  },
+  {
+    "name": "arbitrary named group selector",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "group-[&:focus]/form:flex"
+    ]
+  },
+  {
+    "name": "nth selector clause variant",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "nth-[2n+1_of_.item]:flex"
+    ]
+  },
+  {
+    "name": "aria and data attribute variants",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "aria-checked:flex",
+      "aria-[sort=ascending]:block",
+      "data-[state=open]:hidden",
+      "data-active:grid",
+      "data-[mode=dark_i]:flex"
+    ]
+  },
+  {
+    "name": "selector compatible not and in variants",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "not-focus:flex",
+      "not-has-checked:block",
+      "not-aria-selected:grid",
+      "not-nth-2:hidden",
+      "in-data-visible:flex",
+      "not-in-data-visible:block",
+      "not-hover:grid",
+      "supports-[display:grid]:flex",
+      "supports-grid:block",
+      "not-supports-grid:hidden"
+    ]
+  },
+  {
+    "name": "responsive min max and negation",
+    "css": "@theme { --breakpoint-sm: 640px; }\n@tailwind utilities;",
+    "candidates": [
+      "min-sm:flex",
+      "max-[500px]:block",
+      "not-min-[700px]:grid"
+    ]
+  },
+  {
+    "name": "extended state variant",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "placeholder-shown:flex"
+    ]
+  },
+  {
+    "name": "direction variant",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "rtl:block"
+    ]
+  },
+  {
+    "name": "environment media variant",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "forced-colors:grid"
+    ]
+  },
+  {
+    "name": "starting style variant",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "starting:hidden"
+    ]
+  },
+  {
+    "name": "arbitrary in ancestor variants",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "not-in-[p]:block",
+      "in-[.group]:flex"
+    ]
+  },
+  {
+    "name": "screen reader utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "sr-only"
+    ]
+  },
+  {
+    "name": "layout primitive utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "table-cell"
+    ]
+  },
+  {
+    "name": "logical spacing utility",
+    "css": "@theme { --spacing: 0.25rem; }\n@tailwind utilities;",
+    "candidates": [
+      "ms-4"
+    ]
+  },
+  {
+    "name": "inset utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "inset-full"
+    ]
+  },
+  {
+    "name": "special sizing utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "w-screen"
+    ]
+  },
+  {
+    "name": "hyphenation utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "hyphens-auto"
+    ]
+  },
+  {
+    "name": "text wrapping utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "break-normal"
+    ]
+  },
+  {
+    "name": "aspect ratio utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "aspect-square"
+    ]
+  },
+  {
+    "name": "object position utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "object-center"
+    ]
+  },
+  {
+    "name": "axis overflow utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "overflow-x-clip"
+    ]
+  },
+  {
+    "name": "user selection utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "select-none"
+    ]
+  },
+  {
+    "name": "cursor utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "cursor-pointer"
+    ]
+  },
+  {
+    "name": "interaction color utility",
+    "css": "@theme { --color-brand: #123456; }\n@tailwind utilities;",
+    "candidates": [
+      "accent-brand"
+    ]
+  },
+  {
+    "name": "numeric grid template utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "grid-cols-3"
+    ]
+  },
+  {
+    "name": "grid flow utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "grid-flow-row-dense"
+    ]
+  },
+  {
+    "name": "grid column span utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "col-span-3"
+    ]
+  },
+  {
+    "name": "grid row placement utility",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "row-start-2"
+    ]
+  },
+  {
+    "name": "pseudo element and user validation variants",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "first-letter:flex",
+      "first-line:flex",
+      "marker:flex",
+      "selection:flex",
+      "file:flex",
+      "placeholder:flex",
+      "backdrop:flex",
+      "details-content:flex",
+      "before:flex",
+      "after:flex",
+      "user-valid:flex",
+      "user-invalid:flex"
+    ]
+  },
+  {
+    "name": "nested compound variant capabilities",
+    "css": "@custom-variant hocus (&:hover, &:focus);\n@tailwind utilities;",
+    "candidates": [
+      "group-not-hover:flex",
+      "peer-not-checked:block",
+      "not-group-hover:grid",
+      "group-has-checked/foo:flex",
+      "not-has-checked:hidden",
+      "group-hocus:flex",
+      "not-hocus:block",
+      "not-supports-[display:grid,display:flex]:flex",
+      "has-user-valid:flex",
+      "has-aria-expanded:block",
+      "has-data-[state=open]:grid",
+      "has-nth-3:hidden",
+      "has-hocus:flex"
+    ]
+  },
+  {
+    "name": "direct child selector variants",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "*:flex",
+      "**:block",
+      "not-*:grid",
+      "group-*:hidden",
+      "in-*:flex"
+    ]
+  },
+  {
+    "name": "equivalent stacked variant ordering",
+    "css": "@tailwind utilities;",
+    "candidates": [
+      "active:focus:flex",
+      "focus:active:flex"
+    ]
+  },
+  {
+    "name": "conditional variant negation",
+    "css": "@theme { --breakpoint-sm: 40rem; --container-lg: 64rem; }\n@tailwind utilities;",
+    "candidates": [
+      "not-@lg/sidebar:flex",
+      "not-@max-lg/sidebar:block",
+      "not-min-sm:grid",
+      "not-max-sm:hidden",
+      "not-supports-[display:grid,display:flex]:flex",
+      "not-[@media_print,screen]:block"
+    ]
+  },
+  {
+    "name": "theme emission options",
+    "css": "@theme { --color-default: #111; --color-unused: #999; } @theme inline { --color-inline: #222; } @theme static { --color-static: #333; --color-static-unused: #444; } @theme reference { --color-reference: #555; } @tailwind utilities;",
+    "candidates": [
+      "bg-default",
+      "bg-inline",
+      "bg-static",
+      "bg-reference"
+    ]
+  },
+  {
+    "name": "prefixed theme and candidates",
+    "css": "@theme prefix(tw) { --color-brand: #123456; --spacing: 0.25rem; }\n@tailwind utilities;",
+    "candidates": [
+      "bg-brand",
+      "tw:bg-brand",
+      "tw:p-4",
+      "hover:tw:bg-brand",
+      "tw:hover:bg-brand"
+    ]
+  },
+  {
+    "name": "used theme keyframes",
+    "css": "@theme { --animate-spin: spin 1s linear infinite; --animate-unused: unused 2s; @keyframes spin { to { transform: rotate(360deg); } } @keyframes unused { to { opacity: 0; } } }\n@tailwind utilities;",
+    "candidates": [
+      "animate-spin"
+    ]
+  },
+  {
+    "name": "reference theme import",
+    "css": "@import \"theme.css\" theme(reference);\n@tailwind utilities;",
+    "files": {
+      "theme.css": "@theme { --color-brand: #123456; }"
+    },
+    "candidates": [
+      "bg-brand"
+    ]
+  },
+  {
+    "name": "theme wildcard reset and dependencies",
+    "css": "@theme { --color-red: red; --color-blue: blue; } @theme { --color-*: initial; --color-base: #123456; --color-brand: var(--color-base); }\n@tailwind utilities;",
+    "candidates": [
+      "bg-red",
+      "bg-blue",
+      "bg-brand"
+    ]
+  },
+  {
+    "name": "simple functional utility families",
+    "css": "@theme { --spacing: 0.25rem; --container-sm: 24rem; --columns-card: 18rem; --order-first: -9999; --flex-basis-card: 20rem; }\n@tailwind utilities;",
+    "candidates": [
+      "line-clamp-3",
+      "line-clamp-none",
+      "columns-3",
+      "columns-card",
+      "w-sm",
+      "w-1/2",
+      "size-2/3",
+      "inline-4",
+      "min-inline-full",
+      "max-inline-none",
+      "block-8",
+      "min-block-min",
+      "max-block-screen",
+      "scroll-m-4",
+      "-scroll-ms-2",
+      "scroll-px-3",
+      "scroll-pbe-px",
+      "border-spacing-2",
+      "border-spacing-x-4",
+      "border-spacing-y-[7px]",
+      "order-3",
+      "-order-2",
+      "order-first",
+      "flex-1",
+      "flex-auto",
+      "flex-none",
+      "flex-[2_2_10%]",
+      "basis-4",
+      "basis-1/2",
+      "basis-card",
+      "grow",
+      "grow-0",
+      "shrink",
+      "shrink-0"
+    ]
+  },
+  {
+    "name": "simple list opacity blend and form utilities",
+    "css": "@theme { --list-style-type-square: square; --list-style-image-check: url(check.svg); --opacity-dim: 0.35; }\n@tailwind utilities;",
+    "candidates": [
+      "list-square",
+      "list-[upper-roman]",
+      "list-image-none",
+      "list-image-check",
+      "list-image-[url(icon.svg)]",
+      "opacity-50",
+      "opacity-[.12]",
+      "opacity-dim",
+      "bg-blend-multiply",
+      "bg-blend-luminosity",
+      "mix-blend-screen",
+      "mix-blend-plus-lighter",
+      "scheme-normal",
+      "scheme-light",
+      "scheme-dark",
+      "scheme-light-dark",
+      "scheme-only-light",
+      "scheme-only-dark",
+      "forced-color-adjust-auto",
+      "forced-color-adjust-none",
+      "align-[3px]",
+      "tab-4",
+      "tab-[12px]"
+    ]
+  },
+  {
+    "name": "typography utility families",
+    "css": "@theme { --spacing: 0.25rem; --font-sans: Inter, sans-serif; --font-sans--font-feature-settings: \"cv02\"; --font-sans--font-variation-settings: \"opsz\" 32; --text-sm: 0.875rem; --text-sm--line-height: 1.25rem; --text-sm--letter-spacing: 0.01em; --text-sm--font-weight: 500; --leading-tight: 1.25; --tracking-wide: 0.025em; --text-indent-note: 2rem; --text-decoration-thickness-heavy: 3px; --text-underline-offset-far: 6px; }\n@tailwind utilities;",
+    "candidates": [
+      "font-sans",
+      "font-[Georgia]",
+      "text-sm",
+      "text-sm/6",
+      "text-[14px]/[1.5]",
+      "leading-6",
+      "leading-tight",
+      "tracking-wide",
+      "tracking-[.1em]",
+      "indent-4",
+      "indent-note",
+      "decoration-solid",
+      "decoration-double",
+      "decoration-dotted",
+      "decoration-dashed",
+      "decoration-wavy",
+      "decoration-auto",
+      "decoration-from-font",
+      "decoration-2",
+      "decoration-heavy",
+      "underline-offset-auto",
+      "underline-offset-4",
+      "underline-offset-far",
+      "ordinal",
+      "slashed-zero",
+      "lining-nums",
+      "oldstyle-nums",
+      "proportional-nums",
+      "tabular-nums",
+      "diagonal-fractions",
+      "stacked-fractions",
+      "normal-nums"
+    ]
+  },
+  {
+    "name": "border background SVG and color utility families",
+    "css": "@theme { --color-brand: oklch(60% .2 20); --border-width-wide: 3px; --radius-card: .75rem; --background-image-hero: url(hero.png); --stroke-width-bold: 3; }\n@tailwind utilities;",
+    "candidates": [
+      "rounded-card",
+      "rounded-ss-card",
+      "rounded-br-card",
+      "border",
+      "border-2",
+      "border-[5px]",
+      "border-wide",
+      "border-x-2",
+      "border-s-2",
+      "border-dashed",
+      "border-none",
+      "border-brand/50",
+      "border-s-brand",
+      "bg-brand/50",
+      "bg-[url(x.png)]",
+      "bg-hero",
+      "bg-none",
+      "bg-[size:10px_20px]",
+      "bg-cover",
+      "bg-fixed",
+      "bg-clip-text",
+      "bg-[position:10%_20%]",
+      "bg-top",
+      "bg-no-repeat",
+      "bg-origin-content",
+      "fill-brand/50",
+      "stroke-brand/50",
+      "stroke-2",
+      "stroke-bold",
+      "text-brand/50",
+      "decoration-brand/50",
+      "outline-hidden",
+      "outline",
+      "outline-2",
+      "outline-offset-2",
+      "outline-brand/50",
+      "outline-dashed"
+    ]
+  },
+  {
+    "name": "stateful transform filter effect gradient transition and interaction utilities",
+    "css": "@theme { --spacing: .25rem; --color-brand: #123456; --translate-hop: 2rem; --rotate-turn: 30deg; --skew-angle: 12deg; --transform-origin-pin: 20% 30%; --perspective-near: 300px; --perspective-origin-eye: 20% 30%; --blur-soft: 4px; --brightness-dim: .5; --shadow-card: 0 2px 4px #0003; --inset-shadow-well: inset 0 1px 2px #0003; --drop-shadow-card: 0 2px 3px #0003; --text-shadow-label: 0 1px 1px #0003; --transition-duration-slow: 500ms; --ease-smooth: cubic-bezier(.2,.8,.2,1); }\n@tailwind utilities;",
+    "candidates": [
+      "translate-x-4",
+      "-translate-y-full",
+      "translate-hop",
+      "translate-3d",
+      "rotate-45",
+      "-rotate-turn",
+      "rotate-x-45",
+      "skew-x-3",
+      "skew-y-angle",
+      "scale-110",
+      "scale-x-50",
+      "transform-flat",
+      "transform-3d",
+      "transform-none",
+      "origin-center",
+      "origin-pin",
+      "perspective-near",
+      "perspective-origin-eye",
+      "blur-soft",
+      "brightness-50",
+      "brightness-dim",
+      "contrast-125",
+      "grayscale",
+      "invert",
+      "saturate-150",
+      "sepia",
+      "backdrop-blur-soft",
+      "backdrop-brightness-50",
+      "drop-shadow-card",
+      "drop-shadow-brand",
+      "shadow-card",
+      "shadow-brand",
+      "inset-shadow-well",
+      "inset-shadow-brand",
+      "text-shadow-label",
+      "text-shadow-brand",
+      "ring",
+      "ring-2",
+      "ring-brand",
+      "ring-offset-2",
+      "ring-offset-brand",
+      "inset-ring",
+      "inset-ring-2",
+      "inset-ring-brand",
+      "bg-linear-to-r",
+      "bg-linear-[45deg]",
+      "from-brand",
+      "from-brand/50",
+      "from-20%",
+      "via-brand",
+      "via-50%",
+      "to-brand",
+      "to-80%",
+      "transition",
+      "transition-colors",
+      "transition-[width,height]",
+      "duration-300",
+      "duration-slow",
+      "delay-150",
+      "ease-linear",
+      "ease-smooth",
+      "animate-none",
+      "touch-pan-x",
+      "touch-pan-y",
+      "touch-pinch-zoom",
+      "snap-x",
+      "snap-both",
+      "snap-mandatory",
+      "snap-proximity",
+      "transform",
+      "transform-cpu",
+      "transform-gpu",
+      "transform-view",
+      "scale-3d",
+      "scale-none",
+      "ring-inset",
+      "content-none",
+      "content-['x']",
+      "ease-initial",
+      "before:flex",
+      "perspective-origin-[10%_20%]"
+    ]
+  },
+  {
+    "name": "selector producing space divide and placeholder utilities",
+    "css": "@theme { --spacing: 0.25rem; --color-brand: oklch(60% .2 20); --divide-width-hair: 3px; --space-wide: 5rem; }\n@tailwind utilities;",
+    "candidates": [
+      "space-x-4",
+      "space-y-2",
+      "-space-x-4",
+      "space-x-0",
+      "space-x-px",
+      "space-x-[10px]",
+      "space-x-wide",
+      "space-x-reverse",
+      "space-y-reverse",
+      "divide-x",
+      "divide-y",
+      "divide-x-2",
+      "divide-y-4",
+      "divide-x-0",
+      "divide-x-[3px]",
+      "divide-x-hair",
+      "divide-x-reverse",
+      "divide-y-reverse",
+      "divide-solid",
+      "divide-dashed",
+      "divide-dotted",
+      "divide-double",
+      "divide-none",
+      "divide-brand",
+      "divide-brand/50",
+      "divide-current",
+      "divide-transparent",
+      "divide-[#abc]",
+      "placeholder-brand",
+      "placeholder-brand/50",
+      "placeholder-current",
+      "placeholder-[#123456]"
+    ]
+  },
+  {
+    "name": "selector producing utilities under variants and important",
+    "css": "@theme { --spacing: 0.25rem; --color-brand: oklch(60% .2 20); --breakpoint-md: 48rem; }\n@tailwind utilities;",
+    "candidates": [
+      "hover:space-x-4",
+      "focus:placeholder-brand",
+      "md:divide-y-2",
+      "space-x-4!",
+      "divide-x!",
+      "placeholder-brand!",
+      "*:space-x-2",
+      "first:divide-y",
+      "last:space-y-1"
+    ]
+  },
+  {
+    "name": "generated property ordering across utility families",
+    "css": "@theme { --spacing: 0.25rem; --color-brand: #123456; } @tailwind utilities;",
+    "candidates": [
+      "space-x-4",
+      "space-y-2",
+      "divide-x",
+      "divide-y-2",
+      "border-2",
+      "shadow-md",
+      "ring",
+      "blur-sm",
+      "rotate-45",
+      "ordinal",
+      "tabular-nums",
+      "translate-x-2",
+      "text-shadow-sm",
+      "transition",
+      "duration-300",
+      "ease-linear",
+      "touch-pan-x",
+      "snap-mandatory",
+      "bg-linear-to-r",
+      "from-brand"
+    ]
+  },
+  {
+    "name": "apply with variants and nested utility output",
+    "css": "@theme { --spacing: 0.25rem; --color-brand: #123456; --breakpoint-md: 48rem; }\n.a { @apply flex hover:bg-brand p-4; }\n.b { @apply md:flex hover:block; }\n.c { @apply space-x-4; }\n.d { @apply before:flex flex; }\n.e { @apply outline-hidden; }\n.f { @apply bg-brand/50; }\n.g { @apply hover:focus:flex; }\n.h, .i { @apply md:flex; }\n.j { color: red; @apply md:flex; }\n.k { &:hover { @apply flex; } }\n.l { @apply flex! -m-2; }\n@media print { .m { @apply flex; } }\n@tailwind utilities;",
+    "candidates": [
+      "flex"
+    ]
+  },
+  {
+    "name": "utility and variant directives",
+    "css": "@theme { --spacing: 0.25rem; --breakpoint-md: 48rem; }\n@utility card { &:hover { color: red } }\n@utility framed { @media print { border: 1px solid } }\n@utility base { @apply flex p-4; }\n@utility fancy { @apply base; color: blue; }\n@utility tab-* { tab-size: --value(integer); }\n@custom-variant hocus (&:hover, &:focus);\n@custom-variant any (@media print, &:hover);\n@custom-variant dim { @media (prefers-color-scheme: dark) { @slot } }\n@variant hover { .v { color: red } }\n@variant md { .w { color: blue } }\n@variant hover, focus { .x { color: green } }\n@tailwind utilities;",
+    "candidates": [
+      "card",
+      "framed",
+      "base",
+      "fancy",
+      "tab-4",
+      "hocus:flex",
+      "any:flex",
+      "dim:flex",
+      "hover:card",
+      "fancy!"
+    ]
+  },
+  {
+    "name": "nested stylesheet rules",
+    "css": ".a { .b { color: red } }\n.c, .d { &:hover { color: blue } }\n.e { @media print { color: green } }\n.g { color: red; .h { .i { color: blue } } }\n@media print { .j { .k { color: red } } }\n@tailwind utilities;",
+    "candidates": [
+      "flex"
+    ]
+  },
+  {
+    "name": "import conditions and reference imports",
+    "css": "@import \"lib/theme.css\" layer(base) supports(display:grid) print;\n@import \"lib/extra.css\" screen;\n@reference \"lib/ref.css\";\n@import \"lib/only-theme.css\" theme(reference);\n@import url(\"https://example.com/a.css\");\n@tailwind utilities;",
+    "base": "",
+    "files": {
+      "lib/theme.css": "@theme { --color-brand: #123456; }\n.x { color: red }",
+      "lib/extra.css": ".y { color: blue }",
+      "lib/ref.css": "@theme { --color-ref: #654321; }\n.z { color: green }",
+      "lib/only-theme.css": "@theme { --color-only: #abcdef; }"
+    },
+    "candidates": [
+      "bg-brand",
+      "bg-ref",
+      "bg-only"
+    ]
+  },
+  {
+    "name": "nested imports resolve relative to each file",
+    "css": "@import \"a/one.css\";\n@tailwind utilities;",
+    "base": "",
+    "files": {
+      "a/one.css": "@import \"./b/two.css\";\n.one { color: red }",
+      "a/b/two.css": "@theme { --color-deep: #010203; }\n.two { color: blue }"
+    },
+    "candidates": [
+      "bg-deep"
+    ]
+  },
+  {
+    "name": "declaration dedup and adjacent merging",
+    "css": ".a { color: red; color: blue; color: red }\n.b { color: red } .c { color: green } .b { color: blue }\n.d { color: red } .d { color: blue }\n.e { color: red !important; color: red }\n@media print { .f { color: red } } .g { color: green } @media print { .h { color: red } }\n.i { color: red }\n.i { --x: 1 }\n@tailwind utilities;",
+    "candidates": [
+      "flex",
+      "md:flex",
+      "md:hover:block",
+      "md:block"
+    ]
+  },
+  {
+    "name": "exact variant ordering across the graph",
+    "css": "@theme { --breakpoint-sm: 640px; --breakpoint-md: 768px; --breakpoint-lg: 1024px; --container-xs: 320px; --container-sm: 384px; --container-md: 448px; }\n@tailwind utilities;",
+    "candidates": [
+      "dark:flex",
+      "sm:flex",
+      "md:flex",
+      "lg:flex",
+      "max-sm:flex",
+      "max-md:flex",
+      "max-lg:flex",
+      "min-sm:flex",
+      "min-[900px]:flex",
+      "max-[900px]:flex",
+      "hover:flex",
+      "focus:flex",
+      "group-hover:flex",
+      "peer-focus:flex",
+      "has-[a]:flex",
+      "not-hover:flex",
+      "not-md:flex",
+      "aria-checked:flex",
+      "aria-[sort=asc]:flex",
+      "data-[x=y]:flex",
+      "data-open:flex",
+      "supports-[display:grid]:flex",
+      "@sm:flex",
+      "@md:flex",
+      "@max-sm:flex",
+      "[&_p]:flex",
+      "[.x]:flex",
+      "[&.x]:flex",
+      "first:flex",
+      "last:flex",
+      "print:flex",
+      "before:flex",
+      "after:flex"
+    ]
+  },
+  {
+    "name": "variant ordering is candidate order independent",
+    "css": "@theme { --breakpoint-sm: 640px; --breakpoint-md: 768px; --breakpoint-lg: 1024px; --container-xs: 320px; --container-sm: 384px; --container-md: 448px; }\n@tailwind utilities;",
+    "builds": [
+      {
+        "name": "forward",
+        "candidates": [
+          "dark:flex",
+          "sm:flex",
+          "md:flex",
+          "lg:flex",
+          "max-sm:flex",
+          "max-md:flex",
+          "max-lg:flex",
+          "min-sm:flex",
+          "min-[900px]:flex",
+          "max-[900px]:flex",
+          "hover:flex",
+          "focus:flex",
+          "group-hover:flex",
+          "peer-focus:flex",
+          "has-[a]:flex",
+          "not-hover:flex",
+          "not-md:flex",
+          "aria-checked:flex",
+          "aria-[sort=asc]:flex",
+          "data-[x=y]:flex",
+          "data-open:flex",
+          "supports-[display:grid]:flex",
+          "@sm:flex",
+          "@md:flex",
+          "@max-sm:flex",
+          "[&_p]:flex",
+          "[.x]:flex",
+          "[&.x]:flex",
+          "first:flex",
+          "last:flex",
+          "print:flex",
+          "before:flex",
+          "after:flex"
+        ]
+      },
+      {
+        "name": "reversed",
+        "candidates": [
+          "after:flex",
+          "before:flex",
+          "print:flex",
+          "last:flex",
+          "first:flex",
+          "[&.x]:flex",
+          "[.x]:flex",
+          "[&_p]:flex",
+          "@max-sm:flex",
+          "@md:flex",
+          "@sm:flex",
+          "supports-[display:grid]:flex",
+          "data-open:flex",
+          "data-[x=y]:flex",
+          "aria-[sort=asc]:flex",
+          "aria-checked:flex",
+          "not-md:flex",
+          "not-hover:flex",
+          "has-[a]:flex",
+          "peer-focus:flex",
+          "group-hover:flex",
+          "focus:flex",
+          "hover:flex",
+          "max-[900px]:flex",
+          "min-[900px]:flex",
+          "min-sm:flex",
+          "max-lg:flex",
+          "max-md:flex",
+          "max-sm:flex",
+          "lg:flex",
+          "md:flex",
+          "sm:flex",
+          "dark:flex"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "stacked variant ordering",
+    "css": "@theme { --breakpoint-sm: 640px; --breakpoint-md: 768px; --breakpoint-lg: 1024px; --container-xs: 320px; --container-sm: 384px; --container-md: 448px; }\n@tailwind utilities;",
+    "candidates": [
+      "sm:hover:flex",
+      "hover:sm:flex",
+      "md:focus:flex",
+      "dark:md:hover:flex",
+      "group-hover:sm:flex",
+      "max-md:dark:flex"
+    ]
+  }
+]

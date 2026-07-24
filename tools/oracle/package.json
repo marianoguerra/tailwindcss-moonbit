@@ -1,0 +1,9 @@
+{
+  "name": "tailwindcss-v4.3.3-oracle",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "tailwindcss": "4.3.3"
+  }
+}
+

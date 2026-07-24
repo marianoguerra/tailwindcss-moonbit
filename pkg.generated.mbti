@@ -1,0 +1,85 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mariano/tailwindcss"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const POLYFILL_ALL : Int = 3
+
+pub const POLYFILL_AT_PROPERTY : Int = 1
+
+pub const POLYFILL_COLOR_MIX : Int = 2
+
+pub const POLYFILL_NONE : Int = 0
+
+pub async fn compile(String, options? : CompileOptions) -> Compiler
+
+// Errors
+pub(all) suberror CompileError {
+  InvalidCss(String)
+  MissingStylesheetLoader(String)
+  StylesheetNotFound(String)
+  ImportCycle(Array[String])
+  UnsupportedJsCompatibility(String)
+  InvalidApplyCandidate(String)
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub struct CompileOptions {
+  base : String
+  from : String?
+  loader : &StylesheetLoader?
+  polyfills : Int
+}
+pub fn CompileOptions::new(base? : String, from? : String, loader? : &StylesheetLoader, polyfills? : Int) -> Self
+
+pub struct Compiler {
+  input : String
+  polyfills : Int
+  stylesheet : Array[CssNode]
+  theme : Map[String, String]
+  sources : Array[Source]
+  candidates : Map[String, Unit]
+  excluded_candidates : Map[String, Unit]
+  custom_utilities : Map[String, Array[CssNode]]
+  functional_utilities : Map[String, Array[CssNode]]
+  custom_variants : Map[String, CustomVariantTemplate]
+  has_utilities : Bool
+}
+pub fn Compiler::build(Self, ArrayView[String]) -> String
+pub fn Compiler::sources(Self) -> Array[Source]
+
+type CssNode derive(Eq, @debug.Debug)
+
+type CustomVariantTemplate
+
+pub(all) struct LoadedStylesheet {
+  content : String
+  path : String
+  base : String
+} derive(Eq, @debug.Debug)
+
+pub struct MemoryStylesheetLoader {
+  files : Map[String, String]
+}
+pub fn MemoryStylesheetLoader::add(Self, String, String) -> Unit
+pub fn MemoryStylesheetLoader::new(files? : Array[(String, String)]) -> Self
+pub impl StylesheetLoader for MemoryStylesheetLoader
+
+pub(all) struct Source {
+  base : String
+  pattern : String
+  negated : Bool
+} derive(Eq, ToJson, @debug.Debug)
+
+type SourceSpan derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+pub(open) trait StylesheetLoader {
+  async fn load(Self, String, String) -> LoadedStylesheet raise CompileError
+}
+

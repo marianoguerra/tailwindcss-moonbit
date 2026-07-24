@@ -1,0 +1,14 @@
+import {
+  "mariano/tailwindcss" @tw,
+  "moonbitlang/async" @async,
+  "moonbitlang/core/string",
+}
+
+supported_targets = "-all+js+wasm"
+
+options(
+  link: {
+    "js": { "exports": [ "compile_css" ], "format": "esm" },
+    "wasm": { "exports": [ "compile_css" ] },
+  },
+)
