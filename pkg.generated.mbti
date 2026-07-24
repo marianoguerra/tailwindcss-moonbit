@@ -14,6 +14,8 @@ pub const POLYFILL_COLOR_MIX : Int = 2
 
 pub const POLYFILL_NONE : Int = 0
 
+pub async fn collect_imports(String, &StylesheetLoader, base? : String) -> Map[String, String] raise CompileError
+
 pub async fn compile(String, options? : CompileOptions) -> Compiler
 
 pub fn compile_sync(String, options? : CompileOptions) -> Compiler raise CompileError
