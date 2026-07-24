@@ -428,14 +428,38 @@ Five-trial warm median A/B against commit `c28e87f`, same session, back-to-back:
 A large, universal win on the theme-heavy full-import workloads — matches the
 profile (interpolation `Show::output` + `String::contains` were top costs). Kept.
 
+### 13. O(N) keyed declaration dedup instead of O(N²) — REVERTED ❌
+
+Instrumented the candidates first (per the proposal). `generated_footer.contains`
+was a non-issue: `footer=0, atroot_total=0` on every workload — it is never called.
+`dedupe_declarations`, however, runs on the `:root` theme rule with **n=417** on
+stress/a-lot (one declaration per used theme var), doing O(N²) pairwise comparisons.
+Replaced it with two O(N) passes over a `Map[String,Int]` keyed by
+`name\0value\0important`, keeping the last occurrence (identical semantics).
+`moon check`, 57/57 tests, 85/85 differential cases.
+
+Five-trial warm median A/B against commit `0ca5b57`, back-to-back:
+
+| workload | native | wasm-gc |
+|---|--:|--:|
+| a-lot  | +0.4% | +0.2% |
+| stress | +0.2% | +0.9% |
+| margaui| +0.5% | +0.9% |
+
+No improvement — slightly worse. The O(N²) *looked* quadratic but is cheap in
+practice: the 417 declarations are all distinct, so each comparison fast-fails on
+the first character, and the O(N²) scan costs less than the ~800 concat-key string
+allocations the keyed version adds per build. After opt 12, dedup is a minor cost.
+Reverted.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
 and update this order after each result. Do not begin the next proposal until the
 current one is kept and committed or reverted and documented.
 
-**11 — done (reverted, no measurable win). 12 — done (KEPT, native −17..−24%).**
-Next: proposal 13.
+**11 — reverted (no win). 12 — KEPT (native −17..−24%). 13 — reverted (no win).**
+Next: proposal 14.
 
 ### Proposal 11 — Cache build-invariant base stylesheet work
 
