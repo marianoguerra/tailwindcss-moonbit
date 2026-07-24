@@ -452,14 +452,44 @@ the first character, and the O(N²) scan costs less than the ~800 concat-key str
 allocations the keyed version adds per build. After opt 12, dedup is a minor cost.
 Reverted.
 
+### 14. Zero-copy parser representation + EOF sentinel — REVERTED / not viable ❌
+
+Two separable parts, per the proposal.
+
+**(a) Representation change (`StringView`/spans in parser nodes) — not viable.**
+The parser emits `CssNode` directly, so this means making `CssNode`'s string fields
+`@string.View`. A probe (change the fields, `moon check`) produced **57 type errors
+across ~15 files**, almost all "has type StringView, expected String" on the
+*consumer* side: the theme `Map[String,String]`, every utility function signature,
+the `@apply`/variant/css-function passes, and the candidate renderer all take
+`String`. A view AST only avoids allocation if that entire chain also speaks
+`StringView`; fixing the errors with `.to_owned()` instead reintroduces the copies
+(net worse — view creation plus copy). It is a whole-compiler string-handling rewrite,
+not a bounded change. Not attempted beyond the evaluation.
+
+**(b) Non-allocating EOF — no measurable win, reverted.** Replaced the
+`Option`-returning `current()` in the three remaining hot loops (`skip_whitespace`,
+`consume_string`, `parse_custom_property`) with a direct `pos < len` bounds check +
+index (the same pattern opt 8 already applied to the hottest loop). `moon check`,
+57/57 tests, 85/85 differential cases. Five-trial A/B vs `0ca5b57`:
+
+| workload | native | wasm-gc |
+|---|--:|--:|
+| a-lot  | −0.8% | −0.3% |
+| stress | +0.5% | +0.5% |
+| margaui| +0.2% | −0.2% |
+
+All within noise. opt 8 had already removed `current()` from the hottest loop, so the
+remaining loops are not hot enough for the `Option` avoidance to register. Reverted.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
 and update this order after each result. Do not begin the next proposal until the
 current one is kept and committed or reverted and documented.
 
-**11 — reverted (no win). 12 — KEPT (native −17..−24%). 13 — reverted (no win).**
-Next: proposal 14.
+**11 — reverted (no win). 12 — KEPT (native −17..−24%). 13 — reverted (no win).
+14 — reverted (representation change not viable; EOF sentinel no win). Queue complete.**
 
 ### Proposal 11 — Cache build-invariant base stylesheet work
 
