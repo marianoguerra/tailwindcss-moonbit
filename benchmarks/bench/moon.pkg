@@ -4,6 +4,7 @@ import {
   "moonbitlang/core/env" @env,
   "moonbitlang/core/string",
   "moonbitlang/core/json",
+  "moonbitlang/x/fs" @fs,
 }
 
 // No `supported_targets` restriction: this executable is compiled to native, js,

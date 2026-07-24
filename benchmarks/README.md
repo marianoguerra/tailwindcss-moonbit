@@ -42,7 +42,10 @@ checkout). Regenerate with `node benchmarks/generate.mjs`.
 Candidate material comes from the differential corpus `tools/diff/cases.json`. The
 full-import tiers inline the oracle's flattened `tailwindcss/index.css`
 (`workloads/_shared/tailwindcss-bundle.json`) so tw-mb and the oracle compile an
-identical, self-contained graph. The `margaui` tier bundles the external
+identical, self-contained graph. Each runner is handed the workload's committed
+`request.json` by **path**; the bench exe reads it via `moonbitlang/x/fs`, which
+works on native, js, and wasm-gc under moonrun (so even the ~290 KB margaui
+request needs no inlining into argv). The `margaui` tier bundles the external
 [margaui](https://github.com/marianoguerra/margaui) component library (`@import`
 graph via the `tailwindcss bundle` CLI, candidates scraped from its example pages)
 — its **output** is committed, so the checkout is only needed to regenerate it:

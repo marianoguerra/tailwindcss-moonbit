@@ -7,19 +7,20 @@
 /// argv, so one code path is measured with one clock on every target.
 ///
 /// Argv protocol (after the `--` moon passes to the program). The request JSON is
-/// passed as one or more chunks AFTER a `--req` marker and concatenated, because
-/// Linux caps a single argv string at 128 KB (`MAX_ARG_STRLEN`) while the margaui
-/// request is ~290 KB; chunking keeps each argument small while staying well under
-/// the ~2 MB total `ARG_MAX`. Tokens BEFORE `--req` carry the mode/params and may
-/// be preceded by a backend-supplied program name, so they are parsed positionally:
+/// read from a FILE named by `--reqfile <path>` rather than passed inline: it can
+/// be large (the margaui request is ~290 KB, over Linux's 128 KB single-argv
+/// `MAX_ARG_STRLEN`), and `moonbitlang/x/fs` reads files portably on native, js,
+/// and wasm-gc alike (under moonrun's host). Tokens before `--reqfile` carry the
+/// mode/params and may be preceded by a backend-supplied program name, so they
+/// are parsed positionally:
 ///
-/// - Timed:  `[argv0] <warmup> <iters> --req <chunk>...`
+/// - Timed:  `[argv0] <warmup> <iters> --reqfile <path>`
 ///     Runs `warmup` discarded iterations, then `iters` timed iterations of a
 ///     FRESH `compile_sync()` + `build()` (fresh compiler each time — `build`
 ///     accumulates candidates, so reusing one would time growing work). Prints
 ///     one JSON line: {"ok":true,"samples_us":[...],"outLen":N}.
 ///
-/// - Emit:   `[argv0] --emit --req <chunk>...`
+/// - Emit:   `[argv0] --emit --reqfile <path>`
 ///     Compiles once and prints ONLY the generated CSS (no timing). Used by the
 ///     orchestrator's correctness gate.
 ///
@@ -27,25 +28,28 @@
 ///   {css, candidates:[], imports:{path:content}, base, from, polyfills}
 fn main {
   let raw = @env.args()
-  // Split argv at the `--req` marker: everything after is request chunks.
+  // Locate `--reqfile <path>`; the path is the token immediately after it.
   let mut marker = -1
   for i in 0..<raw.length() {
-    if raw[i] == "--req" {
+    if raw[i] == "--reqfile" {
       marker = i
       break
     }
   }
-  guard marker >= 0 else {
+  guard marker >= 0 && marker + 1 < raw.length() else {
     println(
-      "usage: bench <warmup> <iters> --req <chunk>... | bench --emit --req <chunk>...",
+      "usage: bench <warmup> <iters> --reqfile <path> | bench --emit --reqfile <path>",
     )
     return
   }
-  let request = StringBuilder::new()
-  for i in (marker + 1)..<raw.length() {
-    request.write_string(raw[i])
+  let req_json = try {
+    @fs.read_file_to_string(raw[marker + 1])
+  } catch {
+    _ => {
+      println("{\"ok\":false,\"error\":\"cannot read request file\"}")
+      return
+    }
   }
-  let req_json = request.to_string()
   // Interpret the pre-marker tokens positionally (a leading program name, if the
   // backend supplies one, is simply ignored — `--emit` and the trailing two
   // integers are located explicitly).

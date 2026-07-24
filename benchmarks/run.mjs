@@ -34,18 +34,18 @@ const opts = parseArgs(process.argv.slice(2))
 const ALL_TARGETS = {
   native: {
     label: 'tw-mb native',
-    emit: (wl) => emitMoonbit(root, 'native', wl.request),
-    time: (wl, w, i) => timeMoonbit(root, 'native', wl.request, w, i),
+    emit: (wl) => emitMoonbit(root, 'native', reqPath(wl)),
+    time: (wl, w, i) => timeMoonbit(root, 'native', reqPath(wl), w, i),
   },
   js: {
     label: 'tw-mb js',
-    emit: (wl) => emitMoonbit(root, 'js', wl.request),
-    time: (wl, w, i) => timeMoonbit(root, 'js', wl.request, w, i),
+    emit: (wl) => emitMoonbit(root, 'js', reqPath(wl)),
+    time: (wl, w, i) => timeMoonbit(root, 'js', reqPath(wl), w, i),
   },
   'wasm-gc': {
     label: 'tw-mb wasm-gc',
-    emit: (wl) => emitMoonbit(root, 'wasm-gc', wl.request),
-    time: (wl, w, i) => timeMoonbit(root, 'wasm-gc', wl.request, w, i),
+    emit: (wl) => emitMoonbit(root, 'wasm-gc', reqPath(wl)),
+    time: (wl, w, i) => timeMoonbit(root, 'wasm-gc', reqPath(wl), w, i),
   },
   original: {
     label: 'tailwindcss 4.3.3',
@@ -55,13 +55,15 @@ const ALL_TARGETS = {
 }
 const TARGET_ORDER = ['native', 'js', 'wasm-gc', 'original']
 
-function oracleReqPath(wl) {
+// The committed canonical request.json — read directly by both the MoonBit bench
+// exe (--reqfile) and the oracle runner (which adapts imports->files internally).
+function reqPath(wl) {
   return join(workloadsDir(root), wl.id, 'request.json')
 }
 function oracleEmit(wl) {
   const r = run('node', [
     join(root, 'benchmarks/runners/oracle-bench.mjs'),
-    oracleReqPath(wl),
+    reqPath(wl),
     '--emit',
   ])
   return r.ok ? { ok: true, css: r.stdout } : { ok: false, error: r.stderr }
@@ -69,7 +71,7 @@ function oracleEmit(wl) {
 function oracleTime(wl, warmup, iters) {
   const r = runJson('node', [
     join(root, 'benchmarks/runners/oracle-bench.mjs'),
-    oracleReqPath(wl),
+    reqPath(wl),
     String(warmup),
     String(iters),
   ])

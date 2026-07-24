@@ -5,19 +5,12 @@
 // portable monotonic clock and prints the raw per-iteration sample array, so
 // process/VM startup is excluded from the samples — the warm steady-state metric.
 //
-// The request JSON is passed after a `--req` marker, split into <128 KB chunks
-// (Linux MAX_ARG_STRLEN) so even the ~290 KB margaui request fits in argv.
+// The request is passed by FILE PATH (`--reqfile`), read inside the exe via
+// moonbitlang/x/fs, which works on native, js, and wasm-gc under moonrun. This
+// avoids inlining the (up to ~290 KB) request into argv.
 import { run, runJson } from '../lib/spawn.mjs'
 
-const CHUNK = 100_000
-
-function chunk(str) {
-  const parts = []
-  for (let i = 0; i < str.length; i += CHUNK) parts.push(str.slice(i, i + CHUNK))
-  return parts.length ? parts : ['']
-}
-
-function moonArgs(target, pre, requestJson) {
+function moonArgs(target, pre, requestPath) {
   return [
     'run',
     '--release',
@@ -26,17 +19,18 @@ function moonArgs(target, pre, requestJson) {
     'benchmarks/bench',
     '--',
     ...pre,
-    '--req',
-    ...chunk(requestJson),
+    '--reqfile',
+    requestPath,
   ]
 }
 
 // Warm timing: returns { ok, samples_us:[...], outLen } or { ok:false, error }.
-export function timeMoonbit(root, target, request, warmup, iters) {
-  const requestJson = JSON.stringify(request)
-  const result = runJson('moon', moonArgs(target, [String(warmup), String(iters)], requestJson), {
-    cwd: root,
-  })
+export function timeMoonbit(root, target, requestPath, warmup, iters) {
+  const result = runJson(
+    'moon',
+    moonArgs(target, [String(warmup), String(iters)], requestPath),
+    { cwd: root },
+  )
   if (!result.ok) {
     return { ok: false, error: result.stderr || 'runner failed', raw: result.raw }
   }
@@ -44,9 +38,8 @@ export function timeMoonbit(root, target, request, warmup, iters) {
 }
 
 // Single compile for the correctness gate: returns the generated CSS string.
-export function emitMoonbit(root, target, request) {
-  const requestJson = JSON.stringify(request)
-  const result = run('moon', moonArgs(target, ['--emit'], requestJson), { cwd: root })
+export function emitMoonbit(root, target, requestPath) {
+  const result = run('moon', moonArgs(target, ['--emit'], requestPath), { cwd: root })
   if (!result.ok) return { ok: false, error: result.stderr }
   return { ok: true, css: result.stdout }
 }
