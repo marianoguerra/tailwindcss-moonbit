@@ -115,20 +115,40 @@ Warm median delta vs iteration 2 (native / js / wasm-gc):
 Scales with output size (largest on stress/margaui), as expected for a render-path
 change. js gains least (V8 optimizes interpolation well).
 
-## Cumulative (baseline → opt 3, native warm median)
+### 4. De-double-call the dynamic-utility dispatch — KEPT ✅
+
+The dispatch was ~21 `guard util(theme, name) is None else { return util(theme,
+name) }` — each matching utility ran **twice** (the test and the return). Rewrote
+each as `match util(...) { Some(_) as r => return r; None => () }`, so every utility
+runs once and the matched Option is returned without recomputation. 57 tests + 85
+differential cases unchanged.
+
+Warm median delta vs iteration 3 (native / js / wasm-gc):
+
+| workload | native | js | wasm-gc |
+|---|--:|--:|--:|
+| many   | −1.6% (1.02→1.00ms) | +0.0% | +0.7% |
+| a-lot  | −0.7% | +0.7% | +0.1% |
+| stress | −0.1% | −0.6% | −2.6% |
+| margaui| −1.7% (94.93→93.28ms) | −1.5% | +0.5% |
+
+Smaller than expected: the double-call only fires on a **hit**, and only one utility
+matches per candidate — so it removed ~1 redundant call/candidate, not 21. Still a
+consistent native gain and it avoids recomputing expensive matched utilities.
+
+## Cumulative (baseline → opt 4, native warm median)
 
 | workload | baseline | now | total |
 |---|--:|--:|--:|
-| many   | 1.66ms  | 1.02ms  | **−38.6%** |
-| a-lot  | 14.63ms | 13.13ms | −10.3% |
-| stress | 34.73ms | 27.67ms | **−20.3%** |
-| margaui| 100.67ms| 94.93ms | −5.7% |
+| many   | 1.66ms  | 1.00ms  | **−39.8%** |
+| a-lot  | 14.63ms | 13.04ms | −10.9% |
+| stress | 34.73ms | 27.64ms | **−20.4%** |
+| margaui| 100.67ms| 93.28ms | −7.3% |
 
 ## Queued (not yet done)
 
-- Replace the linear utility dispatch (chain of ~21 `guard util(name) is None else
-  { return util(name) }`, each utility **called twice** on a hit) with prefix
-  pattern matching / a first-char dispatch — the double-call is pure waste on hits.
+- Replace the linear dispatch with a first-char / prefix pattern-match so most
+  utilities aren't tried per candidate (the remaining structural win).
 - Hoist the remaining ~12 smaller per-call utility tables.
 - Avoid rendering the whole AST twice for the pre/post-flatten `!=` comparison
   (compiler.mbt:203–204) — compare structurally instead.

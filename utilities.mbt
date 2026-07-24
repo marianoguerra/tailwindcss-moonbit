@@ -1208,66 +1208,93 @@ fn dynamic_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
-  guard descriptor_utility(name) is None else {
-    return descriptor_utility(name)
+  // Try each dynamic utility in order, returning the first match. Each utility is
+  // invoked ONCE (the previous `guard util(...) is None else { return util(...) }`
+  // form called every matching utility twice — the test and the return); `as r`
+  // returns the already-computed Option without recomputing or rewrapping.
+  match descriptor_utility(name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard list_utility(theme, name) is None else {
-    return list_utility(theme, name)
+  match list_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard scalar_utility(theme, name) is None else {
-    return scalar_utility(theme, name)
+  match scalar_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard line_clamp_utility(name) is None else {
-    return line_clamp_utility(name)
+  match line_clamp_utility(name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard columns_utility(theme, name) is None else {
-    return columns_utility(theme, name)
+  match columns_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard logical_size_utility(theme, name) is None else {
-    return logical_size_utility(theme, name)
+  match logical_size_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard scroll_spacing_utility(theme, name) is None else {
-    return scroll_spacing_utility(theme, name)
+  match scroll_spacing_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard order_utility(theme, name) is None else {
-    return order_utility(theme, name)
+  match order_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard flex_utility(theme, name) is None else {
-    return flex_utility(theme, name)
+  match flex_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard basis_utility(theme, name) is None else {
-    return basis_utility(theme, name)
+  match basis_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard border_spacing_utility(theme, name) is None else {
-    return border_spacing_utility(theme, name)
+  match border_spacing_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard directional_spacing(theme, name) is None else {
-    return directional_spacing(theme, name)
+  match directional_spacing(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard inset_utility(theme, name) is None else {
-    return inset_utility(theme, name)
+  match inset_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard paired_size_utility(theme, name) is None else {
-    return paired_size_utility(theme, name)
+  match paired_size_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard size_utility(theme, name) is None else {
-    return size_utility(theme, name)
+  match size_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard color_utility(theme, name) is None else {
-    return color_utility(theme, name)
+  match color_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard content_utility(name) is None else { return content_utility(name) }
-  guard cursor_utility(theme, name) is None else {
-    return cursor_utility(theme, name)
+  match content_utility(name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard interaction_color_utility(theme, name) is None else {
-    return interaction_color_utility(theme, name)
+  match cursor_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard grid_track_utility(theme, name) is None else {
-    return grid_track_utility(theme, name)
+  match interaction_color_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
-  guard grid_placement_utility(theme, name) is None else {
-    return grid_placement_utility(theme, name)
+  match grid_track_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
+  }
+  match grid_placement_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
   }
   if name.has_prefix("animate-") {
     let key = name[8:].to_owned()
