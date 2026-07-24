@@ -27,6 +27,8 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
       - name: Test
         run: moon test   # auto-resolves registry deps
 
@@ -62,6 +64,8 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
       - name: Build JS module
         run: |
           moon build --target js --release ffi
@@ -99,6 +103,8 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
       - name: Build wasm targets
         run: |
           moon build --target wasm-gc --release ffi
@@ -135,6 +141,8 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
       - name: Build native CLI
         run: moon build --target native --release cmd/tailwindcss
       - name: Package binary
@@ -165,6 +173,8 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
       - name: Write mooncakes credentials
         env:
           MOONCAKES_TOKEN: ${{ secrets.MOONCAKES_TOKEN }}
