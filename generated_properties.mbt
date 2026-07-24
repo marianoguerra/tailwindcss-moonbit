@@ -314,11 +314,10 @@ fn author_property_defaults(
 ) -> (Array[CssNode], Array[CssNode]) {
   let root : Array[CssNode] = []
   let universal : Array[CssNode] = []
-  let nodes = try parse_css(css) catch {
-    _ => []
-  }
+  let nodes = parse_css(css) catch { _ => [] }
   for node in nodes {
-    guard node is AtRule(name="@property", params~, nodes=Some(declarations), ..) else {
+    guard node
+      is AtRule(name="@property", params~, nodes=Some(declarations), ..) else {
       continue
     }
     let name = trim(params)
@@ -326,7 +325,8 @@ fn author_property_defaults(
     let mut initial : String? = None
     for declaration in declarations {
       match declaration {
-        Declaration(name="inherits", value~, ..) => inherits_true = trim(value) == "true"
+        Declaration(name="inherits", value~, ..) =>
+          inherits_true = trim(value) == "true"
         Declaration(name="initial-value", value~, ..) => initial = Some(value)
         _ => ()
       }

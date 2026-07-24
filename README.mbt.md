@@ -38,9 +38,9 @@ on hosts without an async runtime — notably the **wasm-gc** backend.
 ```mbt check
 ///|
 test {
-  let loader = @tailwindcss.MemoryStylesheetLoader::new(
-    files=[("base.css", "@theme { --color-black: #000; }")],
-  )
+  let loader = @tailwindcss.MemoryStylesheetLoader::new(files=[
+    ("base.css", "@theme { --color-black: #000; }"),
+  ])
   let compiler = @tailwindcss.compile_sync(
     "@import \"base.css\"; @tailwind utilities;",
     options=@tailwindcss.CompileOptions::new(sync_loader=loader),

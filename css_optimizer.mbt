@@ -233,7 +233,8 @@ fn resolve_theme_var_literals(
           }
         }
         match theme.get(name) {
-          Some(literal) if !literal.contains("var(") => output.push(ValueWord(literal))
+          Some(literal) if !literal.contains("var(") =>
+            output.push(ValueWord(literal))
           _ =>
             output.push(
               ValueFunction("var", resolve_theme_var_literals(children, theme)),
@@ -342,7 +343,12 @@ fn add_color_mix_fallback(
   let output : Array[CssNode] = []
   for node in nodes {
     match node {
-      AtRule(name="@supports", params=color_mix_supports, nodes=Some(children), span~) =>
+      AtRule(
+        name="@supports",
+        params=color_mix_supports,
+        nodes=Some(children),
+        span~
+      ) =>
         output.push(
           AtRule(
             name="@supports",
@@ -359,9 +365,7 @@ fn add_color_mix_fallback(
         }
         match fallback_value {
           Some(fallback) => {
-            output.push(
-              Declaration(name~, value=fallback, important~, span~),
-            )
+            output.push(Declaration(name~, value=fallback, important~, span~))
             output.push(
               AtRule(
                 name="@supports",

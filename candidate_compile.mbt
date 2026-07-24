@@ -1811,7 +1811,7 @@ fn render_candidate(
   functional_utilities : Map[String, Array[CssNode]],
   custom_variants : Map[String, CustomVariantTemplate],
   raw : String,
-  skip_custom~ : Bool = false,
+  skip_custom? : Bool = false,
 ) -> RenderedCandidate? {
   let candidate_source = match theme_prefix(theme) {
     Some(prefix) => {

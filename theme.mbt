@@ -183,7 +183,9 @@ fn theme_value(
 /// Resolve compile-time functions (`--theme()`, `--spacing()`, `theme()`,
 /// `--alpha()`) that appear inside theme values themselves, so the emitted
 /// `:root` declarations never carry an unresolved compile-time call.
-fn resolve_theme_value_functions(theme : Map[String, String]) -> Unit raise CompileError {
+fn resolve_theme_value_functions(
+  theme : Map[String, String],
+) -> Unit raise CompileError {
   let updates : Array[(String, String)] = []
   for name, value in theme {
     if name.has_prefix(theme_meta_prefix) {
@@ -196,7 +198,9 @@ fn resolve_theme_value_functions(theme : Map[String, String]) -> Unit raise Comp
       continue
     }
     let (resolved, changed) = substitute_value_functions(
-      value, theme, inline_theme=false,
+      value,
+      theme,
+      inline_theme=false,
     )
     if changed {
       updates.push((name, resolved))

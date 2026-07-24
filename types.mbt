@@ -11,7 +11,7 @@ pub(all) suberror CompileError {
 
 ///|
 /// Human-readable rendering, used when reporting failures back to a host.
-pub impl Show for CompileError with output(self, logger) {
+pub impl Show for CompileError with fn output(self, logger) {
   let message = match self {
     InvalidCss(detail) => "InvalidCss(\{detail})"
     MissingStylesheetLoader(detail) => "MissingStylesheetLoader(\{detail})"
@@ -49,7 +49,7 @@ pub(open) trait StylesheetLoader {
 /// in-memory resolution (see `MemoryStylesheetLoader`, which implements both
 /// traits) and any host that cannot drive an async runtime, such as wasm-gc.
 pub(open) trait SyncStylesheetLoader {
-  load(Self, id : String, base : String) -> LoadedStylesheet raise CompileError
+  fn load(Self, id : String, base : String) -> LoadedStylesheet raise CompileError
 }
 
 ///|

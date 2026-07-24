@@ -95,7 +95,12 @@ pub fn compile_css_json(request : String) -> String {
   }
   let compiler = @tw.compile_sync(
     css,
-    options=@tw.CompileOptions::new(base~, from?, sync_loader=loader, polyfills~),
+    options=@tw.CompileOptions::new(
+      base~,
+      from?,
+      sync_loader=loader,
+      polyfills~,
+    ),
   ) catch {
     err => return error_result(err.to_string())
   }
