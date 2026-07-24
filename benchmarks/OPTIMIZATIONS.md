@@ -246,7 +246,37 @@ dominant lever:
 **Lesson:** profile the representative workload, not a synthetic isolate — the isolate
 mis-ranked the bottleneck and sent opt 6/7 chasing a cost that's minor on real input.
 
+### 8. Parser copies runs, not chars (from mizchi/css + moonbitlang/parser) — KEPT ✅
+
+Researched the tokenizers in `mizchi/css` and `moonbitlang/parser`. Both **scan a run
+then copy once** (mizchi via `unsafe_substring`, moonbitlang via `lexscan`/regex-DFA
+over `StringView` with copy only at token emission) instead of char-by-char. tw-mb's
+`read_until_top_level` — the hot parse loop — wrote **one code unit at a time**
+(`output.write_view(input[pos:pos+1])` per char). Added `is_plain_value_char` and a
+fast path that copies a maximal run of plain content chars in a single `write_view`;
+boundary chars (escapes, quotes, comments, parens/brackets, whitespace, terminals)
+keep the per-char handling. Also switched the loop guard to a cached `len` + direct
+index instead of the `Option`-returning `current()`. 57 tests + 85 differential cases
+unchanged.
+
+Warm median delta vs opt 5 (native / js / wasm-gc), parse-heavy workloads:
+
+| workload | native | js | wasm-gc |
+|---|--:|--:|--:|
+| a-lot  | −1.5% | −1.1% | 0.0% |
+| stress | −0.9% | −0.9% | −1.0% |
+| margaui| **−2.3%** | **−1.9%** | −0.8% |
+
+Small but **consistent across all three backends** (a portable win, unlike opt 6),
+largest on the most parse-bound workload (margaui). Validates the research direction:
+the parse path is where tw-mb trails upstream, and batching copies is the lever.
+
 ## Remaining candidate levers (distributed, higher-risk — not attempted)
+
+- **Deeper parser wins from the research**: zero-copy AST (store `StringView`/(start,end)
+  spans in `CssNode` instead of `.to_owned()` Strings — the moonbitlang/parser model;
+  removes the ~16% string-copy but requires the input to outlive the AST). Non-allocating
+  EOF sentinel instead of `current(): UInt16?`. Both bigger, structural.
 
 - **Parser is char-by-char**: `css_parser` `read_until_top_level` does `terminals.contains(c)`
   per char and writes one char at a time via a fresh view slice. The large/full-import

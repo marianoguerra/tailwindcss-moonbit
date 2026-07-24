@@ -30,6 +30,35 @@ fn is_css_whitespace(c : UInt16) -> Bool {
 }
 
 ///|
+/// A "plain" value char is one that `read_until_top_level` copies through
+/// verbatim: not an escape, quote, comment-introducing `/`, bracket/paren (those
+/// need depth tracking), whitespace (collapsed to single spaces), or a terminal
+/// (may end the value). Runs of these are copied in one `write_view` instead of
+/// one code unit at a time — the parser's hottest inner loop (see the tokenizers
+/// in mizchi/css and moonbitlang/parser, which likewise scan a run then copy once).
+fn is_plain_value_char(c : UInt16, terminals : ArrayView[UInt16]) -> Bool {
+  if c == '\\' ||
+    c == '\'' ||
+    c == '"' ||
+    c == '/' ||
+    c == '(' ||
+    c == ')' ||
+    c == '[' ||
+    c == ']' {
+    return false
+  }
+  if is_css_whitespace(c) {
+    return false
+  }
+  for t in terminals {
+    if c == t {
+      return false
+    }
+  }
+  true
+}
+
+///|
 fn CssParser::skip_whitespace(self : CssParser) -> Unit {
   while self.current() is Some(c) && is_css_whitespace(c) {
     self.pos += 1
@@ -94,7 +123,27 @@ fn CssParser::read_until_top_level(
   let mut pending_space = false
   let mut parens = 0
   let mut brackets = 0
-  while self.current() is Some(c) {
+  let len = self.input.length()
+  while self.pos < len {
+    let c = self.input[self.pos]
+    // Fast path: copy a maximal run of plain content chars in one `write_view`
+    // rather than one code unit per iteration. Boundary chars (below) are rare
+    // relative to ordinary value/selector text.
+    if is_plain_value_char(c, terminals) {
+      let run_start = self.pos
+      self.pos += 1
+      while self.pos < len &&
+            is_plain_value_char(self.input[self.pos], terminals) {
+        self.pos += 1
+      }
+      if pending_space {
+        output.write_char(' ')
+        pending_space = false
+      }
+      output.write_view(self.input[run_start:self.pos])
+      has_output = true
+      continue
+    }
     if c == '\\' {
       if pending_space {
         output.write_char(' ')
