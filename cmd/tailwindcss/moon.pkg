@@ -1,6 +1,6 @@
 import {
-  "mariano/tailwindcss" @tw,
-  "mariano/tailwindcss/loader/fs" @twfs,
+  "marianoguerra/tailwindcss" @tw,
+  "marianoguerra/tailwindcss/loader/fs" @twfs,
   "moonbitlang/async",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",

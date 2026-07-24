@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mariano/tailwindcss/ffi"
+package "marianoguerra/tailwindcss/ffi"
 
 // Values
 pub fn compile_css(String, String) -> String

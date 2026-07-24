@@ -1,6 +1,6 @@
 # `ffi` — callable JS / Wasm entry point
 
-This package links the `mariano/tailwindcss` compiler into a standalone,
+This package links the `marianoguerra/tailwindcss` compiler into a standalone,
 callable module for non-native hosts. It exports a single function:
 
 ```
