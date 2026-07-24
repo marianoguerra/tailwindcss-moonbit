@@ -6,7 +6,7 @@ readme = "README.mbt.md"
 
 license = "MIT"
 
-repository = ""
+repository = "https://github.com/marianoguerra/tailwindcss-moonbit"
 
 keywords = [ "css", "tailwindcss", "compiler" ]
 
