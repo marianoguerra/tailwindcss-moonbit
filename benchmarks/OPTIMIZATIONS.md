@@ -356,19 +356,35 @@ Minima agree on the parse-heavy workloads: native `margaui` −3.0%, wasm-gc
 graph, so its approximately ±1% movement is treated as noise. Kept for the clear
 and repeatable heavy-workload improvement.
 
+### 10. Track flatten/merge changes instead of rendering twice — REVERTED ❌
+
+Replaced the two full `render_css_nodes` calls used to compute `did_flatten` with
+a shared mutable change flag threaded through nesting flattening, declaration
+deduplication, and adjacent-rule merging. The flag was set only when rendered
+structure changed: a nested rule was dissolved or dropped, duplicate declarations
+were removed, or adjacent wrappers were combined. Correctness passed:
+`moon check --target all`, 57/57 tests, and 85/85 differential cases.
+
+Five-trial warm median A/B against commit `6acfada`, same session and machine:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| many | 950.5→942.1µs (−0.9%) | 1.891→1.865ms (−1.4%) | 2.531→2.475ms (−2.2%) |
+| a-lot | 12.774→12.570ms (−1.6%) | 18.452→18.369ms (−0.4%) | 32.319→32.067ms (−0.8%) |
+| stress | 26.901→26.998ms (+0.4%) | 38.775→38.754ms (−0.1%) | 69.697→69.348ms (−0.5%) |
+| margaui | 88.559→88.242ms (−0.4%) | 132.781→131.631ms (−0.9%) | 290.199→293.254ms (+1.1%) |
+
+Only `a-lot` showed a modest native gain. The representative `stress` and
+`margaui` medians were effectively unchanged, native `margaui` minimum regressed
+1.5%, and the implementation added roughly 80 lines of bookkeeping to recursive
+optimizer code. This does not clear the acceptance threshold, so the implementation
+was reverted. The two render comparisons remain.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
 and update this order after each result. Do not begin the next proposal until the
 current one is kept and committed or reverted and documented.
-
-### Proposal 10 — Return a change flag from nesting flattening
-
-`compile_from_ast` renders the complete pre-flatten and post-flatten trees only to
-compute `did_flatten`. Have the flatten/merge transformation report whether it
-changed output, then remove those two comparison renders. Avoid using structural
-AST equality as a shortcut unless measurement shows it is cheaper and tests prove
-that source spans cannot create false positives.
 
 ### Proposal 11 — Cache build-invariant base stylesheet work
 
