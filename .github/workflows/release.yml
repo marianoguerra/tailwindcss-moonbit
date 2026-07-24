@@ -1,0 +1,170 @@
+name: release
+
+# Fires on version tags (e.g. v0.1.0). Builds and publishes:
+#   - the JS library to npm (@marianoguerra/tailwindcss)
+#   - wasm + wasm-gc modules as GitHub Release assets
+#   - native CLI binaries for Linux and macOS as Release assets
+#   - the MoonBit source package to mooncakes.io
+#
+# Windows native binaries are intentionally deferred: the native CLI links
+# moonbitlang/async, whose Windows native support is unverified. Revisit once
+# a Windows runner is confirmed to build and run cmd/tailwindcss.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write   # create the GitHub Release and upload assets
+
+jobs:
+  # --- Quality gate: nothing publishes unless this is green -------------------
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Sync dependencies
+        run: moon install
+      - name: Test
+        run: moon test
+      - name: Check all targets
+        run: moon check --target all
+
+  # --- Create the Release once; later jobs attach assets to it ---------------
+  create-release:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag
+
+  # --- JS library -> npm -----------------------------------------------------
+  npm:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Build JS module
+        run: |
+          moon install
+          moon build --target js --release ffi
+          cp _build/js/release/build/ffi/ffi.js ffi/js/ffi.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Publish to npm
+        working-directory: ffi/js
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
+      - name: Attach JS module to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp _build/js/release/build/ffi/ffi.js "tailwindcss-${GITHUB_REF_NAME}.js"
+          gh release upload "${GITHUB_REF_NAME}" \
+            "tailwindcss-${GITHUB_REF_NAME}.js" --clobber
+
+  # --- wasm + wasm-gc -> Release assets --------------------------------------
+  wasm:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Build wasm targets
+        run: |
+          moon install
+          moon build --target wasm-gc --release ffi
+          moon build --target wasm --release ffi
+      - name: Attach wasm modules to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp _build/wasm-gc/release/build/ffi/ffi.wasm "tailwindcss-${GITHUB_REF_NAME}-wasm-gc.wasm"
+          cp _build/wasm/release/build/ffi/ffi.wasm    "tailwindcss-${GITHUB_REF_NAME}-wasm.wasm"
+          gh release upload "${GITHUB_REF_NAME}" \
+            "tailwindcss-${GITHUB_REF_NAME}-wasm-gc.wasm" \
+            "tailwindcss-${GITHUB_REF_NAME}-wasm.wasm" --clobber
+
+  # --- Native CLI -> Release assets (Linux + macOS) --------------------------
+  native:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ubuntu-22.04 pins an older glibc (2.35) for broader Linux reach
+          # than ubuntu-latest. For maximum portability, swap to a musl-static
+          # build or a manylinux container.
+          - runner: ubuntu-22.04
+            asset: tailwindcss-linux-x86_64
+          # macos-latest runners are arm64 (Apple Silicon).
+          - runner: macos-latest
+            asset: tailwindcss-macos-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Build native CLI
+        run: |
+          moon install
+          moon build --target native --release cmd/tailwindcss
+      - name: Package binary
+        run: |
+          bin="_build/native/release/build/cmd/tailwindcss/tailwindcss.exe"
+          mkdir -p dist
+          cp "$bin" "dist/tailwindcss"
+          chmod +x "dist/tailwindcss"
+          tar -C dist -czf "${{ matrix.asset }}.tar.gz" tailwindcss
+      - name: Attach binary to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" \
+            "${{ matrix.asset }}.tar.gz" --clobber
+
+  # --- MoonBit source package -> mooncakes.io --------------------------------
+  mooncakes:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Write mooncakes credentials
+        env:
+          MOONCAKES_TOKEN: ${{ secrets.MOONCAKES_TOKEN }}
+        run: |
+          mkdir -p "$HOME/.moon"
+          printf '{"token":"%s","username":"marianoguerra"}' "$MOONCAKES_TOKEN" \
+            > "$HOME/.moon/credentials.json"
+      - name: Publish to mooncakes
+        run: |
+          moon install
+          moon publish

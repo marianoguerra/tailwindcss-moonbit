@@ -1,0 +1,35 @@
+{
+  "name": "@marianoguerra/tailwindcss",
+  "version": "0.1.0",
+  "description": "A MoonBit implementation of the Tailwind CSS v4 compiler, compiled to JavaScript. Compiles Tailwind v4 CSS fully in memory (no filesystem access).",
+  "type": "module",
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "ffi.js",
+    "README.md"
+  ],
+  "keywords": [
+    "css",
+    "tailwindcss",
+    "compiler",
+    "moonbit"
+  ],
+  "license": "MIT",
+  "author": "Mariano Guerra",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marianoguerra/tailwindcss-moonbit.git",
+    "directory": "ffi/js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

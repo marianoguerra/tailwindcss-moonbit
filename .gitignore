@@ -5,3 +5,6 @@ node_modules/
 tools/oracle/node_modules/
 tools/diff/.work/
 
+# Built MoonBit->JS module, copied next to the wrapper for local use / npm publish
+ffi/js/ffi.js
+
