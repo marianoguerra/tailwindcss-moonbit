@@ -104,6 +104,8 @@ fn radius_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
+  // Fast-reject: every entry starts with "rounded", so skip the loop otherwise.
+  guard name.has_prefix("rounded") else { return None }
   for entry in radius_entries {
     let (root, properties) = entry
     let key = if name == root {

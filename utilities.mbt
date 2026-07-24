@@ -533,6 +533,11 @@ fn directional_spacing(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
+  // First-char fast-reject: every entry is margin (m*), padding (p*) or gap (g*),
+  // so skip the 25-entry loop for anything else.
+  guard name.length() > 0 else { return None }
+  let first = name[0]
+  guard first == 'm' || first == 'p' || first == 'g' else { return None }
   for entry in directional_spacing_entries {
     let (prefix, properties) = entry
     guard prefixed_value(name, prefix) is Some(raw) else { continue }
@@ -647,6 +652,13 @@ fn color_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
+  // First-char fast-reject before building/scanning the table: color utilities are
+  // border/bg (b), text (t), outline (o), decoration (d), fill (f), stroke (s).
+  guard name.length() > 0 else { return None }
+  let c = name[0]
+  guard c == 'b' || c == 't' || c == 'o' || c == 'd' || c == 'f' || c == 's' else {
+    return None
+  }
   let entries : Array[(String, String)] = [
     ("border-x", "border-inline-color"),
     ("border-y", "border-block-color"),

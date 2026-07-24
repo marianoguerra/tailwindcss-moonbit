@@ -145,10 +145,31 @@ consistent native gain and it avoids recomputing expensive matched utilities.
 | stress | 34.73ms | 27.64ms | **−20.4%** |
 | margaui| 100.67ms| 93.28ms | −7.3% |
 
+### 5. First-char / prefix fast-reject on loop-heavy utilities — KEPT ✅
+
+Every candidate reaches the linear utility dispatch, so the loop-heavy utilities ran
+their whole tables even for candidates they can't match. Added a cheap first-char (or
+prefix) guard at the top of the four biggest: `directional_spacing` (m/p/g),
+`radius_utility` (`rounded`), `one_filter_utility` (`backdrop-` or b/c/g/h/i/o/s),
+`color_utility` (b/t/o/d/f/s, before its table is even built). Each guard is derived
+from — and provably covers — that utility's own table, so it can only fast-reject
+non-matches. 57 tests + 85 differential cases unchanged.
+
+**Measured with a back-to-back A/B (gated vs reverted, same session/thermal state)** —
+the reliable method, since comparing against the older opt-4 baseline was confounded
+by machine warm-up drift:
+
+| workload | native median (gated → ungated) | delta |
+|---|---|--:|
+| stress  | 26.93 vs 27.92ms (min 25.95 vs 26.76) | **−3.6%** |
+| margaui | 94.61 vs 95.87ms (min 91.45 vs 92.54) | **−1.3%** |
+
+(Earlier vs-stale-baseline runs wrongly showed margaui *regressing* +2% — pure thermal
+drift. Lesson: A/B under identical conditions, not against a stale baseline.)
+
 ## Queued (not yet done)
 
-- Replace the linear dispatch with a first-char / prefix pattern-match so most
-  utilities aren't tried per candidate (the remaining structural win).
-- Hoist the remaining ~12 smaller per-call utility tables.
+- Hoist / gate the remaining smaller per-call utility tables (paired_size, grid, …).
 - Avoid rendering the whole AST twice for the pre/post-flatten `!=` comparison
   (compiler.mbt:203–204) — compare structurally instead.
+- Re-profile to find the next dominant cost (see the fresh profile below).

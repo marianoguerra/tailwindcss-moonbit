@@ -54,6 +54,20 @@ fn one_filter_utility(
   name : String,
   backdrop : Bool,
 ) -> Array[Declaration]? {
+  // First-char / prefix fast-reject: skip the whole roots loop (and its per-entry
+  // string building) for candidates that cannot possibly be a filter utility.
+  // Safe because every `filter_roots` entry starts with one of these chars, and in
+  // backdrop mode the candidate is always `backdrop-<root>`.
+  if backdrop {
+    guard name.has_prefix("backdrop-") else { return None }
+  } else {
+    guard name.length() > 0 else { return None }
+    let c = name[0]
+    guard c == 'b' || c == 'c' || c == 'g' || c == 'h' || c == 'i' || c == 'o' || c ==
+      's' else {
+      return None
+    }
+  }
   let prefix = if backdrop { "backdrop-" } else { "" }
   for entry in filter_roots {
     let (root, theme_namespace, function_name, default_value, percent) = entry
