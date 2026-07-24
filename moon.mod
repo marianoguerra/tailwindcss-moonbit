@@ -1,6 +1,6 @@
 name = "marianoguerra/tailwindcss"
 
-version = "0.1.2"
+version = "0.1.3"
 
 readme = "README.mbt.md"
 
