@@ -856,6 +856,59 @@ ordering: `@property` blocks are emitted in first-rendered-position order, so th
 AST walk has to produce a comparable ordering key. Note opt 11 tried *caching* this
 render and failed; not rendering it at all is the different, promising version.
 
+### 24. Discover usage from the AST, not from a rendered string — REVERTED ❌
+
+Instrumented before implementing (opt 13's lesson), because the proposal's own
+justification — `render_css_node` at 11.5% of stress / 9.2% of margaui — is a
+share of *all* renders, not of the two this change would remove.
+
+**Upper-bound probe.** Replacing `usage` with just the generated CSS (wrong
+output, but it deletes the whole base pipeline: the `remove_theme_nodes_deep` AST
+clone, the base render, the concatenation, and all four scans over the base text)
+gives the most the proposal could possibly return:
+
+| workload | baseline | `usage = generated` | ceiling |
+|---|--:|--:|--:|
+| a-lot  | 2.91ms | 2.76ms | −5.2% |
+| stress | 7.59ms | 7.34ms | −3.3% |
+| margaui| 18.23ms| 15.70ms| **−13.9%** |
+
+**Step (a) — no AST clone, no concatenation.** `write_without_theme_nodes` renders
+the stylesheet with its `@theme` blocks skipped straight into the `usage` builder,
+so the copy of the AST and the third full copy of the text both disappear.
+Correct: `moon check --target all`, 59/59 tests, 85/85 differential cases, native
+`--emit` byte-identical on all five workloads. Three-trial back-to-back A/B:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | −1.0% (2.92→2.89ms) | +1.1% | +0.5% |
+| stress | +0.5% (7.49→7.53ms) | +1.4% | +1.6% |
+| margaui| −0.1% (18.19→18.18ms) | −0.1% | −1.7% |
+
+A wash. So the ceiling is not in the render or the clone — it is in the scanning.
+
+**Where the 13.9% actually is.** Disabling `author_property_defaults` alone (base
+render and all other scans left in place) recovers nearly all of it:
+
+| workload | baseline | no `author_property_defaults` | delta |
+|---|--:|--:|--:|
+| stress  | 7.49ms | 7.46ms | −0.4% (no `@property` in that workload) |
+| margaui | 18.19ms| 15.89ms| **−12.6%** |
+
+That is **proposal 25's** target — the full `parse_css` of the compiled stylesheet
+that opt 17's guard cannot skip on margaui, the one workload whose graph really
+does register an author `@property`. What is left for proposal 24 is the base's
+share of the other three scanners plus the render: 15.89 − 15.70 ≈ 0.19ms, about
+**1% of margaui** and ~2% of stress.
+
+Rejected: a ~1–2% native return does not justify the change the proposal actually
+requires. Every consumer of `usage` is a *byte-offset* scanner — `@property` blocks
+are ordered by first-rendered-position, and triggers such as `filter: var(--tw-blur`
+straddle the `name: value` boundary that only exists in rendered text — so an AST
+walk has to reproduce render offsets exactly across declarations, selectors,
+at-rule params, `Context` transparency and `AtRoot` re-indentation. Step (a) is
+reverted with it; it carries its own risk surface for no measured gain.
+
 ### Proposal 25 — Parse only the `@property` blocks, not the whole stylesheet
 
 `author_property_defaults` still costs 6.4% of margaui — the one workload whose
