@@ -114,107 +114,144 @@ fn CssParser::consume_comment(self : CssParser) -> CssNode raise CompileError {
 }
 
 ///|
+/// Materialize the token accumulated by `read_until_top_level`.
+///
+/// In the common case nothing was ever copied: the token is the source range
+/// `[content_start, content_end)` and this is its only copy.
+fn CssParser::finish_token(
+  self : CssParser,
+  output : StringBuilder,
+  verbatim : Bool,
+  content_start : Int,
+  content_end : Int,
+) -> String {
+  if verbatim {
+    if content_start < 0 {
+      ""
+    } else {
+      trim(self.input[content_start:content_end].to_owned())
+    }
+  } else {
+    trim(output.to_string())
+  }
+}
+
+///|
 fn CssParser::read_until_top_level(
   self : CssParser,
   terminals : ArrayView[UInt16],
 ) -> (String, UInt16?) raise CompileError {
+  // Almost every token is exactly a slice of the source. Only two things make
+  // the result differ from `input[content_start:content_end]`: a comment, which
+  // is dropped from the output, and a whitespace run that is not already a
+  // single space, which is collapsed to one. Until one of those turns up the
+  // token is just a pair of offsets — no builder is filled and nothing is
+  // copied, where before every token was copied into the `StringBuilder` and
+  // then copied a second time by `to_string()`. On the first such event the
+  // offsets are flushed into the builder and the original path takes over.
   let output = StringBuilder()
+  let mut verbatim = true
+  let mut content_start = -1
+  let mut content_end = -1
   let mut has_output = false
   let mut pending_space = false
+  // Whether the pending whitespace is a single space already sitting between
+  // `content_end` and whatever comes next, so extending the slice reproduces it.
+  let mut pending_space_verbatim = false
   let mut parens = 0
   let mut brackets = 0
   let len = self.input.length()
   while self.pos < len {
     let c = self.input[self.pos]
-    // Fast path: copy a maximal run of plain content chars in one `write_view`
-    // rather than one code unit per iteration. Boundary chars (below) are rare
-    // relative to ordinary value/selector text.
+    let run_start = self.pos
     if is_plain_value_char(c, terminals) {
-      let run_start = self.pos
+      // Fast path: take a maximal run of plain content chars at once rather
+      // than one code unit per iteration.
       self.pos += 1
       while self.pos < len &&
             is_plain_value_char(self.input[self.pos], terminals) {
         self.pos += 1
       }
-      if pending_space {
-        output.write_char(' ')
-        pending_space = false
-      }
-      output.write_view(self.input[run_start:self.pos])
-      has_output = true
-      continue
-    }
-    if c == '\\' {
-      if pending_space {
-        output.write_char(' ')
-        pending_space = false
-      }
-      output.write_view(self.input[self.pos:self.pos + 1])
+    } else if c == '\\' {
       self.pos += 1
       if !self.eof() {
-        output.write_view(self.input[self.pos:self.pos + 1])
         self.pos += 1
       }
-      has_output = true
-      continue
-    }
-    if c == '\'' || c == '"' {
-      if pending_space {
-        output.write_char(' ')
-        pending_space = false
-      }
-      let start = self.pos
+    } else if c == '\'' || c == '"' {
       self.consume_string(c)
-      output.write_view(self.input[start:self.pos])
-      has_output = true
-      continue
-    }
-    if c == '/' &&
-      self.pos + 1 < self.input.length() &&
-      self.input[self.pos + 1] == '*' {
+    } else if c == '/' && self.pos + 1 < len && self.input[self.pos + 1] == '*' {
+      // A comment is dropped, so the source slice can no longer stand in for
+      // the token.
+      if verbatim {
+        if content_start >= 0 {
+          output.write_view(self.input[content_start:content_end])
+        }
+        verbatim = false
+      }
       let comment = self.consume_comment()
       if comment is Comment(license=true, ..) {
         self.license_comments.push(comment)
       }
       continue
-    }
-    match c {
-      '(' => parens += 1
-      ')' => {
-        if parens == 0 {
-          raise self.error("Unexpected closing parenthesis")
-        }
-        parens -= 1
-      }
-      '[' => brackets += 1
-      ']' => {
-        if brackets == 0 {
-          raise self.error("Unexpected closing bracket")
-        }
-        brackets -= 1
-      }
-      _ => ()
-    }
-    if parens == 0 && brackets == 0 && terminals.contains(c) {
-      return (trim(output.to_string()), Some(c))
-    }
-    if is_css_whitespace(c) {
-      pending_space = has_output
+    } else if is_css_whitespace(c) {
       self.skip_whitespace()
+      pending_space = has_output
+      pending_space_verbatim = self.pos - run_start == 1 &&
+        self.input[run_start] == ' '
       continue
+    } else {
+      match c {
+        '(' => parens += 1
+        ')' => {
+          if parens == 0 {
+            raise self.error("Unexpected closing parenthesis")
+          }
+          parens -= 1
+        }
+        '[' => brackets += 1
+        ']' => {
+          if brackets == 0 {
+            raise self.error("Unexpected closing bracket")
+          }
+          brackets -= 1
+        }
+        _ => ()
+      }
+      if parens == 0 && brackets == 0 && terminals.contains(c) {
+        return (
+          self.finish_token(output, verbatim, content_start, content_end),
+          Some(c),
+        )
+      }
+      self.pos += 1
     }
-    if pending_space {
-      output.write_char(' ')
+    // Emit `input[run_start:self.pos]`, either by extending the slice or, once
+    // the slice has been given up, by writing it to the builder.
+    if verbatim && pending_space && !pending_space_verbatim {
+      if content_start >= 0 {
+        output.write_view(self.input[content_start:content_end])
+      }
+      verbatim = false
+    }
+    if verbatim {
+      if content_start < 0 {
+        content_start = run_start
+      }
+      content_end = self.pos
       pending_space = false
+    } else {
+      if pending_space {
+        output.write_char(' ')
+        pending_space = false
+      }
+      output.write_view(self.input[run_start:self.pos])
     }
-    output.write_view(self.input[self.pos:self.pos + 1])
     has_output = true
-    self.pos += 1
   }
   if parens != 0 || brackets != 0 {
     raise self.error("Unbalanced value")
   }
-  (trim(output.to_string()), None)
+  (self.finish_token(output, verbatim, content_start, content_end), None)
 }
 
 ///|

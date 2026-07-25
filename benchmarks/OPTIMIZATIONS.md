@@ -1018,14 +1018,52 @@ Three-trial warm median A/B, back-to-back:
 
 All nine cells improve.
 
-### Proposal 28 — Hand the parser's buffer over without a copy
+### 28. Keep the parser's token as source offsets until something rewrites it — KEPT ✅
 
-Opt 22 established that the parser's `trim(output.to_string())` cost is the
-`to_string()` materialization, not the trim. A value token is built in a
-`StringBuilder` and then copied out for every declaration parsed. Investigate
-emitting values as views over the source (this is proposal 14's representation
-change in miniature, scoped to values that need no unescaping) or reusing one
-builder across tokens.
+Opt 22 showed the cost at `trim(output.to_string())` is the materialization, not
+the trim: every token was copied into a `StringBuilder` and then copied a second
+time on the way out. Proposal 14 had already ruled out making the AST hold views —
+that is a whole-compiler rewrite — but the *token* does not have to be a view to
+avoid the double copy.
+
+Almost every token `read_until_top_level` produces is exactly a slice of the
+source. Only two things make the result differ from
+`input[content_start:content_end]`:
+
+- a **comment**, which is dropped from the output, and
+- a **whitespace run that is not already a single space**, which is collapsed
+  to one.
+
+Everything else — plain runs, escapes, quoted strings, parens/brackets and other
+single characters — is written through verbatim, so the slice still stands in for
+it. The loop therefore tracks a pair of offsets and allocates nothing; on the
+first comment or non-trivial whitespace run it flushes those offsets into the
+builder and the original character path takes over. Whitespace that turns out to
+be trailing never forces the flush, because the pending space is only reconciled
+at the next write. `finish_token` then produces the token with a **single** copy.
+
+The loop was restructured so all four write sites (`plain run`, escape, quoted
+string, single char) share one emit point, which is what makes the two modes
+tractable to reason about.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases, native `--emit`
+byte-identical on all five workloads.
+
+The first A/B came out close, so it was run **twice, with the order reversed** the
+second time (baseline first) to separate the change from warm-up drift:
+
+| workload | native r1 | native r2 | wasm-gc r1 | wasm-gc r2 | js r1 |
+|---|--:|--:|--:|--:|--:|
+| a-lot  | −0.7% | +0.4% | −0.2% | 0.0% | −1.6% |
+| stress | 0.0% | −1.8% | −1.7% | −0.8% | −1.1% |
+| margaui| −1.1% | **−4.8%** | +2.2% | −0.6% | −4.0% |
+
+The medians disagree on margaui (−1.1% vs −4.8%), but the **minima agree closely**
+— 14.40 vs 14.98ms in round 1 and 14.37 vs 14.86ms in round 2, both about −3.5% —
+so the margaui gain is real and round 1's median simply landed high. Kept: a
+repeatable native gain on the most parse-bound workload, scaling with source size
+(margaui ≫ stress ≫ a-lot, exactly as a per-token copy should), no material
+regression on any backend, and js gains throughout.
 
 ### Proposal 29 — Add a same-variant scaling tier to the workload set
 
