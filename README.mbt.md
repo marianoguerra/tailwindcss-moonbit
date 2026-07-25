@@ -62,8 +62,20 @@ tailwindcss -i input.css -o output.css -c candidates.txt --polyfills 3
 `-i/--input` is the entry CSS (its `@import`s resolve against the filesystem via
 `loader/fs`), `-c/--candidates` is a newline-separated class-name file (optional),
 `-o/--output` defaults to stdout, and `--polyfills` is `0..3` (default all). Run
-`tailwindcss --help` for the full listing. A `--batch` sub-mode backs the
-differential test harness.
+`tailwindcss --help` for the full listing.
+
+Two sub-modes sit alongside the default compile. `bundle` resolves the entry's
+whole `@import` graph from the filesystem and writes a JSON `{ path: content }`
+map:
+
+```sh
+tailwindcss bundle -i input.css -o bundle.json
+```
+
+That map is exactly the shape the `imports` field below takes, so `bundle` is
+how a filesystem project becomes a self-contained in-memory compile request for
+the JS / Wasm-gc entry points, which have no filesystem access. A `--batch`
+sub-mode backs the differential test harness.
 
 ### As a JS / Wasm-gc library
 
@@ -78,10 +90,16 @@ JSON `{ ok, css }` / `{ ok, error }` result:
   "css": "@import \"base.css\"; @tailwind utilities;",
   "candidates": ["flex", "hover:bg-black"],
   "imports": { "base.css": "@theme { --color-black: #000; }" },
+  "base": "",
   "from": "input.css",
   "polyfills": 3
 }
 ```
+
+Every field except `css` is optional: `candidates` defaults to none, `imports`
+to empty, `base` to `""`, and `polyfills` to `POLYFILL_ALL`. `base` is the
+prefix that relative `@import` specifiers and `@source` paths resolve against,
+so it must match the keys used in `imports`.
 
 `ffi/js/` ships an ergonomic, dependency-free wrapper (`compile({ input,
 candidates, imports, ... })`); see `ffi/js/README.md` for the build and usage
