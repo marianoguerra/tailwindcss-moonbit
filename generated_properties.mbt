@@ -260,24 +260,83 @@ fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
 }
 
 ///|
-/// Position of the first declaration that registers `block`, or `None` when the
-/// block is never registered.
-fn generated_property_block_position(
-  css : String,
-  block : GeneratedPropertyBlock,
-) -> Int? {
-  let mut best : Int? = None
-  for trigger in block.triggers {
-    match index_of(css, trigger) {
-      Some(position) =>
-        match best {
-          Some(current) => if position < current { best = Some(position) }
-          None => best = Some(position)
-        }
-      None => ()
+/// The registration blocks, built once. They are read-only after construction,
+/// and both the trigger index below and every `build` walk them.
+let generated_property_block_table : Array[GeneratedPropertyBlock] = generated_property_blocks()
+
+///|
+/// One trigger, prepared for a single scan of the compiled CSS.
+///
+/// `offset` is where `--tw-` starts inside the trigger and `key` is the code unit
+/// straight after it, so a `--tw-` found in the CSS can rewind to where this
+/// trigger would have to begin and reject most candidates on one comparison.
+priv struct GeneratedPropertyTrigger {
+  text : String
+  offset : Int
+  key : UInt16
+  block : Int
+}
+
+///|
+fn build_generated_property_triggers() -> Array[GeneratedPropertyTrigger] {
+  let entries : Array[GeneratedPropertyTrigger] = []
+  for index, block in generated_property_block_table {
+    for trigger in block.triggers {
+      // Every trigger names a `--tw-…` custom property, so `--tw-` is present
+      // exactly once and something always follows it.
+      let offset = index_of(trigger, "--tw-").unwrap_or(0)
+      entries.push({
+        text: trigger,
+        offset,
+        key: trigger[offset + 5],
+        block: index,
+      })
     }
   }
-  best
+  entries
+}
+
+///|
+let generated_property_triggers : Array[GeneratedPropertyTrigger] = build_generated_property_triggers()
+
+///|
+/// Position of the first declaration that registers each block, or `-1` for the
+/// blocks nothing registers.
+///
+/// Each trigger used to be searched for over the whole stylesheet on its own —
+/// ~66 full scans per `build`. Since every trigger contains `--tw-`, one pass
+/// that stops at each `--tw-` and tests only the triggers whose next code unit
+/// matches finds all of them.
+fn generated_property_block_positions(css : String) -> Array[Int] {
+  let positions = Array::make(generated_property_block_table.length(), -1)
+  let length = css.length()
+  let mut pos = 0
+  while pos < length {
+    guard css[pos:].find("--tw-") is Some(found) else { break }
+    let at = pos + found
+    pos = at + 1
+    let key_index = at + 5
+    if key_index >= length {
+      break
+    }
+    let key = css[key_index]
+    for entry in generated_property_triggers {
+      if entry.key != key {
+        continue
+      }
+      let start = at - entry.offset
+      if start < 0 || start + entry.text.length() > length {
+        continue
+      }
+      if css[start:start + entry.text.length()] == entry.text {
+        let current = positions[entry.block]
+        if current < 0 || start < current {
+          positions[entry.block] = start
+        }
+      }
+    }
+  }
+  positions
 }
 
 ///|
@@ -314,6 +373,13 @@ fn author_property_defaults(
 ) -> (Array[CssNode], Array[CssNode]) {
   let root : Array[CssNode] = []
   let universal : Array[CssNode] = []
+  // Parsing the whole compiled stylesheet is one of the more expensive things a
+  // `build` does, and `parse_css` cannot produce an `@property` at-rule out of
+  // CSS that never spells it. Most stylesheets register nothing, so check the
+  // literal first.
+  if !css.contains("@property") {
+    return (root, universal)
+  }
   let nodes = parse_css(css) catch { _ => [] }
   for node in nodes {
     guard node
@@ -351,11 +417,11 @@ fn render_generated_properties(
   css : String,
   at_property_fallback? : Bool = true,
 ) -> (String, String) {
+  let positions = generated_property_block_positions(css)
   let blocks : Array[(GeneratedPropertyBlock, Int, Int)] = []
-  for index, block in generated_property_blocks() {
-    match generated_property_block_position(css, block) {
-      Some(position) => blocks.push((block, position, index))
-      None => ()
+  for index, block in generated_property_block_table {
+    if positions[index] >= 0 {
+      blocks.push((block, positions[index], index))
     }
   }
   if blocks.is_empty() {
