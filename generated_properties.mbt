@@ -405,7 +405,9 @@ fn author_property_defaults(
   let root : Array[CssNode] = []
   let universal : Array[CssNode] = []
   for node in at_rules {
-    guard node is AtRule(params~, nodes=Some(declarations), ..) else { continue }
+    guard node is AtRule(params~, nodes=Some(declarations), ..) else {
+      continue
+    }
     let name = trim(params)
     let mut inherits_true = false
     let mut initial : String? = None
@@ -536,8 +538,7 @@ fn render_generated_properties(
   // fallback as generated ones: inheriting properties on `:root, :host`, the
   // rest appended to the universal selector.
   let (author_root, author_universal) = author_property_defaults(
-    author_properties,
-    span,
+    author_properties, span,
   )
   for declaration in author_universal {
     defaults.push(declaration)

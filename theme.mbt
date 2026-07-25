@@ -203,7 +203,12 @@ fn render_used_keyframes(
       if animate_state[token] < 0 {
         animate_state[token] = match
           theme_css_value(theme, animate_tokens[token]) {
-          Some(css_value) => if generated_css.contains(css_value) { 1 } else { 0 }
+          Some(css_value) =>
+            if generated_css.contains(css_value) {
+              1
+            } else {
+              0
+            }
           None => 0
         }
       }

@@ -1,10 +1,10 @@
 import {
   "marianoguerra/tailwindcss" @tw,
   "moonbitlang/core/bench" @cbench,
-  "moonbitlang/core/env" @env,
+  "moonbitlang/core/env",
   "moonbitlang/core/string",
   "moonbitlang/core/json",
-  "moonbitlang/x/fs" @fs,
+  "moonbitlang/x/fs",
 }
 
 // No `supported_targets` restriction: this executable is compiled to native, js,

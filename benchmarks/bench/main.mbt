@@ -42,9 +42,7 @@ fn main {
     )
     return
   }
-  let req_json = try {
-    @fs.read_file_to_string(raw[marker + 1])
-  } catch {
+  let req_json = @fs.read_file_to_string(raw[marker + 1]) catch {
     _ => {
       println("{\"ok\":false,\"error\":\"cannot read request file\"}")
       return
@@ -59,11 +57,7 @@ fn main {
     if raw[i] == "--emit" {
       emit = true
     } else {
-      let parsed = try {
-        Some(@string.parse_int(raw[i]))
-      } catch {
-        _ => None
-      }
+      let parsed = Some(@string.parse_int(raw[i])) catch { _ => None }
       match parsed {
         Some(n) => ints.push(n)
         None => ()
@@ -158,12 +152,13 @@ fn run_emit(request : String) -> Unit {
 
 ///|
 fn run_timed(request : String, warmup : Int, iters : Int) -> Unit {
-  let req = try {
-    parse_request(request)
-  } catch {
+  let req = parse_request(request) catch {
     err => {
-      println("{\"ok\":false,\"error\":" +
-        Json::string(err.to_string()).stringify() + "}")
+      println(
+        "{\"ok\":false,\"error\":" +
+        Json::string(err.to_string()).stringify() +
+        "}",
+      )
       return
     }
   }
@@ -172,27 +167,19 @@ fn run_timed(request : String, warmup : Int, iters : Int) -> Unit {
   let sink = @cbench.Bench()
   // Warmup — discarded.
   for _ in 0..<warmup {
-    let out = try {
-      compile_once(req)
-    } catch {
-      err => "/* " + err.to_string() + " */"
-    }
+    let out = compile_once(req) catch { err => "/* " + err.to_string() + " */" }
     sink.keep(out)
   }
   // Timed — one sample (microseconds) per fresh compile+build.
   let samples : Array[Double] = []
   for _ in 0..<iters {
     let t = @cbench.monotonic_clock_start()
-    let out = try {
-      compile_once(req)
-    } catch {
-      err => "/* " + err.to_string() + " */"
-    }
+    let out = compile_once(req) catch { err => "/* " + err.to_string() + " */" }
     let us = @cbench.monotonic_clock_end(t)
     sink.keep(out)
     samples.push(us)
   }
-  let out_len = try { compile_once(req).length() } catch { _ => 0 }
+  let out_len = compile_once(req).length() catch { _ => 0 }
   let parts = samples.map(fn(s) { s.to_string() })
   println(
     "{\"ok\":true,\"samples_us\":[" +

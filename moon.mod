@@ -18,5 +18,11 @@ import {
 }
 
 options(
-  exclude: [ "tools", "examples", "benchmarks", "migration-plan.md", "package.json" ],
+  exclude: [
+    "tools",
+    "examples",
+    "benchmarks",
+    "migration-plan.md",
+    "package.json",
+  ],
 )
