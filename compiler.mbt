@@ -29,6 +29,64 @@ fn remove_theme_nodes_deep(nodes : ArrayView[CssNode]) -> Array[CssNode] {
 }
 
 ///|
+/// Collect the distinct texts that follow a literal `var(` in `css`, sorted.
+///
+/// The usage test these feed is a *prefix* test — a theme variable counts as used
+/// when the CSS contains `var(<name>`, so `var(--text-sm--line-height)` also marks
+/// `--text-sm` used. Tokens are therefore kept whole and probed with
+/// `sorted_has_prefix` instead of compared for equality, which preserves that
+/// behaviour while replacing one whole-CSS search per theme variable (400+ on a
+/// full import) with a single pass.
+fn var_reference_tokens(css : String) -> Array[String] {
+  let seen : Map[String, Unit] = Map([])
+  let length = css.length()
+  let mut pos = 0
+  while pos < length {
+    guard css[pos:].find("var(") is Some(offset) else { break }
+    let start = pos + offset + 4
+    let mut end = start
+    while end < length {
+      let character = css[end]
+      if character == ')' ||
+        character == ',' ||
+        character == ' ' ||
+        character == '\n' ||
+        character == '\t' ||
+        character == '\r' {
+        break
+      }
+      end += 1
+    }
+    if end > start {
+      seen[css[start:end].to_owned()] = ()
+    }
+    pos = start
+  }
+  let tokens = seen.keys().to_array()
+  tokens.sort_by(lexical_compare)
+  tokens
+}
+
+///|
+/// Whether any token in the sorted `tokens` starts with `prefix`.
+///
+/// Strings sharing a prefix are contiguous in lexicographic order and are the
+/// first entries at or after the prefix itself, so one binary search decides it.
+fn sorted_has_prefix(tokens : ArrayView[String], prefix : String) -> Bool {
+  let mut low = 0
+  let mut high = tokens.length()
+  while low < high {
+    let middle = (low + high) / 2
+    if lexical_compare(tokens[middle], prefix) < 0 {
+      low = middle + 1
+    } else {
+      high = middle
+    }
+  }
+  low < tokens.length() && tokens[low].has_prefix(prefix)
+}
+
+///|
 /// Build the `:root, :host` rule that carries the theme variables in use.
 fn theme_rule_nodes(
   theme : Map[String, String],
@@ -42,34 +100,41 @@ fn theme_rule_nodes(
   // re-interpolated the search string for every (used × dependency) pair on every
   // iteration — O(V²) throwaway string allocations for a full theme.
   let names : Array[String] = []
+  let variables : Array[String] = []
   let searches : Array[String] = []
   for name, _ in theme {
     if name.has_prefix(theme_meta_prefix) {
       continue
     }
     names.push(name)
-    searches.push("var(" + theme_variable_name(theme, name))
+    let variable = theme_variable_name(theme, name)
+    variables.push(variable)
+    searches.push("var(" + variable)
   }
+  let referenced = var_reference_tokens(generated_css)
   let used : Map[String, Unit] = Map([])
   for i in 0..<names.length() {
     if theme.contains(theme_meta("static", names[i])) ||
-      generated_css.contains(searches[i]) {
+      sorted_has_prefix(referenced, variables[i]) {
       used[names[i]] = ()
     }
   }
   // A used variable may reference another one, which then has to be emitted
-  // as well.
+  // as well. Most theme values contain no `var()` at all, so the cheap check
+  // skips the per-dependency scan entirely for them.
   for ;; {
     let additions : Array[String] = []
     for name, _ in used {
       match theme.get(name) {
         Some(value) =>
-          for i in 0..<names.length() {
-            let dependency = names[i]
-            if !used.contains(dependency) &&
-              !additions.contains(dependency) &&
-              value.contains(searches[i]) {
-              additions.push(dependency)
+          if value.contains("var(") {
+            for i in 0..<names.length() {
+              let dependency = names[i]
+              if !used.contains(dependency) &&
+                !additions.contains(dependency) &&
+                value.contains(searches[i]) {
+                additions.push(dependency)
+              }
             }
           }
         None => ()
@@ -123,7 +188,8 @@ pub async fn compile(
   options? : CompileOptions = CompileOptions::new(),
 ) -> Compiler {
   let ast = parse_css(css)
-  let resolved_ast = if contains_import(ast) {
+  let had_imports = contains_import(ast)
+  let resolved_ast = if had_imports {
     guard options.loader is Some(loader) else {
       raise MissingStylesheetLoader("@import requires a stylesheet loader")
     }
@@ -131,12 +197,7 @@ pub async fn compile(
   } else {
     ast
   }
-  let effective_css = if contains_import(ast) {
-    render_css_nodes(resolved_ast)
-  } else {
-    css
-  }
-  compile_from_ast(resolved_ast, effective_css, options)
+  compile_from_ast(resolved_ast, css, had_imports, options)
 }
 
 ///|
@@ -151,7 +212,8 @@ pub fn compile_sync(
   options? : CompileOptions = CompileOptions::new(),
 ) -> Compiler raise CompileError {
   let ast = parse_css(css)
-  let resolved_ast = if contains_import(ast) {
+  let had_imports = contains_import(ast)
+  let resolved_ast = if had_imports {
     guard options.sync_loader is Some(loader) else {
       raise MissingStylesheetLoader("@import requires a stylesheet loader")
     }
@@ -159,22 +221,18 @@ pub fn compile_sync(
   } else {
     ast
   }
-  let effective_css = if contains_import(ast) {
-    render_css_nodes(resolved_ast)
-  } else {
-    css
-  }
-  compile_from_ast(resolved_ast, effective_css, options)
+  compile_from_ast(resolved_ast, css, had_imports, options)
 }
 
 ///|
 /// Shared, fully synchronous tail of `compile`/`compile_sync`: everything after
-/// `@import` resolution. `resolved_ast` has had its imports inlined and
-/// `effective_css` is its rendered form (or the original `css` when there were
-/// no imports).
+/// `@import` resolution. `resolved_ast` has had its imports inlined, `source_css`
+/// is the stylesheet as authored, and `had_imports` says whether resolution
+/// changed it (in which case echoing `source_css` back is not equivalent).
 fn compile_from_ast(
   resolved_ast : Array[CssNode],
-  effective_css : String,
+  source_css : String,
+  had_imports : Bool,
   options : CompileOptions,
 ) -> Compiler raise CompileError {
   reject_javascript_directives(resolved_ast)
@@ -208,8 +266,12 @@ fn compile_from_ast(
     applied_ast, theme, custom_variants,
   )
   let flattened_ast = merge_adjacent_at_rules(flatten_css_nesting(applied_ast))
-  let did_flatten = render_css_nodes(applied_ast) !=
-    render_css_nodes(flattened_ast)
+  // Comparing the two trees directly replaces rendering both of them to strings
+  // just to diff them. `flatten_css_nesting`/`merge_adjacent_at_rules` only ever
+  // reuse the spans of the nodes they keep, so an unchanged tree compares equal
+  // and the derived structural equality answers the same question the rendered
+  // comparison did — without building two copies of the whole stylesheet.
+  let did_flatten = applied_ast != flattened_ast
   let did_rewrite = did_apply ||
     did_custom_utility ||
     did_custom_variant ||
@@ -218,10 +280,19 @@ fn compile_from_ast(
     did_at_variant ||
     did_flatten
   let stylesheet = flattened_ast
-  let effective_css = if did_rewrite {
+  let has_utilities = contains_tailwind_utilities(stylesheet) || did_rewrite
+  // `input` is read at exactly one place: `build`'s `!has_utilities` early
+  // return, where the compiler echoes the stylesheet back because it generates
+  // nothing of its own. Rendering it for a stylesheet that *does* have
+  // `@tailwind utilities` — every real workload — is pure waste, and
+  // `did_rewrite` implies `has_utilities`, so the rewrite case never needs it
+  // either. Render only when the echo can actually happen.
+  let input = if has_utilities {
+    ""
+  } else if had_imports {
     render_css_nodes(stylesheet)
   } else {
-    effective_css
+    source_css
   }
   let initial_candidates : Map[String, Unit] = Map([])
   for candidate in source_directives.included {
@@ -230,7 +301,7 @@ fn compile_from_ast(
     }
   }
   {
-    input: effective_css,
+    input,
     polyfills: options.polyfills,
     stylesheet,
     theme,
@@ -240,7 +311,7 @@ fn compile_from_ast(
     custom_utilities,
     functional_utilities,
     custom_variants,
-    has_utilities: contains_tailwind_utilities(stylesheet) || did_rewrite,
+    has_utilities,
   }
 }
 

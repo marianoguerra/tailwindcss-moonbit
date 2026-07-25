@@ -469,3 +469,25 @@ async test "compile nested compound variants and sort equivalent stacks" {
     output.contains(":is(:where(.group):hover, :where(.group):focus) *"),
   )
 }
+
+///|
+/// `Compiler.input` is only rendered when the compiler generates nothing of its
+/// own, so both echo paths need a guard: an as-authored stylesheet is returned
+/// verbatim, and one whose content arrived through `@import` is returned
+/// resolved.
+test "stylesheet without utilities is echoed back unchanged" {
+  let css = ".a { color: red; }\n"
+  assert_eq(@tailwindcss.compile_sync(css).build(["flex"]), css)
+}
+
+///|
+test "imported stylesheet without utilities is echoed back resolved" {
+  let loader = @tailwindcss.MemoryStylesheetLoader::new()
+  loader.add("a.css", ".a { color: red; }")
+  let output = @tailwindcss.compile_sync(
+    "@import \"a.css\";",
+    options=@tailwindcss.CompileOptions::new(sync_loader=loader),
+  ).build(["flex"])
+  assert_true(output.contains("color: red"))
+  assert_false(output.contains("@import"))
+}
