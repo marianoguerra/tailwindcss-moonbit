@@ -482,6 +482,349 @@ index (the same pattern opt 8 already applied to the hottest loop). `moon check`
 All within noise. opt 8 had already removed `current()` from the hottest loop, so the
 remaining loops are not hot enough for the `Option` avoidance to register. Reverted.
 
+## Profile after opt 14 (wasm-gc CPU, real workloads) — one function dominated
+
+Re-profiled both heavy workloads with `moon-pprof profile --interval-us 500` over a
+generated `benchmarks/_prof` harness (the workload request is embedded as a string
+constant, because the wasmtime profiler passes no argv and has no filesystem).
+Caller attribution came from `moon-pprof pprof2folded` + a rollup of the frame
+below each `Eq::equal` leaf.
+
+| workload | self time | function | caller |
+|---|--:|---|---|
+| stress  | **43.1%** | `Eq::equal` | 100% from `index_of` |
+| stress  | 15.0% | `blit_from_string` | mostly `render_css_node` |
+| margaui | **39.8%** | `Eq::equal` | 100% from `index_of` |
+| margaui | 23.7% | `parse_value_nodes` | `substitute_css_functions` |
+
+Inclusive: `index_of` was **47.1%** of the whole stress run and **43.1%** of margaui,
+every sample under `build → render_generated_properties → generated_property_block_position`.
+That single call site is ~66 trigger searches over the entire rendered output, once
+per build. This is the "the bigger the workload, the worse we scale" signature: the
+scan cost is (fixed trigger count) × (output size), and it was being run with a
+hand-written matcher that allocates a `StringView` and calls `Eq::equal` per position.
+
+### 15. `index_of` → `String::find` (naive O(n·m) scan → Boyer-Moore-Horspool) — KEPT ✅
+
+`string_utils.mbt`'s `index_of` compared `haystack[start:start + needle.length()] ==
+needle` at **every** offset. MoonBit core already ships `String::find`, which uses
+`boyer_moore_horspool_find` for needles longer than 4 code units. Replaced the body
+with `haystack.find(needle)` — identical semantics (both return a code-unit offset,
+both return `Some(0)` for an empty needle). `moon check --target native`, 57/57
+tests, 85/85 differential cases.
+
+Three-trial warm median A/B, back-to-back on the same session:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−30.7%** (9.64→6.68ms) | **−45.5%** (14.38→7.84ms) | **−22.6%** (24.41→18.90ms) |
+| stress | **−27.4%** (20.48→14.86ms) | **−38.7%** (30.39→18.64ms) | **−20.0%** (53.03→42.44ms) |
+| margaui| **−41.9%** (78.51→45.64ms) | **−48.2%** (109.38→56.67ms) | **−60.5%** (267.28→105.47ms) |
+
+The largest single win recorded in this log, and universal across backends. The
+lesson for future proposals: before optimizing *callers*, check that the primitive
+they call is not a hand-rolled linear scan where core has a real algorithm.
+
+### 16. Skip the value round-trip for declarations with no compile-time function — KEPT ✅
+
+`substitute_css_functions` called `substitute_value_functions` on **every**
+declaration value in the stylesheet — a full `parse_value` → `substitute_value_ast`
+→ `render_value` round trip — even though only values containing `theme(`,
+`--theme(`, `--spacing(` or `--alpha(` can change. On margaui (a ~290 KB import
+graph) that made `parse_value_nodes` 45.7% inclusive of the whole run. Added the
+same cheap guard `resolve_theme_value_functions` already used: return `(input,
+false)` unless the value contains `theme(`, `--spacing(` or `--alpha(` (`theme(`
+covers `--theme(`). The risk was output drift, since the round trip also normalizes
+values it does not otherwise change — the differential gate says it does not:
+`moon check`, 57/57 tests, 85/85 differential cases, and the benchmark similarity
+gates are unchanged (97.9% / 99.0% / 99.7%).
+
+Three-trial warm median A/B vs opt 15:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−13.5%** (6.68→5.78ms) | −4.1% (7.84→7.52ms) | +0.5% (noise) |
+| stress | **−5.7%** (14.86→14.01ms) | −0.8% (noise) | +0.8% (noise) |
+| margaui| **−21.5%** (45.64→35.84ms) | **−11.5%** (56.67→50.17ms) | **−5.7%** (105.47→99.42ms) |
+
+Scales with import-graph size (margaui ≫ a-lot ≫ stress), as expected for a change
+that skips work proportional to the number of authored declarations.
+
+## Cumulative (opt 14 → opt 16, warm median)
+
+| workload | native | wasm-gc | js | vs tailwindcss 4.3.3 (native) |
+|---|--:|--:|--:|--:|
+| a-lot  | 9.64→5.78ms (**−40.0%**) | 14.38→7.52ms (−47.7%) | 24.41→19.00ms (−22.2%) | 0.34× → **0.56×** |
+| stress | 20.48→14.01ms (**−31.6%**) | 30.39→18.49ms (−39.2%) | 53.03→42.80ms (−19.3%) | 0.37× → **0.54×** |
+| margaui| 78.51→35.84ms (**−54.4%**) | 109.38→50.17ms (−54.1%) | 267.28→99.42ms (−62.8%) | 0.28× → **0.56×** |
+
+## Profile after opt 16 — where the remaining time goes
+
+Same harness, re-profiled. Shares are of the whole profiled run, which includes
+~8% (margaui) / ~4% (stress) of harness-only JSON request parsing — scale product
+costs up slightly.
+
+| share (stress) | share (margaui) | cost |
+|--:|--:|---|
+| 14.6% | 4.6% | `theme_rule_nodes` — one `usage.contains("var(--x")` per theme variable (417 on a full import) |
+| 16.5% | 10.7% | `render_css_node` — the pipeline renders the full AST ~6–7× per compile+build |
+| ~9%   | 2.9% | `boyer_moore_horspool_find` — the 66 remaining whole-output trigger scans |
+| 9.1%  | 1.7% | `theme_meta` — interpolating `"\0tailwind:kind:name"` metadata keys |
+| 5.4%  | 2.2% | `author_property_defaults` — re-parses the entire output CSS every build |
+| 6.4%  | 1.3% | `parse_theme` |
+| 6.8%  | 7.9% | `parse_css` |
+| 3.4%  | 3.6% | `trim` (`s.trim().to_owned()` allocates at every call site) |
+| 7.7%  | 50.0% | `substitute_css_functions` (margaui: still the top cost even after opt 16) |
+
+### 17. Guard `author_property_defaults` on the `@property` literal — KEPT ✅
+
+Every `build` called `author_property_defaults(usage, span)`, which ran a full
+`parse_css` over the entire compiled stylesheet purely to find author `@property`
+registrations. `parse_css` cannot produce an `@property` at-rule from CSS that
+never spells it, so the whole parse is skippable with one `contains` check. Added
+`if !css.contains("@property") { return (root, universal) }`. `moon check --target
+all`, 57/57 tests, 85/85 differential cases; similarity gates unchanged.
+
+Three-trial warm median A/B, back-to-back:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−6.4%** (5.79→5.42ms) | **−5.8%** (7.58→7.14ms) | −5.9% (19.11→17.98ms) |
+| stress | **−8.3%** (14.14→12.97ms) | **−7.9%** (18.49→17.02ms) | −3.6% (41.32→39.83ms) |
+| margaui| −0.3% (34.35→34.23ms) | −1.3% (49.04→48.38ms) | −0.5% (95.65→95.14ms) |
+
+margaui is flat **because the guard does not fire there**: its bundled graph is the
+only workload whose stylesheet actually contains an author `@property`, so it still
+pays for the parse. a-lot and stress contain none and skip it entirely. That split
+is the expected shape of the change, not noise.
+
+### 18. Stop rendering CSS that nothing reads — KEPT ✅ (two iterations)
+
+**(a) `Compiler.input` is now rendered only when it can be read.** `input` is read
+at exactly one place — `build`'s `!has_utilities` early return, where the compiler
+echoes the stylesheet back because it generates nothing itself — yet producing it
+cost a full `render_css_nodes(resolved_ast)` in `compile`/`compile_sync` whenever
+imports existed, plus another render in `compile_from_ast` when `did_rewrite`.
+Since `did_rewrite` implies `has_utilities`, both were dead for every stylesheet
+containing `@tailwind utilities`. `compile_from_ast` now takes the authored `css`
+plus a `had_imports` flag and renders only in the echo case. Added two regression
+tests for that path (as-authored echo, and import-resolved echo), which the eager
+render had been covering implicitly.
+
+**(b) `did_flatten` by structural comparison instead of two renders.** It was
+`render_css_nodes(applied_ast) != render_css_nodes(flattened_ast)` — building two
+complete copies of the stylesheet to diff them. `flatten_css_nesting` and
+`merge_adjacent_at_rules` only ever reuse the spans of nodes they keep, so the
+derived `CssNode` equality answers the same question: `applied_ast != flattened_ast`.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases after each step.
+Three-trial warm median A/B, each step against the previous state:
+
+| workload | native (a) | native (b) | **native total** | wasm-gc total | js total |
+|---|--:|--:|--:|--:|--:|
+| a-lot  | −2.2% | −2.5% | **−4.6%** (5.42→5.17ms) | −4.3% (7.14→6.83ms) | −1.9% |
+| stress | −1.5% | −1.3% | **−2.9%** (12.97→12.60ms) | −1.1% (17.02→16.83ms) | −0.4% |
+| margaui| −3.4% | −1.5% | **−4.8%** (34.23→32.59ms) | **−9.2%** (48.38→43.93ms) | −2.3% |
+
+Largest on margaui, the biggest import graph — exactly where a dead full-stylesheet
+render costs most.
+
+### 19. One `var(` pass instead of one whole-CSS search per theme variable — KEPT ✅
+
+`theme_rule_nodes` decided which theme variables to emit by asking
+`generated_css.contains("var(<name>")` **once per theme variable** — 417 searches
+over the entire compiled stylesheet on a full import — and then ran a fixed point
+that re-scanned every theme value against all 417 candidate dependencies on every
+round. Replaced with:
+
+- `var_reference_tokens`: one left-to-right pass collecting the distinct text that
+  follows each literal `var(`, sorted with `lexical_compare`.
+- `sorted_has_prefix`: a binary search for the first token ≥ the variable name.
+  The usage test is a *prefix* test (`var(--text-sm--line-height)` also marks
+  `--text-sm` used), and strings sharing a prefix are contiguous in lexicographic
+  order, so one binary search decides it — preserving the old semantics exactly
+  rather than switching to equality.
+- The fixed point now skips any theme value that contains no `var(` at all, which
+  is nearly all of them.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases. Because the win
+was much larger than the profile predicted, output was also compared **byte for
+byte** against the pre-optimization compiler (`git checkout` of opts 15–19, native
+`--emit`): a-lot, stress, margaui, many and few are all **identical**, so the
+speedup is not a behaviour change.
+
+Three-trial warm median A/B vs opt 18:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−30.8%** (5.17→3.58ms) | **−27.4%** (6.83→4.96ms) | −31.7% (17.64→12.04ms) |
+| stress | **−34.5%** (12.60→8.25ms) | **−31.5%** (16.83→11.53ms) | −39.5% (39.68→24.01ms) |
+| margaui| **−40.3%** (32.59→19.45ms) | **−36.0%** (43.93→28.13ms) | −44.5% (92.94→51.59ms) |
+
+Far above the ~15% the profile attributed to `theme_rule_nodes`: the profiler
+charged most of the fixed point's cost to `String::contains`/BMH rather than to the
+enclosing function, so the real total was hidden. Lesson: when a hot function is a
+loop of calls into core primitives, read the primitive's share too, not just the
+caller's.
+
+### 20. One `--tw-` pass for the `@property` trigger table — KEPT ✅
+
+`render_generated_properties` located each registration block by searching the
+whole compiled stylesheet for every one of its triggers — ~66 full scans per
+`build`, and it rebuilt the block table on each call as well. Every trigger names
+a `--tw-…` custom property, so `--tw-` occurs in it exactly once. Now the block
+table and a trigger index are module-level constants (each entry carries the
+offset of `--tw-` inside the trigger and the code unit that follows it), and one
+pass over the CSS stops at each `--tw-`, rejects most triggers on a single code
+unit compare, and rewinds by the stored offset to test the rest. Block ordering is
+unchanged: the scan keeps the smallest start position per block, which is what the
+per-trigger minimum computed before.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases, and native
+`--emit` output byte-identical to the pre-optimization compiler on all five
+workloads.
+
+Three-trial warm median A/B vs opt 19:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−3.6%** (3.58→3.45ms) | **−5.0%** (4.96→4.71ms) | −0.7% |
+| stress | **−3.0%** (8.25→8.00ms) | **−3.8%** (11.53→11.09ms) | −0.5% |
+| margaui| **−8.7%** (19.45→17.76ms) | **−7.7%** (28.13→25.96ms) | −9.0% (51.59→46.97ms) |
+
+### 21. Stop building theme-metadata key strings — KEPT ✅ (two iterations)
+
+Re-profiling after opt 20 promoted this to the top `stress` cost: `theme_meta` was
+**14.0% inclusive** (5.7% under `collect_theme`, 5.3% under `theme_rule_nodes`,
+2.6% under `theme_prefix`), because theme options live in the value map under
+`"\0tailwind:<kind>:<name>"` keys that were built by interpolation on every
+probe.
+
+**(a) Constant prefixes instead of interpolation.** Replaced `theme_meta(kind,
+name)` with per-kind module constants (`theme_meta_inline_prefix`, …) and one
+concatenation, plus a fixed `theme_meta_prefix_key` for the single variable-prefix
+entry (`theme_prefix` is called by `theme_variable_name` for every variable, and
+was allocating a key each time). `theme_meta` itself is gone.
+
+**(b) Collect the option sets in the pass that is already happening.**
+`theme_rule_nodes` walks the whole theme map anyway, so it now classifies the
+metadata keys it passes into `inline`/`reference`/`static` name sets, instead of
+building three key strings and probing the map three times per variable — twice,
+since the emit loop repeated the inline/reference test.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases, and native
+`--emit` byte-identical to the pre-optimization compiler on all five workloads
+after each step.
+
+| workload | native (a) | native (b) | **native total** | wasm-gc total | js total |
+|---|--:|--:|--:|--:|--:|
+| a-lot  | **−15.4%** | −0.7% | **−15.9%** (3.45→2.90ms) | −9.8% (4.71→4.25ms) | −4.9% |
+| stress | **−7.5%** | −0.1% | **−7.6%** (8.00→7.39ms) | −6.5% (11.09→10.37ms) | −2.9% |
+| margaui| −2.8% | −0.2% | −3.0% (17.76→17.22ms) | −2.9% (25.96→25.22ms) | −0.4% |
+
+Step (b) is native-neutral on its own but improves wasm-gc (−1.2…−2.4%) and js
+(−0.8…−3.1%) on every workload — 9 of 9 cells non-regressing — so it is kept under
+the "wasm-gc improves, native neutral" rule. The proposal's larger option (replace
+`Map[String, String]` with `Map[String, ThemeEntry]`) was **not** attempted: the
+map type appears in 107 signatures across the compiler, while the encoded keys are
+confined to 19 sites, so the cheap version captured the win at a fraction of the
+risk. That refactor remains available if theme lookups resurface in a profile.
+
+### 22. Non-allocating `trim` — REVERTED ❌ (core already does it)
+
+The post-opt-20 profile put `trim` at 10.0% of margaui, 7.2% of it under the value
+parser's `trim(output.to_string())`, and `trim` reads `s.trim().to_owned()` — a
+view followed by a copy. Added a fast path returning `s` unchanged when the
+trimmed view spans the whole string (which is the common case: the value parser
+never emits leading or trailing space). Correct — 59/59 tests, 85/85 differential
+cases, byte-identical output — but a wash:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | −0.7% | +0.2% | +1.3% |
+| stress | −0.5% | +1.8% | +0.8% |
+| margaui| +0.6% | +0.8% | +0.7% |
+
+**Why:** core's `StringView::to_owned` is
+`self.str().unsafe_substring(start, end)`, and `unsafe_substring` already returns
+the original string when the range covers it — the copy this proposal removed does
+not exist. The added length check is pure overhead. Reverted.
+
+The profiled cost is therefore in `output.to_string()` (materializing the builder),
+not in the trim, so a real fix would have to make the value parser hand out its
+buffer without a copy — a different, larger change than this proposal.
+
+Mirror image of opt 15's lesson: check what core's primitive actually does before
+either hand-rolling it *or* trying to improve on it.
+
+### 23. De-quadratic `merge_adjacent_at_rules` — KEPT ✅ (9.5× on the shape it targets)
+
+When consecutive siblings shared a name/params (or selector), the merge copied the
+accumulated children, appended the new ones, and re-ran `merge_adjacent_at_rules`
+(plus `dedupe_declarations`) over **all** of them — re-walking and re-merging the
+whole subtree for every additional sibling, so a run of K wrappers cost O(K²)
+walks. Replaced with `append_merged`, which extends the wrapper already in the
+output **in place**: both sides are internally merged, so concatenating them can
+create only one new adjacency — the junction — and merging that junction can
+create only one more, one level down. Cross-run deduplication is preserved
+(`rededuplicate` re-runs `dedupe_declarations` over the whole run when rules
+merge, since a declaration repeated by a later member still removes the earlier
+copy).
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases, native `--emit`
+byte-identical on all five workloads.
+
+Three-trial warm median A/B vs opt 21 (opt 22 was reverted):
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | −0.7% (2.90→2.88ms) | −1.2% | +0.4% |
+| stress | −1.2% (7.39→7.30ms) | +0.3% | −0.9% |
+| margaui| −0.2% (17.22→17.19ms) | −0.1% | −1.1% |
+
+Marginal — because no benchmark workload has long runs of same-key wrappers. Since
+the proposal targets an *asymptotic* cost, it was measured on the shape it is about:
+1500 candidates sharing one variant (`md:p-[Npx]`, one `@media` wrapper each),
+native, same session, identical output (68314 bytes both ways):
+
+| | median | min |
+|---|--:|--:|
+| before | 452.73ms | 444.85ms |
+| after  | **47.85ms** | **31.84ms** |
+
+**9.5× on the median, 14× on the min.** Kept: neutral on today's suite, and it
+removes the last super-linear-in-candidate-count algorithm in the pipeline — the
+one that would dominate any project that leans on a handful of breakpoints, which
+real Tailwind codebases do. Worth adding such a tier to the workload set so this
+stays covered.
+
+## Cumulative: opt 14 → opt 23
+
+Full suite, warm median, 3 trials, all four targets in one run (so the
+`tailwindcss 4.3.3` column is measured under the same conditions as the rest —
+its own numbers drift a few percent between sessions).
+
+| workload | native before | **native after** | change | wasm-gc after | js after | tailwindcss 4.3.3 | speedup before → after |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| empty (0)     | 13.2µs  | **4.8µs**   | −64% | 7.8µs   | 6.3µs   | 418.8µs | 31.9× → **87.3×** |
+| one (1)       | 25.1µs  | **9.0µs**   | −64% | 15.8µs  | 12.2µs  | 393.8µs | 18.6× → **43.8×** |
+| few (4)       | 73.2µs  | **23.3µs**  | −68% | 38.1µs  | 28.9µs  | 471.0µs | 7.1× → **20.2×** |
+| many (37)     | 987.9µs | **408.7µs** | −59% | 654.5µs | 1.31ms  | 730.8µs | 0.84× → **1.79×** |
+| a-lot (81)    | 9.56ms  | **2.88ms**  | −70% | 4.20ms  | 11.45ms | 2.95ms  | 0.34× → **1.02×** |
+| stress (440)  | 20.46ms | **7.31ms**  | −64% | 10.40ms | 23.03ms | 6.90ms  | 0.37× → **0.94×** |
+| margaui (122) | 72.47ms | **17.13ms** | −76% | 25.06ms | 46.57ms | 19.08ms | 0.28× → **1.11×** |
+
+**The scaling gap is closed.** tw-mb was 3–4× *slower* than upstream on every heavy
+workload; native is now at parity or ahead everywhere except `stress` (0.94×), and
+the real-world tier (`margaui`) is 1.11× faster. wasm-gc is within ~1.4× of upstream
+on the heavy tiers. js remains the slow backend by design.
+
+What made the difference was not micro-optimization: six of the seven kept changes
+removed **whole-output string scans and whole-AST renders** that ran once per fixed
+table entry (66 `@property` triggers, 417 theme variables) or produced strings
+nothing read. Output is byte-identical to the pre-optimization compiler on every
+workload, verified with native `--emit` after each step.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
@@ -489,35 +832,67 @@ and update this order after each result. Do not begin the next proposal until th
 current one is kept and committed or reverted and documented.
 
 **11 — reverted (no win). 12 — KEPT (native −17..−24%). 13 — reverted (no win).
-14 — reverted (representation change not viable; EOF sentinel no win). Queue complete.**
+14 — reverted (representation change not viable; EOF sentinel no win).
+15 — KEPT (native −27..−42%, all backends). 16 — KEPT (native −6..−22%).
+17 — KEPT (native −6..−8% where the guard fires). 18 — KEPT (native −3..−5%).
+19 — KEPT (native −31..−40%). 20 — KEPT (native −3..−9%).
+21 — KEPT (native −3..−16%). 22 — reverted (core already avoids the copy).
+23 — KEPT (neutral on the suite, 9.5× on a same-variant-heavy workload).
+Queue complete.**
 
-### Proposal 11 — Cache build-invariant base stylesheet work
+Proposals 17 through 23 are complete — their outcomes are the iteration entries
+above. The queue below is rebuilt from the profile taken *after* opt 21, so the
+shares quoted are of the current, much faster compiler (the `margaui` numbers
+still include ~23% harness-only JSON parsing; scale product costs up accordingly).
 
-`Compiler::build` repeatedly removes theme nodes and renders the same base
-stylesheet. Precompute the invariant representation during compiler construction
-or retain a reusable theme-free tree/string. Measure both fresh compilation (the
-current benchmark contract) and a small incremental-build workload, because the
-largest benefit may be in repeated `build` calls.
+### Proposal 24 — Discover usage from the AST, not from a rendered string
 
-### Proposal 12 — Avoid the combined `usage` string and repeated theme scans
+`build` still renders the theme-free base stylesheet and the generated nodes into
+strings whose *only* purpose is usage discovery (`render_css_node` is 11.5% of
+stress, 9.2% of margaui, and the `usage` concatenation feeds three consumers).
+After opts 19 and 20 both consumers are single-pass scanners, so they could walk
+the AST instead and skip building `base` and `usage` altogether. The catch is
+ordering: `@property` blocks are emitted in first-rendered-position order, so the
+AST walk has to produce a comparable ordering key. Note opt 11 tried *caching* this
+render and failed; not rendering it at all is the different, promising version.
 
-Stop copying `base` and `generated` into one large interpolated string merely for
-property/keyframe/theme usage discovery. First try scanners that accept the two
-strings separately. If that is insufficient, collect used custom properties while
-walking declarations and replace the theme dependency fixed-point's repeated
-whole-string searches with an explicit dependency graph.
+### Proposal 25 — Parse only the `@property` blocks, not the whole stylesheet
 
-### Proposal 13 — Reduce quadratic AST merge/deduplication
+`author_property_defaults` still costs 6.4% of margaui — the one workload whose
+stylesheet actually contains `@property`, so opt 17's guard does not fire. Instead
+of `parse_css` over the entire output, find each `@property` occurrence and parse
+just that at-rule.
 
-Instrument collection sizes first, then optimize the measured hotspot among
-`dedupe_declarations`, recursive `merge_adjacent_at_rules`, and
-`generated_footer.contains`. Prefer stable compact keys over hashing entire
-`CssNode` trees. This proposal must remain one concrete hotspot per iteration.
+### Proposal 26 — Look for repeated work in `@import` resolution
 
-### Proposal 14 — Deeper zero-copy parser representation
+`resolve_imports_sync` is 18.1% of margaui and `parse_css` 23.6% — by far its
+biggest remaining cost. Check first whether a file imported from several places is
+parsed more than once; if so, cache parsed stylesheets by resolved path. Instrument
+before implementing (opt 13's lesson: the quadratic that *looks* obvious was not the
+one that mattered).
 
-Only after the smaller experiments: evaluate storing `StringView` or `(start, end)`
-spans in parser nodes instead of eagerly owning every substring. This targets the
-profiled string-copy cost but changes AST lifetimes and is therefore the
-highest-risk proposal. Treat the representation change and any non-allocating EOF
-sentinel as separate iterations.
+### Proposal 27 — Reuse opt 19's `var(` token set for keyframes
+
+`render_used_keyframes` walks the theme once per keyframe and calls
+`generated_css.contains(css_value)` inside — the same shape opt 19 removed from
+`theme_rule_nodes`. It is small today (1.4% of stress) but the fix is nearly free
+once the token set is threaded through.
+
+### Proposal 28 — Hand the parser's buffer over without a copy
+
+Opt 22 established that the parser's `trim(output.to_string())` cost is the
+`to_string()` materialization, not the trim. A value token is built in a
+`StringBuilder` and then copied out for every declaration parsed. Investigate
+emitting values as views over the source (this is proposal 14's representation
+change in miniature, scoped to values that need no unescaping) or reusing one
+builder across tokens.
+
+### Proposal 29 — Add a same-variant scaling tier to the workload set
+
+Opt 23 removed an O(K²) that no committed workload exercises: it took a synthetic
+1500-candidate single-variant probe to show the 9.5× difference. Add such a tier
+(many candidates sharing a breakpoint variant) so quadratic regressions in the
+merge path are caught by the suite rather than by inspection.
+
+*(The historical descriptions of proposals 11–14 were removed once their
+iterations were recorded above; see entries 11–14 for what happened.)*
