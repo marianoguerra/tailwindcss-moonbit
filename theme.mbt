@@ -2,9 +2,28 @@
 let theme_meta_prefix = "\u0000tailwind:"
 
 ///|
-fn theme_meta(kind : String, name : String) -> String {
-  "\{theme_meta_prefix}\{kind}:\{name}"
-}
+/// Theme options live in the same map as theme values, under keys that cannot
+/// collide with a custom property. Building those keys through `theme_meta`
+/// interpolates a string on every probe — on a path that runs for every theme
+/// variable on every build, which the profiler put at ~14% of a `stress`
+/// compile. Each kind's prefix is a constant, so a key is one concatenation.
+let theme_meta_inline_prefix = "\u0000tailwind:inline:"
+
+///|
+let theme_meta_reference_prefix = "\u0000tailwind:reference:"
+
+///|
+let theme_meta_static_prefix = "\u0000tailwind:static:"
+
+///|
+let theme_meta_keyframes_prefix = "\u0000tailwind:keyframes:"
+
+///|
+let theme_meta_reference_keyframes_prefix = "\u0000tailwind:reference-keyframes:"
+
+///|
+/// The variable prefix is a single entry, so its key is fixed outright.
+let theme_meta_prefix_key = "\u0000tailwind:prefix:"
 
 ///|
 fn default_theme() -> Map[String, String] {
@@ -13,7 +32,7 @@ fn default_theme() -> Map[String, String] {
 
 ///|
 fn theme_prefix(theme : Map[String, String]) -> String? {
-  theme.get(theme_meta("prefix", ""))
+  theme.get(theme_meta_prefix_key)
 }
 
 ///|
@@ -34,11 +53,11 @@ fn theme_css_value(
   logical_name : String,
 ) -> String? {
   guard theme.get(logical_name) is Some(value) else { return None }
-  if theme.contains(theme_meta("inline", logical_name)) {
+  if theme.contains(theme_meta_inline_prefix + logical_name) {
     Some(value)
   } else {
     let variable = theme_variable_name(theme, logical_name)
-    if theme.contains(theme_meta("reference", logical_name)) {
+    if theme.contains(theme_meta_reference_prefix + logical_name) {
       Some("var(\{variable}, \{value})")
     } else {
       Some("var(\{variable})")
@@ -59,9 +78,9 @@ fn remove_theme_namespace(
   }
   for name in removed {
     theme.remove(name)
-    theme.remove(theme_meta("inline", name))
-    theme.remove(theme_meta("reference", name))
-    theme.remove(theme_meta("static", name))
+    theme.remove(theme_meta_inline_prefix + name)
+    theme.remove(theme_meta_reference_prefix + name)
+    theme.remove(theme_meta_static_prefix + name)
   }
 }
 
@@ -97,7 +116,7 @@ fn collect_theme(
       if option.has_prefix("prefix(") && option.has_suffix(")") {
         let prefix = option[7:option.length() - 1].to_owned()
         if prefix != "" {
-          theme[theme_meta("prefix", "")] = prefix
+          theme[theme_meta_prefix_key] = prefix
         }
       }
     }
@@ -109,25 +128,26 @@ fn collect_theme(
             continue
           }
           theme[name] = value
-          for kind in ["inline", "reference", "static"] {
-            theme.remove(theme_meta(kind, name))
-          }
+          theme.remove(theme_meta_inline_prefix + name)
+          theme.remove(theme_meta_reference_prefix + name)
+          theme.remove(theme_meta_static_prefix + name)
           if inline {
-            theme[theme_meta("inline", name)] = ""
+            theme[theme_meta_inline_prefix + name] = ""
           }
           if reference {
-            theme[theme_meta("reference", name)] = ""
+            theme[theme_meta_reference_prefix + name] = ""
           }
           if emit_all {
-            theme[theme_meta("static", name)] = ""
+            theme[theme_meta_static_prefix + name] = ""
           }
         }
         AtRule(name="@keyframes", params=keyframe_name, ..) => {
-          theme[theme_meta("keyframes", keyframe_name)] = render_css_nodes([
-            child,
-          ])
+          theme[theme_meta_keyframes_prefix + keyframe_name] = render_css_nodes([
+              child,
+            ],
+          )
           if reference {
-            theme[theme_meta("reference-keyframes", keyframe_name)] = ""
+            theme[theme_meta_reference_keyframes_prefix + keyframe_name] = ""
           }
         }
         _ => ()
@@ -142,13 +162,13 @@ fn render_used_keyframes(
   generated_css : String,
 ) -> String {
   let output = StringBuilder()
-  let marker = theme_meta("keyframes", "")
+  let marker = theme_meta_keyframes_prefix
   for name, value in theme {
     if !name.has_prefix(marker) {
       continue
     }
     let keyframe_name = name[marker.length():].to_owned()
-    if theme.contains(theme_meta("reference-keyframes", keyframe_name)) {
+    if theme.contains(theme_meta_reference_keyframes_prefix + keyframe_name) {
       continue
     }
     let mut used = false

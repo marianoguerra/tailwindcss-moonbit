@@ -99,11 +99,25 @@ fn theme_rule_nodes(
   // Previously the fixed-point below recomputed `theme_variable_name` and
   // re-interpolated the search string for every (used × dependency) pair on every
   // iteration — O(V²) throwaway string allocations for a full theme.
+  // Theme options are stored under prefixed keys in the same map, so asking
+  // "is this variable inline/reference/static?" per variable means building a
+  // key string and probing the map three times each. The whole map is walked
+  // here anyway — collect the option sets in that one pass instead.
   let names : Array[String] = []
   let variables : Array[String] = []
   let searches : Array[String] = []
+  let inline_names : Map[String, Unit] = Map([])
+  let reference_names : Map[String, Unit] = Map([])
+  let static_names : Map[String, Unit] = Map([])
   for name, _ in theme {
     if name.has_prefix(theme_meta_prefix) {
+      if name.has_prefix(theme_meta_inline_prefix) {
+        inline_names[name[theme_meta_inline_prefix.length():].to_owned()] = ()
+      } else if name.has_prefix(theme_meta_reference_prefix) {
+        reference_names[name[theme_meta_reference_prefix.length():].to_owned()] = ()
+      } else if name.has_prefix(theme_meta_static_prefix) {
+        static_names[name[theme_meta_static_prefix.length():].to_owned()] = ()
+      }
       continue
     }
     names.push(name)
@@ -114,7 +128,7 @@ fn theme_rule_nodes(
   let referenced = var_reference_tokens(generated_css)
   let used : Map[String, Unit] = Map([])
   for i in 0..<names.length() {
-    if theme.contains(theme_meta("static", names[i])) ||
+    if static_names.contains(names[i]) ||
       sorted_has_prefix(referenced, variables[i]) {
       used[names[i]] = ()
     }
@@ -151,8 +165,8 @@ fn theme_rule_nodes(
   let declarations : Array[CssNode] = []
   for name, value in theme {
     if name.has_prefix(theme_meta_prefix) ||
-      theme.contains(theme_meta("inline", name)) ||
-      theme.contains(theme_meta("reference", name)) {
+      inline_names.contains(name) ||
+      reference_names.contains(name) {
       continue
     }
     // A theme value that resolves to `initial` is treated as unset: it is not
