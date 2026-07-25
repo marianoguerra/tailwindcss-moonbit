@@ -60,20 +60,14 @@ fn split_top_level(input : String, separator : Char) -> Array[String] {
 
 ///|
 /// Return the index of the first occurrence of `needle` in `haystack`.
+///
+/// `String::find` is Boyer-Moore-Horspool for needles over four code units. This
+/// used to be a hand-written scan comparing `haystack[start:start + n] == needle`
+/// at every offset, which the profiler put at ~45% of a full compile: the
+/// `@property` trigger table searches the whole generated stylesheet once per
+/// trigger, so the matcher runs over the entire output ~66 times per build.
 fn index_of(haystack : String, needle : String) -> Int? {
-  if needle == "" {
-    return Some(0)
-  }
-  let limit = haystack.length() - needle.length()
-  if limit < 0 {
-    return None
-  }
-  for start in 0..<=limit {
-    if haystack[start:start + needle.length()] == needle {
-      return Some(start)
-    }
-  }
-  None
+  haystack.find(needle)
 }
 
 ///|
