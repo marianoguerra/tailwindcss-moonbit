@@ -944,13 +944,32 @@ The exact mirror image of opt 17: a-lot and stress register no author `@property
 so the guard already skipped their parse and they cannot gain. margaui is the
 workload that pays, and it is the one that moves.
 
-### Proposal 26 — Look for repeated work in `@import` resolution
+### 26. Cache parsed stylesheets by resolved path — REJECTED ❌ (nothing is parsed twice)
 
-`resolve_imports_sync` is 18.1% of margaui and `parse_css` 23.6% — by far its
-biggest remaining cost. Check first whether a file imported from several places is
-parsed more than once; if so, cache parsed stylesheets by resolved path. Instrument
-before implementing (opt 13's lesson: the quadratic that *looks* obvious was not the
-one that mattered).
+The proposal instructed instrumenting before implementing. Instrumented, and the
+premise does not hold: **no file in the margaui graph is parsed more than once.**
+
+A static reconstruction of the graph (extract every `@import`/`@reference`, resolve
+each spec the way the loader does, count importers per target) reports 82 import
+edges reaching 82 distinct targets and **zero files with more than one importer** —
+the graph is a tree, not a DAG with shared subtrees.
+
+A counter compiled into `resolve_imports_sync` itself confirms it directly:
+
+```
+PROBE parses=81 bytes=275750
+```
+
+81 parses for 81 distinct imported files, and the byte total is exactly the sum of
+the file sizes with no file counted twice. A by-path cache would have a 0% hit rate.
+The remaining `parse_css` call sites are the entry stylesheet (once) and the 81
+imports (once each); `author_property_defaults`, which used to parse the compiled
+output a second time, was removed by opt 25.
+
+So `resolve_imports_sync` at 18.1% and `parse_css` at 23.6% of margaui are not
+repeated work — they are the irreducible cost of reading a ~276 KB import graph
+once. Making that cheaper means making the parser itself faster, which is
+proposal 28's subject, not a cache.
 
 ### Proposal 27 — Reuse opt 19's `var(` token set for keyframes
 
