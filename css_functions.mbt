@@ -149,6 +149,16 @@ fn substitute_value_functions(
   theme : Map[String, String],
   inline_theme~ : Bool,
 ) -> (String, Bool) raise CompileError {
+  // Only these four calls are compile-time functions, so a value naming none of
+  // them cannot change. Every declaration in the stylesheet reaches this point,
+  // and the parse/render round trip below is the single biggest cost on large
+  // import graphs — skip it rather than rebuild an identical value. (`theme(`
+  // also covers `--theme(`.)
+  if !input.contains("theme(") &&
+    !input.contains("--spacing(") &&
+    !input.contains("--alpha(") {
+    return (input, false)
+  }
   let ast = parse_value(input)
   let (ast, changed) = substitute_value_ast(ast, theme, inline_theme)
   (render_value(ast), changed)
