@@ -481,12 +481,20 @@ pub fn Compiler::build(
     }
   }
   generated_nodes.append(generated_footer)
-  let base = render_css_nodes(remove_theme_nodes_deep(self.stylesheet))
-  let generated = render_css_nodes(merge_adjacent_at_rules(generated_nodes))
+  let base_nodes = remove_theme_nodes_deep(self.stylesheet)
+  let merged_generated = merge_adjacent_at_rules(generated_nodes)
+  let base = render_css_nodes(base_nodes)
+  let generated = render_css_nodes(merged_generated)
   let usage = "\{base}\n\{generated}"
+  // The author `@property` registrations `usage` would expose at its top level,
+  // taken from the nodes it is rendered from rather than parsed back out of it.
+  let author_properties : Array[CssNode] = []
+  collect_author_property_at_rules(base_nodes, author_properties)
+  collect_author_property_at_rules(merged_generated, author_properties)
   // `@apply` can put generated custom properties in the base stylesheet too.
   let (property_header, property_footer) = render_generated_properties(
     usage,
+    author_properties,
     at_property_fallback=(self.polyfills & POLYFILL_AT_PROPERTY) != 0,
   )
   let composed_nodes = compose_stylesheet(

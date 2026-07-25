@@ -363,29 +363,49 @@ fn content_registered_by_variant(css : String) -> Bool {
 }
 
 ///|
-/// Collect the `@layer properties` fallback declarations contributed by author
-/// `@property` registrations found in the compiled CSS. Returns the declarations
-/// for inheriting properties (emitted on `:root, :host`) and the rest (appended
-/// to the universal selector).
+/// Collect the author `@property` registrations the compiled CSS exposes at its
+/// top level.
+///
+/// These used to be recovered by running `parse_css` over the whole compiled
+/// stylesheet, which is the single most expensive thing a `build` does on a graph
+/// that actually registers one — opt 17's `@property` literal guard skips the
+/// parse only for stylesheets that register nothing. But that text is rendered
+/// from an AST this compiler is already holding, so the registrations can be read
+/// off the AST and the round trip through the parser disappears.
+///
+/// Only the top level counts, which is what iterating `parse_css`'s result did.
+/// `Context` wrappers render their children inline and `at-root` re-indents its
+/// children to column zero, so children of both stay at the top level of the
+/// text; a `@property` nested in a rule or another at-rule does not, and is
+/// skipped exactly as it was before.
+fn collect_author_property_at_rules(
+  nodes : ArrayView[CssNode],
+  output : Array[CssNode],
+) -> Unit {
+  for node in nodes {
+    match node {
+      AtRule(name="@property", nodes=Some(_), ..) => output.push(node)
+      Context(nodes=children, ..) =>
+        collect_author_property_at_rules(children, output)
+      AtRoot(nodes=children, ..) =>
+        collect_author_property_at_rules(children, output)
+      _ => ()
+    }
+  }
+}
+
+///|
+/// Turn author `@property` registrations into the `@layer properties` fallback
+/// declarations. Returns the declarations for inheriting properties (emitted on
+/// `:root, :host`) and the rest (appended to the universal selector).
 fn author_property_defaults(
-  css : String,
+  at_rules : ArrayView[CssNode],
   span : SourceSpan,
 ) -> (Array[CssNode], Array[CssNode]) {
   let root : Array[CssNode] = []
   let universal : Array[CssNode] = []
-  // Parsing the whole compiled stylesheet is one of the more expensive things a
-  // `build` does, and `parse_css` cannot produce an `@property` at-rule out of
-  // CSS that never spells it. Most stylesheets register nothing, so check the
-  // literal first.
-  if !css.contains("@property") {
-    return (root, universal)
-  }
-  let nodes = parse_css(css) catch { _ => [] }
-  for node in nodes {
-    guard node
-      is AtRule(name="@property", params~, nodes=Some(declarations), ..) else {
-      continue
-    }
+  for node in at_rules {
+    guard node is AtRule(params~, nodes=Some(declarations), ..) else { continue }
     let name = trim(params)
     let mut inherits_true = false
     let mut initial : String? = None
@@ -415,6 +435,7 @@ fn author_property_defaults(
 ///|
 fn render_generated_properties(
   css : String,
+  author_properties : ArrayView[CssNode],
   at_property_fallback? : Bool = true,
 ) -> (String, String) {
   let positions = generated_property_block_positions(css)
@@ -514,7 +535,10 @@ fn render_generated_properties(
   // Author `@property` registrations receive the same `@layer properties`
   // fallback as generated ones: inheriting properties on `:root, :host`, the
   // rest appended to the universal selector.
-  let (author_root, author_universal) = author_property_defaults(css, span)
+  let (author_root, author_universal) = author_property_defaults(
+    author_properties,
+    span,
+  )
   for declaration in author_universal {
     defaults.push(declaration)
   }

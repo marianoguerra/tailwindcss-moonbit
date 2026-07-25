@@ -909,12 +909,40 @@ walk has to reproduce render offsets exactly across declarations, selectors,
 at-rule params, `Context` transparency and `AtRoot` re-indentation. Step (a) is
 reverted with it; it carries its own risk surface for no measured gain.
 
-### Proposal 25 — Parse only the `@property` blocks, not the whole stylesheet
+### 25. Read author `@property` off the AST instead of re-parsing the output — KEPT ✅
 
-`author_property_defaults` still costs 6.4% of margaui — the one workload whose
-stylesheet actually contains `@property`, so opt 17's guard does not fire. Instead
-of `parse_css` over the entire output, find each `@property` occurrence and parse
-just that at-rule.
+Opt 24's instrumentation put this at −12.6% of margaui on its own. The proposal
+was to find each `@property` occurrence in the compiled CSS and parse only that
+at-rule; the implementation goes one step further and parses nothing at all. That
+text is rendered from an AST `build` is still holding, so the registrations are
+read straight off the nodes: `collect_author_property_at_rules` walks the
+theme-free stylesheet and the merged generated nodes, and `author_property_defaults`
+now takes those at-rules instead of a string. Opt 17's `contains("@property")`
+guard is gone with the parse it guarded.
+
+Only top-level registrations count, which is exactly what iterating `parse_css`'s
+result did. The walk therefore descends into `Context` (renders its children
+inline) and `at-root` (re-indents its children to column zero) — both keep their
+children at the top level of the text — and stops at rules and other at-rules,
+whose contents `parse_css` would have seen as nested. `@theme` needs no special
+case: it is skipped as a non-`@property` at-rule, matching `remove_theme_nodes_deep`.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases, and native
+`--emit` byte-identical to the pre-optimization compiler on all five workloads —
+including margaui, the workload that actually exercises the author-registration
+path.
+
+Three-trial warm median A/B, back-to-back on the same session:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | −0.3% (2.92→2.91ms) | +0.2% | −1.7% |
+| stress | +0.1% (7.48→7.49ms) | **−3.2%** (10.96→10.61ms) | −2.4% |
+| margaui| **−16.0%** (18.46→15.50ms) | **−10.9%** (26.78→23.85ms) | −7.7% (49.61→45.80ms) |
+
+The exact mirror image of opt 17: a-lot and stress register no author `@property`,
+so the guard already skipped their parse and they cannot gain. margaui is the
+workload that pays, and it is the one that moves.
 
 ### Proposal 26 — Look for repeated work in `@import` resolution
 
