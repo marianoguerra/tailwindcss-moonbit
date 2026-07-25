@@ -17,7 +17,7 @@
 pub async fn collect_imports(
   css : String,
   loader : &StylesheetLoader,
-  base~ : String = "",
+  base? : String = "",
 ) -> Map[String, String] raise CompileError {
   let files : Map[String, String] = Map([])
   collect_imports_from(parse_css(css), loader, "", base, [], files)

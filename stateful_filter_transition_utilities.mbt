@@ -63,8 +63,13 @@ fn one_filter_utility(
   } else {
     guard name.length() > 0 else { return None }
     let c = name[0]
-    guard c == 'b' || c == 'c' || c == 'g' || c == 'h' || c == 'i' || c == 'o' || c ==
-      's' else {
+    guard c == 'b' ||
+      c == 'c' ||
+      c == 'g' ||
+      c == 'h' ||
+      c == 'i' ||
+      c == 'o' ||
+      c == 's' else {
       return None
     }
   }

@@ -23,9 +23,9 @@ async test "collect_imports round-trips through compile" {
   ])
   let entry = "@import \"a.css\"; @tailwind utilities;"
   let direct = @tailwindcss.compile(
-      entry,
-      options=@tailwindcss.CompileOptions::new(loader~),
-    ).build(["bg-brand"])
+    entry,
+    options=@tailwindcss.CompileOptions::new(loader~),
+  ).build(["bg-brand"])
 
   // Rebuild a loader from the collected map and compile the same entry.
   let imports = @tailwindcss.collect_imports(entry, loader)
@@ -34,9 +34,9 @@ async test "collect_imports round-trips through compile" {
     replay.add(path, content)
   }
   let round = @tailwindcss.compile(
-      entry,
-      options=@tailwindcss.CompileOptions::new(loader=replay),
-    ).build(["bg-brand"])
+    entry,
+    options=@tailwindcss.CompileOptions::new(loader=replay),
+  ).build(["bg-brand"])
   assert_eq(round, direct)
 }
 
