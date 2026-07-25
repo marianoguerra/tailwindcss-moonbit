@@ -161,31 +161,59 @@ fn render_used_keyframes(
   theme : Map[String, String],
   generated_css : String,
 ) -> String {
-  let output = StringBuilder()
+  // A `@keyframes` block is emitted when some `--animate-*` token that names it
+  // reaches the generated CSS. That used to be decided by walking the *whole*
+  // theme again for every keyframe — so a full import paid (keyframes x theme
+  // size) prefix tests — and by recomputing `theme_css_value` plus a fresh
+  // whole-output search for every (keyframe, token) pair that matched.
+  //
+  // One pass collects both sides instead, and each token's search runs at most
+  // once. The searches stay lazy: a token is only looked for once a keyframe
+  // actually names it, which is what the old inner loop did.
   let marker = theme_meta_keyframes_prefix
+  let keyframe_names : Array[String] = []
+  let keyframe_values : Array[String] = []
+  let animate_tokens : Array[String] = []
+  let animate_values : Array[String] = []
   for name, value in theme {
-    if !name.has_prefix(marker) {
-      continue
+    if name.has_prefix(marker) {
+      let keyframe_name = name[marker.length():].to_owned()
+      if theme.contains(theme_meta_reference_keyframes_prefix + keyframe_name) {
+        continue
+      }
+      keyframe_names.push(keyframe_name)
+      keyframe_values.push(value)
+    } else if name.has_prefix("--animate-") {
+      animate_tokens.push(name)
+      animate_values.push(trim(value))
     }
-    let keyframe_name = name[marker.length():].to_owned()
-    if theme.contains(theme_meta_reference_keyframes_prefix + keyframe_name) {
-      continue
-    }
+  }
+  if keyframe_names.is_empty() {
+    return ""
+  }
+  // Per token: -1 not searched for yet, 0 absent, 1 present.
+  let animate_state = Array::make(animate_tokens.length(), -1)
+  let output = StringBuilder()
+  for index, keyframe_name in keyframe_names {
     let mut used = false
-    for token_name, token_value in theme {
-      if token_name.has_prefix("--animate-") &&
-        trim(token_value).has_prefix(keyframe_name) {
-        match theme_css_value(theme, token_name) {
-          Some(css_value) =>
-            if generated_css.contains(css_value) {
-              used = true
-            }
-          None => ()
+    for token in 0..<animate_tokens.length() {
+      if !animate_values[token].has_prefix(keyframe_name) {
+        continue
+      }
+      if animate_state[token] < 0 {
+        animate_state[token] = match
+          theme_css_value(theme, animate_tokens[token]) {
+          Some(css_value) => if generated_css.contains(css_value) { 1 } else { 0 }
+          None => 0
         }
+      }
+      if animate_state[token] == 1 {
+        used = true
+        break
       }
     }
     if used {
-      output.write_string(value)
+      output.write_string(keyframe_values[index])
     }
   }
   output.to_string()

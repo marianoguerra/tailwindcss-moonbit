@@ -971,12 +971,52 @@ repeated work — they are the irreducible cost of reading a ~276 KB import grap
 once. Making that cheaper means making the parser itself faster, which is
 proposal 28's subject, not a cache.
 
-### Proposal 27 — Reuse opt 19's `var(` token set for keyframes
+### 27. One theme pass for keyframes instead of one per keyframe — KEPT ✅
 
-`render_used_keyframes` walks the theme once per keyframe and calls
-`generated_css.contains(css_value)` inside — the same shape opt 19 removed from
-`theme_rule_nodes`. It is small today (1.4% of stress) but the fix is nearly free
-once the token set is threaded through.
+The proposal filed this at 1.4% of stress and suggested threading opt 19's `var(`
+token set through. Probed first (return `""` from `render_used_keyframes`): the
+function is worth far more than that, and the token set turns out to be the wrong
+tool for it.
+
+| workload | baseline | no `render_used_keyframes` | ceiling |
+|---|--:|--:|--:|
+| a-lot  | 2.91ms | 2.67ms | **−8.2%** |
+| stress | 7.49ms | 7.23ms | −3.5% |
+| margaui| 15.50ms| 15.71ms| +1.4% (noise) |
+
+The cost is not the searches, it is the **walk**: the function iterated the whole
+theme map again for *every* `@keyframes` block to find the `--animate-*` tokens
+that could name it, so a full import paid (keyframes × theme size) prefix tests
+plus a `trim` each, and re-ran `theme_css_value` and a whole-output search for
+every (keyframe, token) pair that matched. `a-lot` is hit hardest precisely
+because it emits **no** keyframes at all — it paid the entire nested walk to
+discover that nothing was used.
+
+Now one pass collects the keyframe blocks and the `--animate-*` tokens together,
+and each token's search runs at most once, memoized in a small state array. The
+searches stay lazy — a token is only looked for once some keyframe actually names
+it — which is what the old inner loop did, so no search is added.
+
+The token set was **not** used: `theme_css_value` yields `var(--animate-spin)` for
+a plain variable but the raw value for an `inline` theme and `var(--x, <value>)`
+for a `reference` one, and opt 19's tokens stop at `)`/`,`, so matching them
+against the token set would accept `var(--animate-spin, …)` where `contains`
+rejects it. That is a behaviour change for no extra gain, since the searches were
+never the bottleneck.
+
+`moon check --target all`, 59/59 tests, 85/85 differential cases, native `--emit`
+byte-identical on all five workloads — margaui emits 11 keyframes and stress 1, so
+the emit path is genuinely covered.
+
+Three-trial warm median A/B, back-to-back:
+
+| workload | native | wasm-gc | js |
+|---|--:|--:|--:|
+| a-lot  | **−4.8%** (2.90→2.76ms) | **−6.8%** (4.40→4.10ms) | −6.3% (11.93→11.18ms) |
+| stress | **−2.3%** (7.52→7.35ms) | −2.3% (10.78→10.53ms) | −1.3% |
+| margaui| −1.0% (16.01→15.85ms) | **−3.6%** (24.59→23.71ms) | −1.4% |
+
+All nine cells improve.
 
 ### Proposal 28 — Hand the parser's buffer over without a copy
 
