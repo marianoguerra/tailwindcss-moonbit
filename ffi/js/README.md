@@ -13,11 +13,14 @@ The wrapper (`index.mjs`) imports the compiled MoonBit module as a peer file
 ```sh
 # JS backend (Node / browsers / bundlers)
 moon build --target js ffi --release
-cp _build/js/release/build/ffi/ffi.js ffi/js/ffi.js
+cp _build/js/release/build/marianoguerra/tailwindcss/ffi/ffi.js ffi/js/ffi.js
+# or just: just build-npm
 
 # or the wasm-gc backend (GC-capable Wasm host)
 moon build --target wasm-gc ffi --release
-# load _build/wasm-gc/release/build/ffi/ffi.wasm with your Wasm runtime
+# load _build/wasm-gc/release/build/marianoguerra/tailwindcss/ffi/ffi.wasm with
+# your Wasm runtime; note its exported strings use MoonBit's GC array ABI, which
+# a browser cannot construct — see ../README.md
 ```
 
 The exported functions are `compile_css_json` (structured, recommended) and

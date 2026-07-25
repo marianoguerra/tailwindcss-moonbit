@@ -1,0 +1,96 @@
+name: pages
+
+# Publishes the showcase editor in web/site to GitHub Pages.
+#
+# Everything the site needs is committed except the compiler artifacts, which
+# this workflow builds: the wasm-gc module (primary) and the js module (fallback
+# for browsers without JS String Builtins). Regenerating the margaui assets
+# needs an external checkout and is deliberately NOT done here — see
+# tools/gen-web-assets.mjs.
+#
+# One-time setup: Settings -> Pages -> Source = "GitHub Actions".
+#
+# Disjoint from release.yml by construction: that one fires on v* tags with
+# `contents: write`, this one on main with `pages: write`. No shared jobs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "*.mbt"
+      - "moon.mod"
+      - "moon.work"
+      - "tools/gen-web-assets.mjs"
+      - "tools/web-smoke.mjs"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Deploys are serialized, and a queued one is worth finishing rather than
+# cancelling: the last push should be what is live.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
+
+      # The workspace covers both modules, so this type-checks and tests the
+      # site's MoonBit code (including the HTML scanner) as well as the compiler.
+      - name: Check all targets
+        run: moon check --target all
+      - name: Test
+        run: moon test
+
+      - name: Build browser artifacts
+        run: |
+          moon build --release --target wasm-gc web/ffi
+          moon build --release --target js web/ffi
+          cp _build/wasm-gc/release/build/marianoguerra/tailwindcss-web/ffi/ffi.wasm web/site/assets/twffi.wasm
+          cp _build/js/release/build/marianoguerra/tailwindcss-web/ffi/ffi.js web/site/assets/twffi.js
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24   # instantiating the wasm-gc module needs JS String Builtins
+      - name: Smoke-test the artifacts
+        run: node tools/web-smoke.mjs
+
+      - name: Report payload sizes
+        run: |
+          {
+            echo "| asset | raw | gzip |"
+            echo "|---|--:|--:|"
+            for f in web/site/assets/twffi.wasm web/site/assets/twffi.js \
+                     web/site/assets/margaui-bundle.json web/site/assets/shell.css \
+                     web/site/vendor/codemirror/codemirror.js; do
+              printf '| `%s` | %s | %s |\n' "${f#web/site/}" \
+                "$(stat -c%s "$f")" "$(gzip -9c "$f" | wc -c)"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

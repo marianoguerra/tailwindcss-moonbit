@@ -178,7 +178,7 @@ function runCold(workloads) {
   mkdirSync(join(root, 'benchmarks/results'), { recursive: true })
   const nativeExe = join(
     root,
-    '_build/native/release/build/cmd/tailwindcss/tailwindcss.exe',
+    '_build/native/release/build/marianoguerra/tailwindcss/cmd/tailwindcss/tailwindcss.exe',
   )
   const cold = {}
   for (const wl of workloads) {

@@ -1,0 +1,62 @@
+# Classes the showcase site's own chrome uses.
+#
+# The chrome is styled by margaui too, but it cannot wait for the compiler to
+# load — so these are compiled ahead of time into assets/shell.css by
+# `just web-assets`. Add a class here whenever index.html grows one, then
+# regenerate. Blank lines and #-comments are ignored.
+
+# Layout and surfaces
+navbar
+card
+card-body
+card-title
+menu
+menu-title
+divider
+join
+join-item
+badge
+badge-sm
+badge-ghost
+badge-primary
+badge-neutral
+kbd
+kbd-sm
+alert
+alert-error
+loading
+loading-spinner
+loading-sm
+
+# Controls
+btn
+btn-sm
+btn-xs
+btn-ghost
+btn-primary
+btn-outline
+btn-active
+btn-square
+select
+select-sm
+select-bordered
+checkbox
+checkbox-sm
+label
+tabs
+tabs-lift
+tabs-sm
+tab
+tab-active
+tooltip
+tooltip-bottom
+tooltip-left
+link
+link-hover
+table
+table-sm
+table-zebra
+stat
+stat-title
+stat-value
+stat-desc

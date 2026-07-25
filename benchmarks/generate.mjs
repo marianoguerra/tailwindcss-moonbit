@@ -146,7 +146,7 @@ function buildMargaui() {
   // Bundle the whole @import graph from disk via the native CLI's `bundle` mode.
   const nativeExe = join(
     root,
-    '_build/native/release/build/cmd/tailwindcss/tailwindcss.exe',
+    '_build/native/release/build/marianoguerra/tailwindcss/cmd/tailwindcss/tailwindcss.exe',
   )
   if (!existsSync(nativeExe)) {
     execFileSync('moon', ['build', '--release', 'cmd/tailwindcss'], {

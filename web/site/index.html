@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tailwindcss-moonbit — live editor</title>
+    <meta
+      name="description"
+      content="Type HTML, get Tailwind CSS. The whole compiler is a MoonBit program running in your browser as WebAssembly."
+    />
+    <link rel="icon" href="favicon.svg" />
+    <!-- The page chrome, compiled ahead of time by `just web-assets` so the site
+         is styled before any JavaScript runs. -->
+    <link rel="stylesheet" href="assets/shell.css" />
+    <style id="layout-styles">
+      /* Page layout — unlayered so it beats the Tailwind reset. Grid and panel
+         rules below are margaui's editor layout, kept as-is. */
+      * {
+        box-sizing: border-box;
+      }
+      #app {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100vh;
+      }
+      #ed-nav {
+        padding-inline: 1.5rem;
+        border-bottom: 1px solid var(--color-base-300);
+        gap: 0.5rem 1rem;
+        flex-wrap: wrap;
+      }
+      #ed-nav .ed-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+      #ed-nav .ed-title small {
+        font-size: 0.75rem;
+        font-weight: 500;
+        opacity: 0.6;
+        margin-left: 0.5rem;
+        letter-spacing: 0;
+      }
+      #ed-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        min-height: 0;
+      }
+      #ed-left {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+        min-width: 0;
+        border-right: 1px solid var(--color-base-300);
+      }
+      #ed-nav .ed-example {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .ed-link {
+        font-size: 0.8125rem;
+        color: var(--color-primary, #4f46e5);
+        text-decoration: underline;
+      }
+      #theme-select {
+        margin-left: auto;
+      }
+      #ed-nav .ed-toggles {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.8125rem;
+      }
+      #ed-nav .ed-toggles label {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        cursor: pointer;
+      }
+      #ed-right {
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 0;
+        min-width: 0;
+      }
+      #ed-tabs {
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--color-base-300);
+        background: var(--color-base-100);
+        flex-wrap: wrap;
+      }
+      .ed-tab {
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: inherit;
+        border-bottom: 2px solid transparent;
+        opacity: 0.5;
+      }
+      .ed-tab[aria-selected="true"] {
+        opacity: 1;
+        border-bottom-color: currentColor;
+      }
+      #ed-stats {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-right: 0.75rem;
+        font-size: 0.75rem;
+      }
+      #ed-stats #stat-size {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+      #ed-stats #stat-time {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+      #ed-stats .ed-sep {
+        opacity: 0.35;
+      }
+      /* Empty badges render as a stray dot. */
+      #bench-out:empty {
+        display: none;
+      }
+      #stat-detail {
+        grid-column: 1;
+        padding: 0.375rem 0.75rem;
+        border-bottom: 1px solid var(--color-base-300);
+        background: var(--color-base-200);
+        font-size: 0.6875rem;
+        font-family: var(--font-mono, monospace);
+        opacity: 0.75;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      .ed-muted {
+        opacity: 0.5;
+      }
+      #ed-panel-preview {
+        min-height: 0;
+        min-width: 0;
+        overflow: auto;
+        background: var(--color-base-100);
+      }
+      #ed-panel-css,
+      #ed-panel-candidates,
+      #ed-panel-how,
+      #ed-panel-bench {
+        min-height: 0;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+      }
+      #ed-panel-candidates,
+      #ed-panel-how,
+      #ed-panel-bench {
+        overflow: auto;
+        padding: 1.5rem;
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+      .ed-hidden {
+        display: none !important;
+      }
+      #preview-frame {
+        width: 100%;
+        height: 100%;
+      }
+      /* Panel content */
+      .ed-prose {
+        max-width: 62ch;
+      }
+      .ed-prose h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+      }
+      .ed-prose ol {
+        display: grid;
+        gap: 0.875rem;
+        counter-reset: step;
+        list-style: none;
+        padding: 0;
+      }
+      .ed-prose ol li {
+        counter-increment: step;
+        padding-left: 2rem;
+        position: relative;
+      }
+      .ed-prose ol li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0.0625rem;
+        width: 1.375rem;
+        height: 1.375rem;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--color-base-300);
+        font-size: 0.6875rem;
+        font-weight: 700;
+      }
+      .ed-prose code,
+      .ed-num {
+        font-family: var(--font-mono, monospace);
+        font-size: 0.8125em;
+      }
+      .ed-num {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--color-primary);
+      }
+      .ed-prose pre {
+        background: var(--color-base-200);
+        border: 1px solid var(--color-base-300);
+        border-radius: var(--radius-box, 0.5rem);
+        padding: 0.75rem 1rem;
+        overflow-x: auto;
+        font-size: 0.75rem;
+        line-height: 1.5;
+      }
+      .ed-prose p {
+        margin-block: 0.75rem;
+      }
+      .ed-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+        margin-top: 0.75rem;
+      }
+      .ed-chip {
+        font-family: var(--font-mono, monospace);
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        border-radius: 999px;
+        background: var(--color-base-200);
+        border: 1px solid var(--color-base-300);
+      }
+      .ed-chip[data-unused="true"] {
+        border-style: dashed;
+        opacity: 0.55;
+      }
+      .ed-panel-actions {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--color-base-300);
+      }
+      #ed-panel-css {
+        grid-template-rows: auto 1fr;
+      }
+      #bench-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8125rem;
+        font-variant-numeric: tabular-nums;
+      }
+      #bench-table th,
+      #bench-table td {
+        text-align: left;
+        padding: 0.375rem 0.75rem;
+        border-bottom: 1px solid var(--color-base-300);
+      }
+      #bench-table th {
+        font-weight: 700;
+        opacity: 0.7;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        gap: 0.75rem;
+        background: var(--color-base-100);
+        z-index: 10;
+        font-size: 0.875rem;
+      }
+      #boot[hidden] {
+        display: none;
+      }
+      @media (max-width: 900px) {
+        #ed-body {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: minmax(12rem, 40vh) minmax(0, 1fr);
+        }
+        #ed-left {
+          border-right: none;
+          border-bottom: 1px solid var(--color-base-300);
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="light">
+    <div id="app">
+      <nav id="ed-nav" class="navbar bg-base-100">
+        <span class="ed-title">
+          tailwindcss-moonbit
+          <small>the compiler, running in your browser</small>
+        </span>
+        <div class="ed-example">
+          <select id="example-select" class="select select-sm select-bordered"></select>
+          <button id="load-btn" class="btn btn-sm btn-primary">Load</button>
+        </div>
+        <div class="ed-toggles">
+          <label
+            class="tooltip tooltip-bottom"
+            data-tip="Reuse one compiler: fast, but candidates accumulate"
+          >
+            <input type="checkbox" id="mode-warm" class="checkbox checkbox-sm" /> Warm
+          </label>
+          <label><input type="checkbox" id="editor-dark" class="checkbox checkbox-sm" /> Dark editor</label>
+          <label><input type="checkbox" id="editor-vim" class="checkbox checkbox-sm" /> Vim</label>
+        </div>
+        <a class="ed-link" href="https://github.com/marianoguerra/tailwindcss-moonbit">GitHub</a>
+        <a class="ed-link" href="https://www.npmjs.com/package/@marianoguerra/tailwindcss">npm</a>
+        <select id="theme-select" class="select select-sm select-bordered"></select>
+      </nav>
+      <div id="ed-body">
+        <div id="ed-left">
+          <code-editor id="html-input" lang="html" code=""></code-editor>
+        </div>
+        <div id="ed-right">
+          <div id="ed-tabs">
+            <button class="ed-tab" aria-selected="true" data-panel="preview">Preview</button>
+            <button class="ed-tab" aria-selected="false" data-panel="css">CSS</button>
+            <button class="ed-tab" aria-selected="false" data-panel="candidates">Candidates</button>
+            <button class="ed-tab" aria-selected="false" data-panel="how">How it works</button>
+            <button class="ed-tab" aria-selected="false" data-panel="bench">Benchmarks</button>
+            <div id="ed-stats">
+              <span id="stat-size">—</span>
+              <span class="ed-sep">·</span>
+              <span id="stat-classes">—</span>
+              <span class="ed-sep">·</span>
+              <span id="stat-time">—</span>
+              <button id="bench-btn" class="btn btn-xs btn-ghost" title="Compile 10 times and report the median">
+                Run ×10
+              </button>
+              <span id="bench-out" class="badge badge-sm badge-ghost"></span>
+            </div>
+          </div>
+          <div
+            id="stat-detail"
+            title="Stage timings come from the compiler's own clock. performance.now() is clamped by the browser, so a stage faster than one tick reads 0 — use Run ×10 for a stable number."
+          >
+            —
+          </div>
+          <div id="ed-panel-preview">
+            <div id="preview-frame"></div>
+          </div>
+          <div id="ed-panel-css" class="ed-hidden">
+            <div class="ed-panel-actions">
+              <button id="css-copy" class="btn btn-xs btn-outline">Copy</button>
+              <button id="css-download" class="btn btn-xs btn-outline">Download</button>
+            </div>
+            <code-editor id="css-output" lang="css" code=""></code-editor>
+          </div>
+          <div id="ed-panel-candidates" class="ed-hidden">
+            <div class="ed-prose">
+              <h2>Candidates</h2>
+              <p>
+                The class names this HTML uses, extracted in MoonBit by
+                <code>moonbit-community/html</code> — a WHATWG-conformant parser, not a regular
+                expression. Dashed chips are candidates the compiler produced no CSS for, usually a
+                typo or a class margaui does not define.
+              </p>
+            </div>
+            <div id="candidate-chips" class="ed-chips"></div>
+          </div>
+          <div id="ed-panel-how" class="ed-hidden">
+            <div class="ed-prose" id="how-root">
+              <h2>How it works</h2>
+              <p>
+                No server is involved. The compiler is a MoonBit program built for
+                <span class="ed-num" data-hiw="backend">wasm-gc</span>
+                (<span class="ed-num" data-hiw="artifactBytes">—</span> over the wire), and every
+                number in the stats bar was measured inside it.
+              </p>
+              <ol>
+                <li>You type HTML into the left pane.</li>
+                <li>
+                  MoonBit wraps the fragment in <code>&lt;template&gt;</code> and parses it, then
+                  walks the resulting tree collecting <code>class</code> attributes. The wrapper is
+                  what lets a bare <code>&lt;tr&gt;</code> keep its classes: the HTML spec's "in
+                  template" mode re-enters the table insertion modes, where a document parse would
+                  throw those rows away. Last pass:
+                  <span class="ed-num" data-hiw="elements">—</span> elements,
+                  <span class="ed-num" data-hiw="classAttrs">—</span> class attributes,
+                  <span class="ed-num" data-hiw="candidates">—</span> distinct candidates, in
+                  <span class="ed-num" data-hiw="scanUs">—</span>.
+                </li>
+                <li>
+                  <code>compile_sync</code> parses margaui's stylesheet graph —
+                  <span class="ed-num" data-hiw="imports">—</span> files,
+                  <span class="ed-num" data-hiw="importBytes">—</span> of CSS, resolved entirely from
+                  memory — into a compiler:
+                  <span class="ed-num" data-hiw="compileUs">—</span>.
+                </li>
+                <li>
+                  <code>Compiler::build(candidates)</code> emits only the rules those classes need:
+                  <span class="ed-num" data-hiw="buildUs">—</span> for
+                  <span class="ed-num" data-hiw="outBytes">—</span> of CSS. That ratio is the point
+                  of Tailwind, and the reason the editor recompiles from scratch on every edit
+                  rather than accumulating.
+                </li>
+                <li>
+                  The stylesheet goes into a shadow root next to the adopted theme sheet, and the
+                  preview renders.
+                </li>
+              </ol>
+              <p>
+                The same entry point is callable from any host. This is the whole request/response
+                contract:
+              </p>
+              <pre><code>// in:
+{ "html": "&lt;div class=\"btn btn-primary\"&gt;Go&lt;/div&gt;",
+  "css": "@import \"tailwindcss\";",
+  "imports": { "tailwindcss": "@theme { … } @tailwind utilities;" } }
+
+// out:
+{ "ok": true, "css": ".btn { … }",
+  "candidates": ["btn", "btn-primary"],
+  "counts": { "elements": 1, "classAttrs": 1, "candidates": 2, "cssChars": 812 },
+  "timings": { "scanUs": 41, "compileUs": 17100, "buildUs": 5900, "totalUs": 23041 } }</code></pre>
+              <p>
+                Candidate discovery is normally the caller's job — the compiler never scans your
+                templates on its own. This page is what it looks like when the caller does that work
+                in MoonBit too.
+              </p>
+              <p>
+                About those timings: they are read inside the compiler, but the clock is the
+                browser's, and <code>performance.now()</code> is clamped for privacy — often to 5 µs,
+                sometimes much coarser. A stage quicker than one tick therefore reads <code>0</code>,
+                which is why the scan often does. <strong>Run ×10</strong> compiles ten times and
+                reports the median, which is the number worth comparing.
+              </p>
+              <p>
+                Compiler <span class="ed-num" data-hiw="compilerVersion">—</span>, HTML parser
+                <span class="ed-num" data-hiw="htmlVersion">—</span>. The margaui bundle is
+                <span class="ed-num" data-hiw="bundleBytes">—</span> of JSON, parsed once at startup
+                in <span class="ed-num" data-hiw="bundleLoad">—</span>.
+                <a class="ed-link" href="https://github.com/marianoguerra/margaui">margaui</a> and
+                <a class="ed-link" href="assets/ATTRIBUTION.md">attribution</a>.
+              </p>
+            </div>
+          </div>
+          <div id="ed-panel-bench" class="ed-hidden">
+            <div class="ed-prose">
+              <h2>Benchmarks</h2>
+              <p>
+                Committed medians from this repo's benchmark suite, for context next to the
+                <strong>Run ×10</strong> button above. <code>margaui</code> is the workload this
+                page runs.
+              </p>
+            </div>
+            <table id="bench-table"></table>
+            <p class="ed-prose" id="bench-note" style="margin-top: 0.75rem; opacity: 0.7"></p>
+            <p class="ed-prose" style="opacity: 0.7">
+              Read it as it is: the native build is the fast one, and on the margaui graph the
+              browser builds land near or behind tailwindcss itself. Methodology and the full matrix
+              live in
+              <a
+                class="ed-link"
+                href="https://github.com/marianoguerra/tailwindcss-moonbit/blob/main/benchmarks/README.md"
+                >benchmarks/README.md</a
+              >.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="boot">
+      <span class="loading loading-spinner"></span>
+      <span id="boot-status">starting</span>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

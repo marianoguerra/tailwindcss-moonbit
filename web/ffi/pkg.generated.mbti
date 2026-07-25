@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/tailwindcss-web/ffi"
+
+// Values
+pub fn build_info() -> String
+
+pub fn bundle_free(Int) -> Unit
+
+pub fn bundle_load(String) -> String
+
+pub fn compile_html(Int, String) -> String
+
+pub fn compile_html_json(String) -> String
+
+pub fn compiler_build_html(Int, String) -> String
+
+pub fn compiler_close(Int) -> Unit
+
+pub fn compiler_open(Int) -> String
+
+pub fn scan_html_json(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

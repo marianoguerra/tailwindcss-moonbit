@@ -22,7 +22,9 @@ options(
     "tools",
     "examples",
     "benchmarks",
+    "web",
     "migration-plan.md",
     "package.json",
+    "moon.work",
   ],
 )

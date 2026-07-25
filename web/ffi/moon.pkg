@@ -1,0 +1,53 @@
+import {
+  "marianoguerra/tailwindcss" @tw,
+  "moonbit-community/html/src" @html5,
+  "moonbitlang/core/bench" @clock,
+  "moonbitlang/core/string",
+  "moonbitlang/core/json",
+}
+
+// No `supported_targets` restriction: the code is portable MoonBit and `@clock`
+// has an implementation for every backend, so `moon check --target all` stays
+// green. Only *linking* is browser-specific.
+//
+// `use-js-builtin-string` is what makes wasm-gc usable from a browser at all.
+// Without it `String` lowers to `(array (mut i16))`, a GC array JS cannot
+// construct; with it `String` is a real JS string via the JS String Builtins
+// proposal, so these exports take and return strings with no glue. The host must
+// instantiate with `{ builtins: ['js-string'] }`.
+//
+// The `js` block builds the fallback artifact for browsers without JS String
+// Builtins, and is what the node smoke test drives.
+
+options(
+  link: {
+    "wasm-gc": {
+      "exports": [
+        "bundle_load",
+        "compile_html_json",
+        "scan_html_json",
+        "build_info",
+        "bundle_free",
+        "compile_html",
+        "compiler_open",
+        "compiler_build_html",
+        "compiler_close",
+      ],
+      "use-js-builtin-string": true,
+    },
+    "js": {
+      "exports": [
+        "bundle_load",
+        "compile_html_json",
+        "scan_html_json",
+        "build_info",
+        "bundle_free",
+        "compile_html",
+        "compiler_open",
+        "compiler_build_html",
+        "compiler_close",
+      ],
+      "format": "esm",
+    },
+  },
+)

@@ -1,6 +1,7 @@
 {
   "name": "tailwindcss-moonbit-development",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "moon test",
     "test:diff": "node tools/diff/compare.mjs",

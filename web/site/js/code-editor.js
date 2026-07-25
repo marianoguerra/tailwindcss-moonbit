@@ -1,0 +1,206 @@
+// Copied verbatim from margaui (editor/code-editor.js, MIT) so the editor keeps
+// the same element contract: `lang`, `code`, `rev`, `readonly`, `dark`, the
+// static `isVimMode` flag, and a bubbling `code-editor-update` event carrying
+// `{ code }`. Only the CodeMirror bundle path differs, and that is passed in by
+// the caller through `setCodeMirrorPath`.
+
+let withCodeMirror;
+
+export function setCodeMirrorPath(path) {
+  withCodeMirror = lazyDynamicImportToWithFn(path);
+  return withCodeMirror;
+}
+
+const isDarkTheme = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+export class CodeMirror extends HTMLElement {
+  static isVimMode = false;
+  constructor() {
+    super();
+    this._lang = null;
+    this._code = null;
+    this._rev = null;
+    this._dark = isDarkTheme();
+    this._readonly = false;
+    this._initialized = false;
+    this._root = this.attachShadow({ mode: "open" });
+    this._rootNode = null;
+    this._editor = null;
+    this._codemirror = null;
+  }
+
+  connectedCallback() {
+    const style = document.createElement("style");
+    style.textContent = `
+      :host { display: block; height: 100%; min-height: 0; min-width: 0; }
+      .ce-host { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); }
+      .ce-host > .cm-editor { height: 100%; min-height: 0; min-width: 0; }
+    `;
+    this._root.appendChild(style);
+    const node = document.createElement("div");
+    node.className = "ce-host";
+    this._root.appendChild(node);
+    this._rootNode = node;
+    this._code ??= this.getAttribute("code");
+    this._lang ??= this.getAttribute("lang");
+    this._maybeInitialize();
+  }
+
+  _maybeInitialize() {
+    if (this._initialized || this._code === null || this._lang === null) {
+      return;
+    }
+    this._initialized = true;
+    withCodeMirror((mod) => {
+      const { EditorView } = mod;
+      this._codemirror = mod;
+      this._editor = new EditorView({
+        extensions: this._getExtensionsForLang(),
+        doc: this._code,
+        parent: this._rootNode,
+      });
+    });
+  }
+
+  _replaceCode(v) {
+    if (this._editor) {
+      const { EditorState } = this._codemirror;
+      const transaction = {
+        doc: v,
+        extensions: this._getExtensionsForLang(),
+      };
+      this._editor.setState(EditorState.create(transaction));
+    }
+  }
+
+  _bubble(name, detail) {
+    this.dispatchEvent(
+      new CustomEvent(name, {
+        detail,
+        bubbles: true,
+      }),
+    );
+  }
+
+  _getExtensionsForLang() {
+    const { basicSetup, css, javascript, html, vim, Vim, darkTheme, EditorView } = this._codemirror;
+    const updateListener = EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        const code = update.view.state.doc.toString();
+        this._bubble("code-editor-update", { code, update });
+      }
+    });
+    let exts;
+    switch (this._lang.toLowerCase()) {
+      case "js":
+      case "javascript":
+        exts = [basicSetup, javascript(), updateListener];
+        break;
+      case "html":
+        exts = [basicSetup, html(), updateListener];
+        break;
+      case "css":
+        exts = [basicSetup, css(), updateListener];
+        break;
+      default:
+        console.warn("unknown codemirror lang", this._lang);
+        exts = [basicSetup, updateListener];
+    }
+
+    if (CodeMirror.isVimMode) {
+      exts.unshift(vim());
+      Vim.defineEx("write", "w", () => {
+        this._bubble("code-editor-save", {});
+      });
+    }
+    if (this._dark) {
+      exts.push(darkTheme);
+    }
+    if (this._readonly) {
+      const { EditorState } = this._codemirror;
+      exts.push(EditorState.readOnly.of(true));
+      exts.push(EditorView.editable.of(false));
+    }
+    return exts;
+  }
+
+  set code(v) {
+    this._code = v;
+    this._maybeInitialize();
+  }
+
+  get code() {
+    return this._code;
+  }
+
+  set lang(v) {
+    this._lang = v;
+    this._maybeInitialize();
+  }
+
+  get lang() {
+    return this._lang;
+  }
+
+  set rev(v) {
+    if (this._rev === v) {
+      return;
+    }
+    this._rev = v;
+    if (this._initialized) {
+      this._replaceCode(this._code);
+    } else {
+      this._maybeInitialize();
+    }
+  }
+
+  get rev() {
+    return this._rev;
+  }
+
+  set dark(v) {
+    this._dark = v;
+    if (this._editor) {
+      this._code = this._editor.state.doc.toString();
+      this._replaceCode(this._code);
+    }
+  }
+
+  get dark() {
+    return this._dark;
+  }
+
+  refresh() {
+    if (this._editor) {
+      this._code = this._editor.state.doc.toString();
+      this._replaceCode(this._code);
+    }
+  }
+
+  set readonly(v) {
+    this._readonly = v;
+  }
+
+  get readonly() {
+    return this._readonly;
+  }
+}
+
+function lazyDynamicImportToPromise(path) {
+  let prom = null;
+  return async () => {
+    if (prom === null) {
+      prom = import(path);
+    }
+
+    return await prom;
+  };
+}
+
+function lazyDynamicImportToWithFn(path) {
+  const loader = lazyDynamicImportToPromise(path);
+  return async (fn) => {
+    const lib = await loader();
+    return fn ? fn(lib) : lib;
+  };
+}

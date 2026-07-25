@@ -1,0 +1,82 @@
+{
+  "source": {
+    "note": "Warm medians from a local `just bench-warm` run; see benchmarks/README.md for the methodology.",
+    "timestamp": "2026-07-25T17:41:11.071Z",
+    "cpu": "AMD Ryzen 5 7520U with Radeon Graphics",
+    "platform": "linux 7.0.0-28-generic",
+    "commit": "5d305fd6d6baaba23f981a377a40c42bc83215b6",
+    "oracle": "4.3.3",
+    "trials": 3
+  },
+  "workloads": [
+    {
+      "id": "a-lot",
+      "candidates": 81,
+      "cssVariant": "full-import",
+      "targets": {
+        "js": {
+          "medianUs": 11185.7,
+          "minUs": 10007
+        },
+        "native": {
+          "medianUs": 2894.3,
+          "minUs": 2783.3
+        },
+        "original": {
+          "medianUs": 3429.9,
+          "minUs": 2773.6
+        },
+        "wasm-gc": {
+          "medianUs": 4252.4,
+          "minUs": 3559
+        }
+      }
+    },
+    {
+      "id": "stress",
+      "candidates": 440,
+      "cssVariant": "full-import",
+      "targets": {
+        "js": {
+          "medianUs": 23741.4,
+          "minUs": 21615
+        },
+        "native": {
+          "medianUs": 7686.2,
+          "minUs": 7425.9
+        },
+        "original": {
+          "medianUs": 8075.2,
+          "minUs": 6523.2
+        },
+        "wasm-gc": {
+          "medianUs": 10934.2,
+          "minUs": 9852.7
+        }
+      }
+    },
+    {
+      "id": "margaui",
+      "candidates": 122,
+      "cssVariant": "full-import",
+      "targets": {
+        "js": {
+          "medianUs": 42497.1,
+          "minUs": 38437.4
+        },
+        "native": {
+          "medianUs": 16738.8,
+          "minUs": 15668.1
+        },
+        "original": {
+          "medianUs": 22198.8,
+          "minUs": 18866.9
+        },
+        "wasm-gc": {
+          "medianUs": 24060.9,
+          "minUs": 21533.7
+        }
+      }
+    }
+  ]
+}

@@ -69,7 +69,7 @@ jobs:
       - name: Build JS module
         run: |
           moon build --target js --release ffi
-          cp _build/js/release/build/ffi/ffi.js ffi/js/ffi.js
+          cp _build/js/release/build/marianoguerra/tailwindcss/ffi/ffi.js ffi/js/ffi.js
       - uses: actions/setup-node@v4
         with:
           node-version: 22   # trusted publishing requires Node >= 22.14.0
@@ -89,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp _build/js/release/build/ffi/ffi.js "tailwindcss-${GITHUB_REF_NAME}.js"
+          cp _build/js/release/build/marianoguerra/tailwindcss/ffi/ffi.js "tailwindcss-${GITHUB_REF_NAME}.js"
           gh release upload "${GITHUB_REF_NAME}" \
             "tailwindcss-${GITHUB_REF_NAME}.js" --clobber
 
@@ -113,8 +113,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp _build/wasm-gc/release/build/ffi/ffi.wasm "tailwindcss-${GITHUB_REF_NAME}-wasm-gc.wasm"
-          cp _build/wasm/release/build/ffi/ffi.wasm    "tailwindcss-${GITHUB_REF_NAME}-wasm.wasm"
+          cp _build/wasm-gc/release/build/marianoguerra/tailwindcss/ffi/ffi.wasm "tailwindcss-${GITHUB_REF_NAME}-wasm-gc.wasm"
+          cp _build/wasm/release/build/marianoguerra/tailwindcss/ffi/ffi.wasm "tailwindcss-${GITHUB_REF_NAME}-wasm.wasm"
           gh release upload "${GITHUB_REF_NAME}" \
             "tailwindcss-${GITHUB_REF_NAME}-wasm-gc.wasm" \
             "tailwindcss-${GITHUB_REF_NAME}-wasm.wasm" --clobber
@@ -147,7 +147,7 @@ jobs:
         run: moon build --target native --release cmd/tailwindcss
       - name: Package binary
         run: |
-          bin="_build/native/release/build/cmd/tailwindcss/tailwindcss.exe"
+          bin="_build/native/release/build/marianoguerra/tailwindcss/cmd/tailwindcss/tailwindcss.exe"
           mkdir -p dist
           cp "$bin" "dist/tailwindcss"
           chmod +x "dist/tailwindcss"

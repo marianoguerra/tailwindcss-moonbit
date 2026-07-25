@@ -19,6 +19,20 @@ async test {
 The implementation is independent MoonBit code. `tools/oracle/` contains a
 development-only differential runner pinned to the original npm package.
 
+## Live demo
+
+**<https://marianoguerra.github.io/tailwindcss-moonbit/>** — type HTML, watch the
+CSS those classes need get compiled in your browser, with the compile time and
+output size measured as it happens. There is no server: the compiler is this
+package built for wasm-gc, and the stylesheets are
+[margaui](https://github.com/marianoguerra/margaui)'s component library — 78
+files, ~270 KB of CSS, compiled from scratch on every edit.
+
+The editor also closes the loop the API leaves open: it discovers candidates by
+parsing the HTML with [`moonbit-community/html`](https://github.com/moonbit-community/html5-mbt)
+and collecting `class` attributes, all inside MoonBit. Source and notes in
+[`web/`](web/README.md); run it locally with `just web-serve`.
+
 ## Using it
 
 The compiler is exposed three ways. In every case candidate discovery is the
