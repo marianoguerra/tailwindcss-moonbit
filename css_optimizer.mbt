@@ -114,18 +114,13 @@ fn merge_adjacent_at_rules(nodes : ArrayView[CssNode]) -> Array[CssNode] {
               name=previous_name,
               params=previous_params,
               nodes=Some(previous_children),
-              span=previous_span
+              ..
             )
-          ) if previous_name == name && previous_params == params => {
-            let combined = previous_children.copy()
-            combined.append(merged)
-            output[output.length() - 1] = AtRule(
-              name~,
-              params~,
-              nodes=Some(merge_adjacent_at_rules(combined)),
-              span=previous_span,
-            )
-          }
+          ) if previous_name == name && previous_params == params =>
+            // The wrapper already in `output` keeps its own span, and its child
+            // array is extended in place, so a run of K wrappers costs one walk
+            // rather than one per member.
+            append_merged(previous_children, merged)
           _ =>
             output.push(
               AtRule(
@@ -140,20 +135,12 @@ fn merge_adjacent_at_rules(nodes : ArrayView[CssNode]) -> Array[CssNode] {
       Rule(selector~, nodes=children, span~) => {
         let merged = merge_adjacent_at_rules(children)
         match output.last() {
-          Some(
-            Rule(
-              selector=previous_selector,
-              nodes=previous_children,
-              span=previous_span
-            )
-          ) if previous_selector == selector => {
-            let combined = previous_children.copy()
-            combined.append(merged)
-            output[output.length() - 1] = Rule(
-              selector~,
-              nodes=dedupe_declarations(merge_adjacent_at_rules(combined)),
-              span=previous_span,
-            )
+          Some(Rule(selector=previous_selector, nodes=previous_children, ..)) if previous_selector ==
+            selector => {
+            append_merged(previous_children, merged)
+            // Deduplication spans the whole run: a declaration repeated by a
+            // later member removes the earlier copy.
+            rededuplicate(previous_children)
           }
           _ =>
             output.push(
@@ -169,6 +156,63 @@ fn merge_adjacent_at_rules(nodes : ArrayView[CssNode]) -> Array[CssNode] {
     }
   }
   output
+}
+
+///|
+/// Replace `nodes` with its deduplicated form, in place.
+fn rededuplicate(nodes : Array[CssNode]) -> Unit {
+  let deduped = dedupe_declarations(nodes[:])
+  nodes.clear()
+  nodes.append(deduped)
+}
+
+///|
+/// Append one already-merged sibling list onto another, in place.
+///
+/// Both sides are internally merged, so concatenating them can only create a
+/// single new adjacency — the junction — and merging that junction can only
+/// create one more, one level down. The previous implementation instead copied
+/// the accumulated children and re-ran `merge_adjacent_at_rules` over the whole
+/// concatenation for *every* additional sibling, re-walking (and re-merging,
+/// re-deduplicating) the entire subtree to discover that one boundary: O(K²)
+/// walks for a run of K wrappers, which grows with candidate count.
+fn append_merged(
+  target : Array[CssNode],
+  addition : ArrayView[CssNode],
+) -> Unit {
+  for node in addition {
+    let mut absorbed = false
+    match (target.last(), node) {
+      (
+        Some(
+          AtRule(
+            name=previous_name,
+            params=previous_params,
+            nodes=Some(previous_children),
+            ..
+          )
+        ),
+        AtRule(name~, params~, nodes=Some(children), ..),
+      ) =>
+        if previous_name == name && previous_params == params {
+          append_merged(previous_children, children)
+          absorbed = true
+        }
+      (
+        Some(Rule(selector=previous_selector, nodes=previous_children, ..)),
+        Rule(selector~, nodes=children, ..),
+      ) =>
+        if previous_selector == selector {
+          append_merged(previous_children, children)
+          rededuplicate(previous_children)
+          absorbed = true
+        }
+      _ => ()
+    }
+    if !absorbed {
+      target.push(node)
+    }
+  }
 }
 
 ///|
