@@ -52,6 +52,24 @@ const allUnique = [
   ...new Set(cases.flatMap(caseCandidates)),
 ].sort((a, b) => a.localeCompare(b))
 
+// ---- same-variant tier ------------------------------------------------------
+//
+// Many candidates sharing ONE breakpoint variant, so each one renders its own
+// `@media (width >= 48rem)` wrapper and the optimizer sees a single long run of
+// adjacent same-key at-rules. That is the shape opt 23 de-quadratified, and no
+// other tier exercises it: `stress` has 440 candidates spread over many
+// different variants, so its runs are short. Real Tailwind codebases lean on a
+// handful of breakpoints, which is exactly this shape.
+//
+// Arbitrary values keep every candidate distinct (so none is deduplicated away)
+// while keeping the generated declaration trivial — the tier measures the merge
+// path, not utility matching.
+const SAME_VARIANT_COUNT = 1500
+const sameVariantCandidates = Array.from(
+  { length: SAME_VARIANT_COUNT },
+  (_, i) => `md:p-[${i + 1}px]`,
+)
+
 // ---- full-import bundle (the parser-heavy entry) ----------------------------
 //
 // The oracle's tailwindcss index.css is already a flattened 950-line stylesheet
@@ -240,6 +258,17 @@ written.push([
   }),
 ])
 
+written.push([
+  'variants',
+  writeWorkload('variants', {
+    css: FULL_IMPORT_CSS,
+    candidates: sameVariantCandidates,
+    imports: bundle,
+    from: 'input.css',
+    source: `${SAME_VARIANT_COUNT} candidates sharing one breakpoint variant (md:p-[Npx])`,
+  }),
+])
+
 let margauiCount = null
 if (withMargaui) {
   margauiCount = buildMargaui()
@@ -258,9 +287,19 @@ const ITER_BUDGET = {
   many: { warmup: 30, iters: 800 },
   'a-lot': { warmup: 20, iters: 300 },
   stress: { warmup: 15, iters: 150 },
+  variants: { warmup: 5, iters: 40 },
   margaui: { warmup: 10, iters: 60 },
 }
-const order = ['empty', 'one', 'few', 'many', 'a-lot', 'stress', 'margaui']
+const order = [
+  'empty',
+  'one',
+  'few',
+  'many',
+  'a-lot',
+  'stress',
+  'variants',
+  'margaui',
+]
 const manifest = {
   defaults: { warmup: 20, iters: 200, trials: 3 },
   workloads: order

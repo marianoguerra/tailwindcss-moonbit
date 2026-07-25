@@ -36,6 +36,11 @@
       "iters": 150
     },
     {
+      "id": "variants",
+      "warmup": 5,
+      "iters": 40
+    },
+    {
       "id": "margaui",
       "warmup": 10,
       "iters": 60

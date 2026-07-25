@@ -37,7 +37,17 @@ checkout). Regenerate with `node benchmarks/generate.mjs`.
 | `many` | 37 | minimal | cases.json "border/background/SVG/color families" |
 | `a-lot` | 81 | `@import "tailwindcss"` | cases.json largest case + full theme |
 | `stress` | 440 | `@import "tailwindcss"` | every unique candidate in cases.json |
+| `variants` | 1500 | `@import "tailwindcss"` | `md:p-[Npx]` — one shared breakpoint variant |
 | `margaui` | 122 | bundled margaui graph | classes from margaui `examples/*.html` |
+
+`variants` is a **scaling** tier rather than a size tier. Every candidate carries
+the same breakpoint variant, so each renders its own `@media` wrapper and the
+optimizer sees one long run of adjacent same-key at-rules — the shape a
+super-linear merge blows up on. The other tiers cannot see it: `stress` has more
+candidates but spreads them across many different variants, so its runs are
+short. Real Tailwind codebases lean on a handful of breakpoints, which is exactly
+this shape. Reverting opt 23 moves this tier from 35ms to 466ms while leaving
+`stress` and `margaui` unchanged.
 
 Candidate material comes from the differential corpus `tools/diff/cases.json`. The
 full-import tiers inline the oracle's flattened `tailwindcss/index.css`

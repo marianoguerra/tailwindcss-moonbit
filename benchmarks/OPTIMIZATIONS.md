@@ -825,6 +825,41 @@ table entry (66 `@property` triggers, 417 theme variables) or produced strings
 nothing read. Output is byte-identical to the pre-optimization compiler on every
 workload, verified with native `--emit` after each step.
 
+## Cumulative: opt 23 → opt 29
+
+Full suite, warm median, 3 trials, all four targets in one run, including the new
+`variants` tier.
+
+| workload | native | wasm-gc | js | tailwindcss 4.3.3 | speedup |
+|---|--:|--:|--:|--:|--:|
+| empty (0)      | 5.2µs   | 8.1µs   | 6.3µs    | 448.9µs | **86.3×** |
+| one (1)        | 9.2µs   | 16.1µs  | 12.9µs   | 479.0µs | **52.1×** |
+| few (4)        | 23.5µs  | 40.6µs  | 31.8µs   | 525.4µs | **22.4×** |
+| many (37)      | 411.9µs | 680.5µs | 1.37ms   | 819.6µs | **1.99×** |
+| a-lot (81)     | 2.74ms  | 4.17ms  | 10.97ms  | 3.28ms  | **1.20×** |
+| stress (440)   | 7.42ms  | 10.86ms | 23.40ms  | 7.87ms  | **1.06×** |
+| variants (1500)| 35.57ms | 50.93ms | 115.73ms | 16.05ms | 0.45× |
+| margaui (122)  | 15.55ms | 24.32ms | 41.28ms  | 20.62ms | **1.33×** |
+
+Compare speedups against the opt-23 table rather than the absolute milliseconds:
+the `tailwindcss 4.3.3` column moved 7–14% between the two sessions, so the ratio
+is the only fair cross-session statistic.
+
+| workload | speedup at opt 23 | speedup at opt 29 |
+|---|--:|--:|
+| a-lot  | 1.02× | **1.20×** |
+| stress | 0.94× | **1.06×** |
+| margaui| 1.11× | **1.33×** |
+
+Native is now ahead of upstream on **every** tier the previous round measured,
+`stress` included — it was the last one behind. The real-world tier (margaui)
+gained the most, which is what opts 25, 27 and 28 all targeted.
+
+The exception is the new `variants` tier at **0.45×** — the one shape where tw-mb
+is clearly slower than upstream. That is not a regression (opt 23 already took it
+from 466ms to 35ms); it is a part of the compiler no previous workload measured,
+now visible. It is the obvious starting point for the next queue.
+
 ## Ordered proposal queue
 
 Take the first uncompleted proposal, run the complete iteration protocol above,
@@ -838,12 +873,24 @@ current one is kept and committed or reverted and documented.
 19 — KEPT (native −31..−40%). 20 — KEPT (native −3..−9%).
 21 — KEPT (native −3..−16%). 22 — reverted (core already avoids the copy).
 23 — KEPT (neutral on the suite, 9.5× on a same-variant-heavy workload).
+24 — rejected (the cost it targets is ~1%; the rest was proposal 25's).
+25 — KEPT (native −16% on margaui). 26 — rejected (nothing is parsed twice).
+27 — KEPT (native −1..−5%, all nine cells improve).
+28 — KEPT (native ~−3.5% on margaui, scales with source size).
+29 — ADDED (`variants` tier; catches opt 23's quadratic at 13.3×).
 Queue complete.**
 
-Proposals 17 through 23 are complete — their outcomes are the iteration entries
-above. The queue below is rebuilt from the profile taken *after* opt 21, so the
-shares quoted are of the current, much faster compiler (the `margaui` numbers
-still include ~23% harness-only JSON parsing; scale product costs up accordingly).
+Proposals 17 through 29 are complete — their outcomes are the iteration entries
+above. The queue that produced 24–29 was rebuilt from the profile taken *after*
+opt 21, so the shares it quoted are of the compiler as it stood then (the
+`margaui` numbers still include ~23% harness-only JSON parsing; scale product
+costs up accordingly).
+
+Two of the six were rejected on **instrumentation rather than implementation**,
+which is the pattern worth keeping: proposal 24's headline cost turned out to
+belong to proposal 25, and proposal 26's premise — a file parsed once per
+importer — was simply false. Both were settled with a probe far cheaper than the
+change would have been.
 
 ### Proposal 24 — Discover usage from the AST, not from a rendered string
 
@@ -1065,12 +1112,35 @@ repeatable native gain on the most parse-bound workload, scaling with source siz
 (margaui ≫ stress ≫ a-lot, exactly as a per-token copy should), no material
 regression on any backend, and js gains throughout.
 
-### Proposal 29 — Add a same-variant scaling tier to the workload set
+### 29. `variants` — a same-variant scaling tier — ADDED ✅
 
-Opt 23 removed an O(K²) that no committed workload exercises: it took a synthetic
-1500-candidate single-variant probe to show the 9.5× difference. Add such a tier
-(many candidates sharing a breakpoint variant) so quadratic regressions in the
-merge path are caught by the suite rather than by inspection.
+Opt 23 removed an O(K²) that no committed workload exercised; it took a throwaway
+probe to see it. That probe is now a committed tier: **1500 candidates sharing one
+breakpoint variant** (`md:p-[1px]` … `md:p-[1500px]`) over the full-import entry.
+Each renders its own `@media` wrapper, so the optimizer sees one long run of
+adjacent same-key at-rules. Arbitrary values keep every candidate distinct while
+keeping the generated declaration trivial, so the tier measures the merge path
+rather than utility matching.
+
+This is a **scaling** tier, not a size tier. `stress` has 440 candidates but
+spreads them over many different variants, so its runs are short — which is
+exactly why it could not see the quadratic.
+
+Validated by reverting opt 23 and re-running, with everything else identical:
+
+| workload | opt 23 present | opt 23 reverted | ratio |
+|---|--:|--:|--:|
+| **variants** (1500) | **35.14ms** | **466.38ms** | **13.3×** |
+| stress (440)  | 7.30ms  | 7.25ms  | 1.00× |
+| margaui (122) | 15.60ms | 15.12ms | 1.00× |
+
+The regression is invisible to the rest of the suite and unmissable in the new
+tier. It also gates against the oracle like every other tier (~99.9% similarity),
+and it is the tier where tw-mb is currently *slowest* relative to upstream
+(35.14ms vs 15.03ms, 0.43×), so it doubles as a standing target.
+
+Budget: `warmup 5, iters 40` — the tier is ~35ms per compile, so it needs far
+fewer iterations than the small tiers.
 
 *(The historical descriptions of proposals 11–14 were removed once their
 iterations were recorded above; see entries 11–14 for what happened.)*
