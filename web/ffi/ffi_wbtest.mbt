@@ -164,7 +164,7 @@ test "build_info: reports the linked versions" {
   debug_inspect(
     build_info(),
     content=(
-      #|"{\"compiler\":\"0.2.0\",\"html\":\"0.1.2\",\"polyfillsDefault\":3}"
+      #|"{\"compiler\":\"0.3.0\",\"html\":\"0.1.2\",\"polyfillsDefault\":3}"
     ),
   )
 }

@@ -1,6 +1,6 @@
 {
   "name": "@marianoguerra/tailwindcss",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A MoonBit implementation of the Tailwind CSS v4 compiler, compiled to JavaScript. Compiles Tailwind v4 CSS fully in memory (no filesystem access).",
   "type": "module",
   "main": "./index.mjs",
