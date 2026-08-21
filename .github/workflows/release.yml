@@ -22,7 +22,7 @@ jobs:
   gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -40,7 +40,7 @@ jobs:
     needs: gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -59,7 +59,7 @@ jobs:
       contents: write   # upload the JS asset to the Release
       id-token: write   # mint the OIDC token npm trusted publishing exchanges
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -70,7 +70,7 @@ jobs:
         run: |
           moon build --target js --release ffi
           cp _build/js/release/build/marianoguerra/tailwindcss/ffi/ffi.js ffi/js/ffi.js
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22   # trusted publishing requires Node >= 22.14.0
           registry-url: https://registry.npmjs.org
@@ -98,7 +98,7 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -136,7 +136,7 @@ jobs:
             asset: tailwindcss-macos-arm64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -168,7 +168,7 @@ jobs:
     # MOONCAKES_TOKEN; add branch/tag protection rules there if desired.
     environment: release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash

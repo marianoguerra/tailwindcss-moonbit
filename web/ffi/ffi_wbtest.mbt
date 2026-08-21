@@ -47,14 +47,14 @@ test "compile_html_json: end to end" {
       #|Some(Array([String("flex"), String("gap-2"), String("hidden")]))
     ),
   )
-  guard json_field(parsed, "css") is Some(String(css))
+  guard! json_field(parsed, "css") is Some(String(css))
   assert_true(css.contains("display: flex"))
   assert_true(css.contains("gap: calc(var(--spacing) * 2)"))
   // The theme variable the utility references came from the imported file.
   assert_true(css.contains("--spacing: 0.25rem"))
   // hidden is a real utility, so all three candidates produced rules.
   assert_true(css.contains("display: none"))
-  guard json_field(parsed, "counts") is Some(counts)
+  guard! json_field(parsed, "counts") is Some(counts)
   debug_inspect(
     json_field(counts, "imports"),
     content=(
@@ -73,7 +73,7 @@ test "compile_html_json: end to end" {
       #|Some(Number(3))
     ),
   )
-  guard json_field(counts, "cssChars") is Some(Number(chars, ..))
+  guard! json_field(counts, "cssChars") is Some(Number(chars, ..))
   assert_eq(chars.to_int(), css.length())
 }
 
@@ -93,7 +93,7 @@ test "compile_html_json: extra candidates join the scanned ones" {
 ///|
 test "compile_html_json: timings cover every stage" {
   let reply = compile_html_json(test_request(html="<div class=\"flex\">"))
-  guard json_field(@json.parse(reply), "timings") is Some(timings)
+  guard! json_field(@json.parse(reply), "timings") is Some(timings)
   for key in ["scanUs", "compileUs", "buildUs", "totalUs"] {
     guard json_field(timings, key) is Some(Number(value, ..)) else {
       fail("missing timing " + key)
@@ -153,7 +153,7 @@ test "scan_html_json: candidates and counts without compiling" {
       #|)
     ),
   )
-  guard field(reply, "timings") is Some(timings)
+  guard! field(reply, "timings") is Some(timings)
   assert_true(json_field(timings, "scanUs") is Some(Number(_)))
   // Scanning never compiles, so there is nothing else to report.
   assert_true(json_field(timings, "compileUs") is None)
@@ -191,16 +191,16 @@ test "bundle handles: load once, compile many" {
       #|)
     ),
   )
-  guard field(loaded, "bundle") is Some(Number(handle, ..))
+  guard! field(loaded, "bundle") is Some(Number(handle, ..))
   let bundle = handle.to_int()
 
   // A fresh compiler per call, so the output tracks the input in both directions.
   let first = compile_html(bundle, "<div class=\"flex gap-2\">")
   assert_true(ok(first))
-  guard field(first, "css") is Some(String(wide))
+  guard! field(first, "css") is Some(String(wide))
   assert_true(wide.contains("display: flex") && wide.contains("gap: calc"))
   let second = compile_html(bundle, "<div class=\"flex\">")
-  guard field(second, "css") is Some(String(narrow))
+  guard! field(second, "css") is Some(String(narrow))
   assert_true(narrow.contains("display: flex"))
   assert_false(narrow.contains("gap: calc")) // shrank when the class went away
   bundle_free(bundle)
@@ -221,22 +221,22 @@ test "warm compiler: no graph parse, and output only grows" {
   let loaded = bundle_load(
     Json::object(Map([("css", Json::string(TEST_CSS))])).stringify(),
   )
-  guard field(loaded, "bundle") is Some(Number(handle, ..))
+  guard! field(loaded, "bundle") is Some(Number(handle, ..))
   let bundle = handle.to_int()
   let opened = compiler_open(bundle)
   assert_true(ok(opened))
-  guard field(opened, "timings") is Some(timings)
+  guard! field(opened, "timings") is Some(timings)
   assert_true(json_field(timings, "compileUs") is Some(Number(_)))
-  guard field(opened, "compiler") is Some(Number(compiler_handle, ..))
+  guard! field(opened, "compiler") is Some(Number(compiler_handle, ..))
   let compiler = compiler_handle.to_int()
   let first = compiler_build_html(compiler, "<div class=\"flex gap-2\">")
   assert_true(ok(first))
-  guard field(first, "timings") is Some(warm_timings)
+  guard! field(first, "timings") is Some(warm_timings)
   // No import graph was parsed on this call, so there is no compile stage.
   assert_true(json_field(warm_timings, "compileUs") is None)
   assert_true(json_field(warm_timings, "buildUs") is Some(Number(_)))
   let second = compiler_build_html(compiler, "<div class=\"flex\">")
-  guard field(second, "css") is Some(String(css))
+  guard! field(second, "css") is Some(String(css))
   assert_true(css.contains("display: flex"))
   assert_true(css.contains("gap: calc")) // still there: candidates accumulate
   compiler_close(compiler)
@@ -249,9 +249,9 @@ test "bundle_free: drops the warm compilers opened from it" {
   let loaded = bundle_load(
     Json::object(Map([("css", Json::string(TEST_CSS))])).stringify(),
   )
-  guard field(loaded, "bundle") is Some(Number(handle, ..))
+  guard! field(loaded, "bundle") is Some(Number(handle, ..))
   let bundle = handle.to_int()
-  guard field(compiler_open(bundle), "compiler") is Some(Number(warm, ..))
+  guard! field(compiler_open(bundle), "compiler") is Some(Number(warm, ..))
   bundle_free(bundle)
   assert_false(ok(compiler_build_html(warm.to_int(), "<div class=\"flex\">")))
 }

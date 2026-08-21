@@ -40,7 +40,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -62,7 +62,7 @@ jobs:
           cp _build/wasm-gc/release/build/marianoguerra/tailwindcss-web/ffi/ffi.wasm web/site/assets/twffi.wasm
           cp _build/js/release/build/marianoguerra/tailwindcss-web/ffi/ffi.js web/site/assets/twffi.js
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24   # instantiating the wasm-gc module needs JS String Builtins
       - name: Smoke-test the artifacts

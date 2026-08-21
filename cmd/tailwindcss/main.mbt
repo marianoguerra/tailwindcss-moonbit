@@ -13,7 +13,7 @@
 ///   Used by the differential test harness (`tools/diff/compare.mjs`); prints one
 ///   build per candidates file, separated by the given marker.
 async fn main {
-  let args = @sys.get_cli_args()
+  let args = @env.args()
   if args.length() >= 2 && args[1] == "--batch" {
     run_batch(args)
   } else if args.length() >= 2 && args[1] == "bundle" {

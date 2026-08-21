@@ -2,6 +2,7 @@ import {
   "marianoguerra/tailwindcss" @tw,
   "marianoguerra/tailwindcss/loader/fs" @twfs,
   "moonbitlang/async",
+  "moonbitlang/core/env",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",
   "moonbitlang/core/string",

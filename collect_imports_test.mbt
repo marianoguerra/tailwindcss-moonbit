@@ -48,7 +48,7 @@ async test "collect_imports reports import cycles" {
     ("b.css", "@import \"a.css\";"),
   ])
   try @tailwindcss.collect_imports("@import \"a.css\";", loader) catch {
-    @tailwindcss.CompileError::ImportCycle(paths) =>
+    ImportCycle(paths) =>
       debug_inspect(paths, content="[\"a.css\", \"b.css\", \"a.css\"]")
     error => abort("unexpected error: \{error}")
   } noraise {

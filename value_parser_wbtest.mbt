@@ -18,7 +18,7 @@ test "value parser exposes function and separator structure" {
         [ValueWord("foo"), ValueSeparator(", "), ValueWord("bar")]
       ),
     ] => ()
-    other => fail("unexpected value AST: \{to_repr(other)}")
+    other => fail("unexpected value AST: \{Repr(other)}")
   }
 }
 

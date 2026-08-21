@@ -199,8 +199,8 @@ byte apart from the upstream license banner, which this package does not print.
 
 JavaScript configuration and plugin loading is intentionally out of scope;
 `@config` and `@plugin` are rejected with `UnsupportedJsCompatibility`. Source
-maps are deferred because the agreed public surface returns CSS only (see
-`migration-plan.md` step 16). Brace expansion in `@source` globs and the parts
+maps are deferred because the agreed public surface returns CSS only. Brace
+expansion in `@source` globs and the parts
 of the upstream utility catalogue without a passing differential case are not
 implemented. No input should be treated as compatible until a differential case
 covers it.
