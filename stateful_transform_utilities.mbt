@@ -116,18 +116,24 @@ fn rotate_skew_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
-  let (root, custom_property, function_name) = if name.has_prefix("rotate-x-") {
-    ("rotate-x", Some("--tw-rotate-x"), "rotateX")
+  // `skew-*` drives both axes; every other member drives one, and bare
+  // `rotate-*` sets the `rotate` property instead of a transform function.
+  let (root, functions) : (String, Array[(String, String)]) = if name.has_prefix(
+      "rotate-x-",
+    ) {
+    ("rotate-x", [("--tw-rotate-x", "rotateX")])
   } else if name.has_prefix("rotate-y-") {
-    ("rotate-y", Some("--tw-rotate-y"), "rotateY")
+    ("rotate-y", [("--tw-rotate-y", "rotateY")])
   } else if name.has_prefix("rotate-z-") {
-    ("rotate-z", Some("--tw-rotate-z"), "rotateZ")
+    ("rotate-z", [("--tw-rotate-z", "rotateZ")])
   } else if name.has_prefix("skew-x-") {
-    ("skew-x", Some("--tw-skew-x"), "skewX")
+    ("skew-x", [("--tw-skew-x", "skewX")])
   } else if name.has_prefix("skew-y-") {
-    ("skew-y", Some("--tw-skew-y"), "skewY")
+    ("skew-y", [("--tw-skew-y", "skewY")])
+  } else if name.has_prefix("skew-") {
+    ("skew", [("--tw-skew-x", "skewX"), ("--tw-skew-y", "skewY")])
   } else if name.has_prefix("rotate-") {
-    ("rotate", None, "")
+    ("rotate", [])
   } else {
     return None
   }
@@ -141,16 +147,19 @@ fn rotate_skew_utility(
     is Some(value) else {
     return None
   }
-  match custom_property {
-    None => Some([decl("rotate", value)])
-    Some(property) =>
-      Some([
-        decl(property, "\{function_name}(\{value})"),
-        decl(
-          "transform", "var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)",
-        ),
-      ])
+  if functions.is_empty() {
+    return Some([decl("rotate", value)])
   }
+  let declarations = functions.map(fn(entry) {
+    let (property, function_name) = entry
+    decl(property, "\{function_name}(\{value})")
+  })
+  declarations.push(
+    decl(
+      "transform", "var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,)",
+    ),
+  )
+  Some(declarations)
 }
 
 ///|
@@ -175,7 +184,8 @@ fn scale_utility(
     None =>
       match theme_css_value(theme, "--scale-\{key}") {
         Some(value) => Some(value)
-        None => if is_spacing_number(key) { Some("\{key}%") } else { None }
+        // Upstream takes a positive integer here, so `scale-1.5` is no candidate.
+        None => if is_nonnegative_integer(key) { Some("\{key}%") } else { None }
       }
   }
   guard value is Some(value) else { return None }
@@ -238,6 +248,13 @@ fn stateful_transform_utility(
       ])
     "transform-view" => return Some([decl("transform-box", "view-box")])
     _ => ()
+  }
+  // `transform-[scaleZ(2)_rotateY(45deg)]` writes the property outright.
+  if prefixed_value(name, "transform") is Some(key) {
+    match arbitrary_value(key) {
+      Some(value) => return Some([decl("transform", value)])
+      None => ()
+    }
   }
   match transform_origin_utility(theme, name) {
     Some(value) => return Some(value)

@@ -60,12 +60,24 @@ fn theme_literal_for_value(
 
 ///|
 fn negate_value(value : String) -> String {
+  // A transform function negates its angle, not itself: upstream writes
+  // `rotateX(calc(45deg * -1))`, never `calc(rotateX(45deg) * -1)`.
+  for function_name in ["rotateX", "rotateY", "rotateZ", "skewX", "skewY"] {
+    let opening = "\{function_name}("
+    if value.has_prefix(opening) && value.has_suffix(")") {
+      let inner = value[opening.length():value.length() - 1].to_owned()
+      return "\{function_name}(calc(\{inner} * -1))"
+    }
+  }
   let spacing_prefix = "calc(var(--spacing) * "
   if value.has_prefix(spacing_prefix) && value.has_suffix(")") {
     let factor = value[spacing_prefix.length():value.length() - 1].to_owned()
     "calc(var(--spacing) * -\{factor})"
   } else if value == "100%" {
     "-100%"
+  } else if value == "1px" {
+    // The `-px` spacing static is registered as `-1px` upstream, not as a calc.
+    "-1px"
   } else if value == "var(--spacing)" {
     "calc(var(--spacing) * -1)"
   } else {
