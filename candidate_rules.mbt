@@ -35,14 +35,34 @@ let negative_utilities : @set.Set[String] = @set.Set([
 ])
 
 ///|
+/// Utilities that sit under a negative-supporting name without inheriting it.
+/// `inset-shadow` is not `inset` and `col-span` is not `col`, so a prefix match
+/// alone would let `-inset-shadow-sm` and `-col-span-4` through. Upstream
+/// registers `-translate-full` itself, which is why it is absent here.
+let non_negative_utilities : @set.Set[String] = @set.Set([
+  "col-span", "row-span", "inset-ring", "inset-shadow", "inset-shadow-initial",
+  "rotate-none", "scale-3d", "scale-none", "space-x-reverse", "space-y-reverse",
+  "translate-3d", "translate-none",
+])
+
+///|
 /// `-inset-x-4` is the `inset-x` utility negated, so the utility name is a
-/// `-`-bounded prefix of the base rather than the whole of it.
+/// `-`-bounded prefix of the base rather than the whole of it. The longest
+/// prefix wins, so a utility that shadows a shorter negative one answers first.
 fn supports_negative(base : String) -> Bool {
-  if negative_utilities.contains(base) {
-    return true
-  }
+  let boundaries = []
   for index in 0..<base.length() {
-    if base[index] == '-' && negative_utilities.contains(base[:index].to_owned()) {
+    if base[index] == '-' {
+      boundaries.push(index)
+    }
+  }
+  boundaries.push(base.length())
+  for offset in 0..<boundaries.length() {
+    let prefix = base[:boundaries[boundaries.length() - 1 - offset]].to_owned()
+    if non_negative_utilities.contains(prefix) {
+      return false
+    }
+    if negative_utilities.contains(prefix) {
       return true
     }
   }
