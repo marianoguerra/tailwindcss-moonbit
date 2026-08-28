@@ -65,15 +65,26 @@ fn border_style_utility(name : String) -> Array[Declaration]? {
 }
 
 ///|
+/// The theme answers first: `--radius-full` in the theme beats the built-in
+/// `full`, and a bare `rounded` is the `--radius` key itself.
 fn radius_value(theme : Map[String, String], key : String) -> String? {
-  match key {
-    "" => Some("0.25rem")
-    "none" => Some("0")
-    "full" => Some("calc(infinity * 1px)")
-    _ =>
-      match arbitrary_value(key) {
+  if key == "" {
+    return match theme_css_value(theme, "--radius") {
+      Some(value) => Some(value)
+      None => Some("0.25rem")
+    }
+  }
+  match arbitrary_value(key) {
+    Some(value) => Some(value)
+    None =>
+      match theme_css_value(theme, "--radius-\{key}") {
         Some(value) => Some(value)
-        None => theme_css_value(theme, "--radius-\{key}")
+        None =>
+          match key {
+            "none" => Some("0")
+            "full" => Some("calc(infinity * 1px)")
+            _ => None
+          }
       }
   }
 }

@@ -1080,24 +1080,32 @@ fn grid_placement_utility(
 }
 
 ///|
-fn line_clamp_utility(name : String) -> Array[Declaration]? {
-  guard prefixed_value(name, "line-clamp") is Some(value) else { return None }
-  if value == "none" {
-    return Some([
-      decl("overflow", "visible"),
-      decl("display", "block"),
-      decl("-webkit-box-orient", "horizontal"),
-      decl("-webkit-line-clamp", "unset"),
-    ])
+fn line_clamp_utility(
+  theme : Map[String, String],
+  name : String,
+) -> Array[Declaration]? {
+  guard prefixed_value(name, "line-clamp") is Some(key) else { return None }
+  let value = match arbitrary_value(key) {
+    Some(value) => Some(value)
+    None => theme_css_value(theme, "--line-clamp-\{key}")
   }
-  let value = match arbitrary_value(value) {
-    Some(value) => value
-    None =>
-      if is_nonnegative_integer(value) && value != "0" {
-        value
-      } else {
-        return None
-      }
+  // `line-clamp-none` releases the clamp, unless the theme claims the name.
+  guard value is Some(value) else {
+    if key == "none" {
+      return Some([
+        decl("overflow", "visible"),
+        decl("display", "block"),
+        decl("-webkit-box-orient", "horizontal"),
+        decl("-webkit-line-clamp", "unset"),
+      ])
+    }
+    guard is_nonnegative_integer(key) && key != "0" else { return None }
+    return Some([
+      decl("overflow", "hidden"),
+      decl("display", "-webkit-box"),
+      decl("-webkit-box-orient", "vertical"),
+      decl("-webkit-line-clamp", key),
+    ])
   }
   Some([
     decl("overflow", "hidden"),
@@ -1384,14 +1392,15 @@ fn list_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
-  if name == "list-image-none" {
-    return Some([decl("list-style-image", "none")])
-  }
   if name.has_prefix("list-image-") {
     let key = name[11:].to_owned()
     let value = match arbitrary_value(key) {
       Some(value) => Some(value)
-      None => theme_css_value(theme, "--list-style-image-\{key}")
+      None =>
+        match theme_css_value(theme, "--list-style-image-\{key}") {
+          Some(value) => Some(value)
+          None => if key == "none" { Some("none") } else { None }
+        }
     }
     return value.map(fn(value) { [decl("list-style-image", value)] })
   }
@@ -1463,7 +1472,7 @@ fn dynamic_utility(
     Some(_) as r => return r
     None => ()
   }
-  match line_clamp_utility(name) {
+  match line_clamp_utility(theme, name) {
     Some(_) as r => return r
     None => ()
   }

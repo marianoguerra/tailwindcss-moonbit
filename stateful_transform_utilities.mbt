@@ -41,15 +41,24 @@ fn transform_origin_utility(
     ("left", "left"),
     ("top-left", "top left"),
   ]
-  for entry in keywords {
-    let (candidate, value) = entry
-    if key == candidate {
-      return Some([decl("transform-origin", value)])
-    }
-  }
   let value = match arbitrary_value(key) {
     Some(value) => Some(value)
-    None => theme_css_value(theme, "--transform-origin-\{key}")
+    None =>
+      match theme_css_value(theme, "--transform-origin-\{key}") {
+        // A theme key wins over the built-in keyword, as it does everywhere.
+        Some(value) => Some(value)
+        None => {
+          let mut keyword = None
+          for entry in keywords {
+            let (candidate, value) = entry
+            if key == candidate {
+              keyword = Some(value)
+              break
+            }
+          }
+          keyword
+        }
+      }
   }
   value.map(fn(value) { [decl("transform-origin", value)] })
 }
@@ -195,12 +204,12 @@ fn perspective_utility(
     })
   }
   guard prefixed_value(name, "perspective") is Some(key) else { return None }
-  let value = match key {
-    "none" => Some("none")
-    _ =>
-      match arbitrary_value(key) {
+  let value = match arbitrary_value(key) {
+    Some(value) => Some(value)
+    None =>
+      match theme_css_value(theme, "--perspective-\{key}") {
         Some(value) => Some(value)
-        None => theme_css_value(theme, "--perspective-\{key}")
+        None => if key == "none" { Some("none") } else { None }
       }
   }
   value.map(fn(value) { [decl("perspective", value)] })

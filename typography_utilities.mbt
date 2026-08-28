@@ -201,16 +201,15 @@ fn decoration_shape_utility(
   }
   guard name.has_prefix("underline-offset-") else { return None }
   let key = name[17:].to_owned()
-  if key == "auto" {
-    return Some([decl("text-underline-offset", "auto")])
-  }
   let value = match arbitrary_value(key) {
     Some(value) => Some(value)
     None =>
       match theme_css_value(theme, "--text-underline-offset-\{key}") {
         Some(value) => Some(value)
         None =>
-          if is_nonnegative_integer(key) {
+          if key == "auto" {
+            Some("auto")
+          } else if is_nonnegative_integer(key) {
             Some("\{key}px")
           } else {
             None
