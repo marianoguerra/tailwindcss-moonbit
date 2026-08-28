@@ -25,8 +25,6 @@
     "modifiers": "different output",
     "negative values": "different output",
     "resolve theme values with sub-namespace (--value(--text --line-height))": "different output",
-    "ring": "different output",
-    "ring-offset": "different output",
     "shadow": "different output",
     "sorts breakpoints based on unit and then in ascending aOrder": "not implemented",
     "text": "different output",

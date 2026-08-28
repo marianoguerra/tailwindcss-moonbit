@@ -40,6 +40,47 @@ fn shadow_value_with_color(value : String, custom_property : String) -> String {
 }
 
 ///|
+/// A color for one of the shadow or ring utilities, resolved against its own
+/// theme namespace before `--color`, with the three universal keywords.
+fn shadow_color(
+  theme : Map[String, String],
+  theme_namespace : String,
+  key : String,
+) -> String? {
+  match arbitrary_value(key) {
+    Some(value) => return Some(value)
+    None => ()
+  }
+  match keyword_color(key) {
+    Some(value) => return Some(value)
+    None => ()
+  }
+  for candidate_namespace in [theme_namespace, "--color"] {
+    if theme_value(theme, candidate_namespace, key) is Some(_) {
+      return theme_css_value(theme, "\{candidate_namespace}-\{key}")
+    }
+  }
+  None
+}
+
+///|
+/// The literal and the `var()` form of a shadow color, which the shadow
+/// utilities need together: the literal becomes the `color-mix` fallback.
+fn shadow_color_pair(
+  theme : Map[String, String],
+  theme_namespace : String,
+  key : String,
+) -> (String, String)? {
+  for candidate_namespace in [theme_namespace, "--color"] {
+    if theme.get("\{candidate_namespace}-\{key}") is Some(literal) &&
+      theme_css_value(theme, "\{candidate_namespace}-\{key}") is Some(value) {
+      return Some((literal, value))
+    }
+  }
+  None
+}
+
+///|
 fn shadow_ring_utility(
   theme : Map[String, String],
   name : String,
@@ -50,8 +91,13 @@ fn shadow_ring_utility(
     let width = if key == "" {
       Some("1px")
     } else {
-      match arbitrary_value(key) {
-        Some(value) => Some(value)
+      match arbitrary_typed_value(key) {
+        Some((value, data_type)) =>
+          if is_measure_value(value, data_type) {
+            Some(value)
+          } else {
+            None
+          }
         None =>
           if is_nonnegative_integer(key) {
             Some("\{key}px")
@@ -70,7 +116,7 @@ fn shadow_ring_utility(
           decl("box-shadow", shadow_stack),
         ])
       None =>
-        match theme_css_value(theme, "--color-\{key}") {
+        match shadow_color(theme, "--ring-color", key) {
           Some(value) => return Some([decl("--tw-inset-ring-color", value)])
           None => return None
         }
@@ -80,8 +126,13 @@ fn shadow_ring_utility(
     let key = if name == "ring" { "" } else { name[5:].to_owned() }
     if key.has_prefix("offset-") {
       let offset_key = key[7:].to_owned()
-      let width = match arbitrary_value(offset_key) {
-        Some(value) => Some(value)
+      let width = match arbitrary_typed_value(offset_key) {
+        Some((value, data_type)) =>
+          if is_measure_value(value, data_type) {
+            Some(value)
+          } else {
+            None
+          }
         None =>
           if is_nonnegative_integer(offset_key) {
             Some("\{offset_key}px")
@@ -98,17 +149,22 @@ fn shadow_ring_utility(
             ),
           ])
         None =>
-          match theme_css_value(theme, "--color-\{offset_key}") {
+          match shadow_color(theme, "--ring-offset-color", offset_key) {
             Some(value) => return Some([decl("--tw-ring-offset-color", value)])
             None => return None
           }
       }
     }
     let width = if key == "" {
-      Some("1px")
+      Some(theme.get("--default-ring-width").unwrap_or("1px"))
     } else {
-      match arbitrary_value(key) {
-        Some(value) => Some(value)
+      match arbitrary_typed_value(key) {
+        Some((value, data_type)) =>
+          if is_measure_value(value, data_type) {
+            Some(value)
+          } else {
+            None
+          }
         None =>
           if is_nonnegative_integer(key) {
             Some("\{key}px")
@@ -127,7 +183,7 @@ fn shadow_ring_utility(
           decl("box-shadow", shadow_stack),
         ])
       None =>
-        match theme_css_value(theme, "--color-\{key}") {
+        match shadow_color(theme, "--ring-color", key) {
           Some(value) => return Some([decl("--tw-ring-color", value)])
           None => return None
         }
@@ -153,9 +209,8 @@ fn shadow_ring_utility(
   if key == "none" {
     return Some([decl(property, "0 0 #0000"), decl("box-shadow", shadow_stack)])
   }
-  match
-    (theme.get("--color-\{key}"), theme_css_value(theme, "--color-\{key}")) {
-    (Some(literal), Some(value)) => {
+  match shadow_color_pair(theme, "--box-shadow-color", key) {
+    Some((literal, value)) => {
       let alpha_property = "\{color_property[:color_property.length() - 6]}-alpha"
       return Some([
         {
@@ -189,9 +244,8 @@ fn text_shadow_utility(
   name : String,
 ) -> Array[Declaration]? {
   guard prefixed_value(name, "text-shadow") is Some(key) else { return None }
-  match
-    (theme.get("--color-\{key}"), theme_css_value(theme, "--color-\{key}")) {
-    (Some(literal), Some(value)) =>
+  match shadow_color_pair(theme, "--text-shadow-color", key) {
+    Some((literal, value)) =>
       return Some([
         {
           property: "--tw-text-shadow-color",
