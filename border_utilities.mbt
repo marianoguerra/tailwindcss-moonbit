@@ -98,9 +98,9 @@ fn border_width_utility(
       ])
     }
     if key == "" {
-      return width(
-        theme_css_value(theme, "--default-border-width").unwrap_or("1px"),
-      )
+      // A `--default-*` key is read for its value, not referenced as a
+      // variable, so `border` inlines the width and leaves `:root` alone.
+      return width(theme.get("--default-border-width").unwrap_or("1px"))
     }
     // An arbitrary value picks its own branch: an explicit `[length:…]` or
     // `[line-width:…]` is a width, anything else — including a bare `var()`,

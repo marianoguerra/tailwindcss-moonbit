@@ -60,6 +60,33 @@ fn is_spacing_number(input : String) -> Bool {
 }
 
 ///|
+/// A `<number>/<number>` ratio, upstream's `ratio` data type. Unlike the
+/// fraction the sizing utilities take, both sides may be decimals and the
+/// denominator may be zero — `aspect-8.5/11` is a ratio, not a division.
+fn is_ratio(value : String) -> Bool {
+  guard value.split_once("/") is Some((left, right)) else { return false }
+  is_plain_number(left.to_owned()) && is_plain_number(right.to_owned())
+}
+
+///|
+fn is_plain_number(input : String) -> Bool {
+  guard input.length() > 0 else { return false }
+  let mut digits = 0
+  let mut dots = 0
+  for index in 0..<input.length() {
+    let character = input[index]
+    if character >= '0' && character <= '9' {
+      digits += 1
+    } else if character == '.' {
+      dots += 1
+    } else {
+      return false
+    }
+  }
+  digits > 0 && dots <= 1
+}
+
+///|
 fn normalize_ratio(input : String, spaced : Bool) -> String? {
   guard input.split_once("/") is Some((left, right)) else { return None }
   let left = trim(left.to_owned())

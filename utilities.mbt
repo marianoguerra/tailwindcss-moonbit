@@ -1264,7 +1264,16 @@ fn flex_utility(
       None =>
         match theme_css_value(theme, "--flex-\{key}") {
           Some(value) => Some(value)
-          None => if is_nonnegative_integer(key) { Some(key) } else { None }
+          None =>
+            if is_nonnegative_integer(key) {
+              Some(key)
+            } else if is_ratio(key) {
+              // `flex` keeps the fraction as written, unlike the sizing
+              // utilities which space it out.
+              Some("calc(\{key} * 100%)")
+            } else {
+              None
+            }
         }
     }
     return value.map(fn(value) { [decl("flex", value)] })
@@ -1570,7 +1579,8 @@ fn dynamic_utility(
       None =>
         match theme_value(theme, "--aspect", key) {
           Some(_) => theme_css_value(theme, "--aspect-\{key}")
-          None => None
+          // A bare ratio is the value itself, not a division.
+          None => if is_ratio(key) { Some(key) } else { None }
         }
     }
     match value {
@@ -1674,6 +1684,25 @@ fn compile_base(
   name : String,
   modifier : String?,
 ) -> CompiledBase? {
+  // `w-1/2` and `translate-1/2` reach us as a value plus a modifier, because a
+  // fraction and a modifier are spelled the same. A utility that takes
+  // fractions matches on the joined name, and a match means the `/` was its
+  // own. Color utilities are exempt: there the `/` really is an alpha channel.
+  let color_candidate = name.has_prefix("bg-") ||
+    name.has_prefix("text-") ||
+    name.has_prefix("border-") ||
+    name.has_prefix("outline-") ||
+    name.has_prefix("decoration-") ||
+    name.has_prefix("fill-") ||
+    name.has_prefix("stroke-") ||
+    name.has_prefix("accent-") ||
+    name.has_prefix("caret-")
+  if modifier is Some(fraction) && !color_candidate && supports_fractions(name) {
+    match compile_base(theme, "\{name}/\{fraction}", None) {
+      Some(base) => return Some({ ..base, modifier_used: true })
+      None => ()
+    }
+  }
   match stateful_transform_utility(theme, name) {
     Some(declarations) => return Some(alpha_base(declarations))
     None => ()
@@ -1701,33 +1730,13 @@ fn compile_base(
     Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
-  {
-      let color_candidate = name.has_prefix("bg-") ||
-        name.has_prefix("text-") ||
-        name.has_prefix("border-") ||
-        name.has_prefix("outline-") ||
-        name.has_prefix("decoration-") ||
-        name.has_prefix("fill-") ||
-        name.has_prefix("stroke-") ||
-        name.has_prefix("accent-") ||
-        name.has_prefix("caret-")
-      // `w-1/2` is a fraction, not a modifier: the `/` goes back into the name
-      // and a match means the lookup itself consumed it.
-      let dynamic_name = match modifier {
-        Some(modifier) if !color_candidate => "\{name}/\{modifier}"
-        _ => name
-      }
-    match dynamic_utility(theme, dynamic_name) {
-      Some(declarations) => {
-        let base = alpha_base(declarations)
-        Some({ ..base, modifier_used: base.modifier_used || dynamic_name != name })
-      }
-      // Static values come last: upstream resolves a utility's theme keys
-      // first, so `--order-first` in the theme beats the built-in `order-first`.
-      None =>
-        static_utility(name).map(fn(value) {
-          { ..alpha_base(value), static_value: true }
-        })
-    }
+  match dynamic_utility(theme, name) {
+    Some(declarations) => Some(alpha_base(declarations))
+    // Static values come last: upstream resolves a utility's theme keys
+    // first, so `--order-first` in the theme beats the built-in `order-first`.
+    None =>
+      static_utility(name).map(fn(value) {
+        { ..alpha_base(value), static_value: true }
+      })
   }
 }

@@ -70,6 +70,27 @@ fn supports_negative(base : String) -> Bool {
 }
 
 ///|
+/// Utilities upstream registers with `supportsFractions`. Only these read a
+/// `1/2` as a fraction; everywhere else a `/` is a modifier, which is why
+/// `leading-6/2` is not a candidate.
+let fraction_utilities : @set.Set[String] = @set.Set([
+  "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be",
+  "top", "right", "bottom", "left", "w", "min-w", "max-w", "h", "min-h", "max-h",
+  "inline", "min-inline", "max-inline", "block", "min-block", "max-block", "size",
+  "basis", "translate", "translate-x", "translate-y", "translate-z",
+])
+
+///|
+fn supports_fractions(base : String) -> Bool {
+  for index in 0..<base.length() {
+    if base[index] == '-' && fraction_utilities.contains(base[:index].to_owned()) {
+      return true
+    }
+  }
+  false
+}
+
+///|
 /// Whether a declaration takes a candidate's `/modifier` as an alpha channel.
 /// The modifier gate and `apply_candidate_value` have to agree on this, so both
 /// ask here.

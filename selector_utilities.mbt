@@ -79,7 +79,7 @@ fn space_value(
 fn divide_width_value(theme : Map[String, String], key : String) -> String? {
   if key == "" {
     return Some(
-      theme_css_value(theme, "--default-border-width").unwrap_or("1px"),
+      theme.get("--default-border-width").unwrap_or("1px"),
     )
   }
   match arbitrary_value(key) {
