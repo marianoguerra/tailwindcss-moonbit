@@ -79,7 +79,8 @@ let fraction_utilities : @set.Set[String] = @set.Set([
   "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be",
   "top", "right", "bottom", "left", "w", "min-w", "max-w", "h", "min-h", "max-h",
   "inline", "min-inline", "max-inline", "block", "min-block", "max-block", "size",
-  "basis", "translate", "translate-x", "translate-y", "translate-z",
+  // `translate-z` is the one axis without fractions.
+  "basis", "translate", "translate-x", "translate-y",
 ])
 
 ///|

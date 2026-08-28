@@ -33,13 +33,13 @@ fn transform_origin_utility(
   let keywords : Array[(String, String)] = [
     ("center", "center"),
     ("top", "top"),
-    ("top-right", "top right"),
-    ("right", "right"),
-    ("bottom-right", "bottom right"),
+    ("top-right", "100% 0"),
+    ("right", "100%"),
+    ("bottom-right", "100% 100%"),
     ("bottom", "bottom"),
-    ("bottom-left", "bottom left"),
-    ("left", "left"),
-    ("top-left", "top left"),
+    ("bottom-left", "0 100%"),
+    ("left", "0"),
+    ("top-left", "0 0"),
   ]
   let value = match arbitrary_value(key) {
     Some(value) => Some(value)
@@ -87,7 +87,8 @@ fn translate_utility(
     return None
   }
   guard prefixed_value(name, root) is Some(key) else { return None }
-  let value = if key == "full" {
+  // `translate-full` and its two axes are upstream statics; the z axis has none.
+  let value = if key == "full" && root != "translate-z" {
     Some("100%")
   } else {
     match theme_css_value(theme, "--translate-\{key}") {
@@ -179,6 +180,10 @@ fn scale_utility(
     return None
   }
   guard prefixed_value(name, root) is Some(key) else { return None }
+  // `scale-[2]` sets the property itself rather than the per-axis pair.
+  if root == "scale" && arbitrary_value(key) is Some(value) {
+    return Some([decl("scale", value)])
+  }
   let value = match arbitrary_value(key) {
     Some(value) => Some(value)
     None =>

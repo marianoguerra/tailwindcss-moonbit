@@ -1547,6 +1547,10 @@ fn dynamic_utility(
     Some(_) as r => return r
     None => ()
   }
+  match mask_radial_position_utility(name) {
+    Some(_) as r => return r
+    None => ()
+  }
   match descriptor_utility(name) {
     Some(_) as r => return r
     None => ()

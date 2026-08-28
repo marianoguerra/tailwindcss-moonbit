@@ -136,33 +136,41 @@ fn mask_gradient_utility(
       declarations.push(decl("\{slot}-\{stop}-\{field}", value))
       return Some(declarations)
     }
+    // `mask-radial-at-*` moves the radial center; the keyword forms are statics.
+    if kind == "radial" && prefixed_value(name, "\{root}-at") is Some(key) {
+      // The keyword positions are statics; only an arbitrary one lands here.
+      match arbitrary_value(key) {
+        Some(value) => return Some([decl("\{slot}-position", value)])
+        None => ()
+      }
+    }
     guard prefixed_value(name, root) is Some(key) else { continue }
     // The bare form sets the gradient's own parameter: an angle for the linear
     // and conic masks, a size for the radial one.
-    let (property, value) = if kind == "radial" {
-      ("\{slot}-size", match arbitrary_value(key) {
-        Some(value) => value
-        None => return None
-      })
+    let property = if kind == "radial" {
+      "\{slot}-size"
     } else {
-      (
-        "\{slot}-position",
-        match arbitrary_value(key) {
-          Some(value) => value
-          None =>
-            if key == "0" {
-              // As with the spacing scale, a zero multiplier folds away.
-              "0deg"
-            } else if key == "1" {
-              "1deg"
-            } else if is_nonnegative_integer(key) {
-              "calc(1deg * \{key})"
-            } else {
-              return None
-            }
-        },
-      )
+      "\{slot}-position"
     }
+    let resolved = match arbitrary_value(key) {
+      Some(value) => Some(value)
+      None =>
+        if kind == "radial" {
+          None
+        } else if key == "0" {
+          // As with the spacing scale, a zero multiplier folds away.
+          Some("0deg")
+        } else if key == "1" {
+          Some("1deg")
+        } else if is_nonnegative_integer(key) {
+          Some("calc(1deg * \{key})")
+        } else {
+          None
+        }
+    }
+    // A keyword form — `mask-radial-at-bottom`, `mask-radial-circle` — is a
+    // static utility, so leave it to that rather than claiming the name.
+    guard resolved is Some(value) else { continue }
     let declarations = mask_composition_declarations()
     declarations.remove(2) |> ignore
     declarations.push(decl(slot, "\{kind}-gradient(var(\{slot}-stops, var(\{property})))"))
@@ -187,6 +195,24 @@ fn mask_placement_utility(
     }
     guard value is Some(value) else { return None }
     return Some([decl(property, value)])
+  }
+  None
+}
+
+///|
+/// `mask-radial-at-*` moves the radial center. The keyword forms name a corner
+/// or an edge; the two-word ones join with a space.
+fn mask_radial_position_utility(name : String) -> Array[Declaration]? {
+  guard prefixed_value(name, "mask-radial-at") is Some(key) else { return None }
+  for position in [
+    "center", "top", "right", "bottom", "left", "top-left", "top-right",
+    "bottom-left", "bottom-right",
+  ] {
+    if key == position {
+      return Some([
+        decl("--tw-mask-radial-position", replace_all(position, "-", " ")),
+      ])
+    }
   }
   None
 }
