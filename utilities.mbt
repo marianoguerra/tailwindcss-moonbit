@@ -131,14 +131,10 @@ fn apply_candidate_value(
 
 ///|
 fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
+  // Upstream's `spacingUtility` registers exactly one static value, `-px`; a
+  // utility that also takes `auto` or `full` declares that for itself.
   if value == "px" {
     return Some("1px")
-  }
-  if value == "full" {
-    return Some("100%")
-  }
-  if value == "auto" {
-    return Some("auto")
   }
   guard is_spacing_number(value) else { return None }
   guard theme_css_value(theme, "--spacing") is Some(base) else { return None }
@@ -702,9 +698,13 @@ fn directional_spacing(
   for entry in directional_spacing_entries {
     let (prefix, properties) = entry
     guard prefixed_value(name, prefix) is Some(raw) else { continue }
-    guard resolved_value(theme, raw, "--spacing", true) is Some(value) else {
-      return None
+    // `m-auto` and its axes are upstream statics; padding and gap have none.
+    let value = if raw == "auto" && first == 'm' {
+      Some("auto")
+    } else {
+      resolved_value(theme, raw, "--spacing", true)
     }
+    guard value is Some(value) else { return None }
     return Some(properties.map(fn(property) { decl(property, value) }))
   }
   None
@@ -731,12 +731,59 @@ fn inset_utility(
   for entry in entries {
     let (prefix, property) = entry
     guard prefixed_value(name, prefix) is Some(raw) else { continue }
-    guard resolved_value(theme, raw, "--inset", true) is Some(value) else {
-      return None
+    // Upstream registers `<name>-auto` and `<name>-full` alongside the spacing
+    // scale for every inset utility.
+    let value = match raw {
+      "auto" => Some("auto")
+      "full" => Some("100%")
+      _ => resolved_value(theme, raw, "--inset", true)
     }
+    guard value is Some(value) else { return None }
     return Some([decl(property, value)])
   }
   None
+}
+
+///|
+/// The keyword values the sizing utilities take, verified against the oracle
+/// across every prefix. `w`, `h` and `size` accept the viewport units of both
+/// axes; the logical utilities take only their own. `auto` is not a maximum and
+/// `none` is only a maximum, and `size-*` has no `screen`.
+fn sizing_keyword(
+  key : String,
+  vertical~ : Bool,
+  logical~ : Bool,
+  maximum~ : Bool,
+  screen~ : Bool,
+) -> String? {
+  match key {
+    "auto" => if maximum { None } else { Some("auto") }
+    "none" => if maximum { Some("none") } else { None }
+    "full" => Some("100%")
+    "min" => Some("min-content")
+    "max" => Some("max-content")
+    "fit" => Some("fit-content")
+    "screen" =>
+      if screen {
+        Some(if vertical { "100vh" } else { "100vw" })
+      } else {
+        None
+      }
+    "lh" => if vertical { Some("1lh") } else { None }
+    "svw" | "lvw" | "dvw" =>
+      if logical && vertical {
+        None
+      } else {
+        Some("100\{key}")
+      }
+    "svh" | "lvh" | "dvh" =>
+      if logical && !vertical {
+        None
+      } else {
+        Some("100\{key}")
+      }
+    _ => None
+  }
 }
 
 ///|
@@ -756,18 +803,13 @@ fn size_utility(
     let (prefix, property, theme_namespace) = entry
     guard prefixed_value(name, prefix) is Some(key) else { continue }
     let vertical = property.contains("height")
-    let special = match key {
-      "screen" => Some(if vertical { "100vh" } else { "100vw" })
-      "svh" => Some("100svh")
-      "lvh" => Some("100lvh")
-      "dvh" => Some("100dvh")
-      "lh" => Some("1lh")
-      "min" => Some("min-content")
-      "max" => Some("max-content")
-      "fit" => Some("fit-content")
-      "none" => if property.has_prefix("max") { Some("none") } else { None }
-      _ => None
-    }
+    let special = sizing_keyword(
+      key,
+      vertical~,
+      logical=false,
+      maximum=property.has_prefix("max"),
+      screen=true,
+    )
     let value = match special {
       Some(v) => Some(v)
       None =>
@@ -792,14 +834,13 @@ fn paired_size_utility(
   name : String,
 ) -> Array[Declaration]? {
   guard prefixed_value(name, "size") is Some(key) else { return None }
-  let special = match key {
-    "auto" => Some("auto")
-    "full" => Some("100%")
-    "min" => Some("min-content")
-    "max" => Some("max-content")
-    "fit" => Some("fit-content")
-    _ => None
-  }
+  let special = sizing_keyword(
+    key,
+    vertical=false,
+    logical=false,
+    maximum=false,
+    screen=false,
+  )
   let value = match special {
     Some(value) => Some(value)
     None => resolved_value(theme, key, "--size", true)
@@ -1090,16 +1131,13 @@ fn logical_size_utility(
   for entry in entries {
     let (prefix, property, vertical) = entry
     guard prefixed_value(name, prefix) is Some(key) else { continue }
-    let special = match key {
-      "auto" => Some("auto")
-      "full" => Some("100%")
-      "min" => Some("min-content")
-      "max" => Some("max-content")
-      "fit" => Some("fit-content")
-      "screen" => Some(if vertical { "100vh" } else { "100vw" })
-      "none" => if property.has_prefix("max") { Some("none") } else { None }
-      _ => None
-    }
+    let special = sizing_keyword(
+      key,
+      vertical~,
+      logical=true,
+      maximum=property.has_prefix("max"),
+      screen=true,
+    )
     let value = match special {
       Some(value) => Some(value)
       None =>
