@@ -1,21 +1,60 @@
 ///|
-fn border_width_value(theme : Map[String, String], key : String) -> String? {
-  if key == "" {
-    return Some("1px")
+/// Upstream's `line-width` data type: every space-separated part is a length, a
+/// number, or one of the three width keywords. It is what tells `border-[12px]`
+/// (a width) from `border-[#0088cc]` (a color).
+fn is_line_width_value(value : String) -> Bool {
+  let parts = split_on_spaces(value)
+  guard parts.length() > 0 else { return false }
+  for part in parts {
+    if part == "thin" || part == "medium" || part == "thick" {
+      continue
+    }
+    guard is_number_with_unit(part) else { return false }
   }
-  match arbitrary_value(key) {
-    Some(value) => Some(value)
-    None =>
-      match theme_css_value(theme, "--border-width-\{key}") {
-        Some(value) => Some(value)
-        None =>
-          if is_nonnegative_integer(key) {
-            Some("\{key}px")
-          } else {
-            None
-          }
+  true
+}
+
+///|
+fn is_number_with_unit(part : String) -> Bool {
+  let mut index = 0
+  if part.length() > 0 && (part[0] == '-' || part[0] == '+') {
+    index += 1
+  }
+  let digits_start = index
+  while index < part.length() &&
+        ((part[index] >= '0' && part[index] <= '9') || part[index] == '.') {
+    index += 1
+  }
+  guard index > digits_start else { return false }
+  // Whatever follows the number must be a unit: letters, or a percent sign.
+  while index < part.length() {
+    let character = part[index]
+    guard (character >= 'a' && character <= 'z') || character == '%' else {
+      return false
+    }
+    index += 1
+  }
+  true
+}
+
+///|
+fn split_on_spaces(value : String) -> Array[String] {
+  let parts : Array[String] = []
+  let buffer = StringBuilder()
+  for character in value {
+    if character == ' ' {
+      if buffer.to_string() != "" {
+        parts.push(buffer.to_string())
+        buffer.reset()
       }
+    } else {
+      buffer.write_char(character)
+    }
   }
+  if buffer.to_string() != "" {
+    parts.push(buffer.to_string())
+  }
+  parts
 }
 
 ///|
@@ -23,32 +62,76 @@ fn border_width_utility(
   theme : Map[String, String],
   name : String,
 ) -> Array[Declaration]? {
-  let entries : Array[(String, String, String)] = [
-    ("border-x", "border-inline-style", "border-inline-width"),
-    ("border-y", "border-block-style", "border-block-width"),
-    ("border-s", "border-inline-start-style", "border-inline-start-width"),
-    ("border-e", "border-inline-end-style", "border-inline-end-width"),
-    ("border-bs", "border-block-start-style", "border-block-start-width"),
-    ("border-be", "border-block-end-style", "border-block-end-width"),
-    ("border-t", "border-top-style", "border-top-width"),
-    ("border-r", "border-right-style", "border-right-width"),
-    ("border-b", "border-bottom-style", "border-bottom-width"),
-    ("border-l", "border-left-style", "border-left-width"),
-    ("border", "border-style", "border-width"),
+  let entries : Array[(String, String, String, String)] = [
+    ("border-x", "border-inline-style", "border-inline-width", "border-inline-color"),
+    ("border-y", "border-block-style", "border-block-width", "border-block-color"),
+    (
+      "border-s", "border-inline-start-style", "border-inline-start-width", "border-inline-start-color",
+    ),
+    (
+      "border-e", "border-inline-end-style", "border-inline-end-width", "border-inline-end-color",
+    ),
+    (
+      "border-bs", "border-block-start-style", "border-block-start-width", "border-block-start-color",
+    ),
+    (
+      "border-be", "border-block-end-style", "border-block-end-width", "border-block-end-color",
+    ),
+    ("border-t", "border-top-style", "border-top-width", "border-top-color"),
+    ("border-r", "border-right-style", "border-right-width", "border-right-color"),
+    ("border-b", "border-bottom-style", "border-bottom-width", "border-bottom-color"),
+    ("border-l", "border-left-style", "border-left-width", "border-left-color"),
+    ("border", "border-style", "border-width", "border-color"),
   ]
   for entry in entries {
-    let (root, style_property, width_property) = entry
+    let (root, style_property, width_property, color_property) = entry
     let key = if name == root {
       ""
     } else {
       guard prefixed_value(name, root) is Some(key) else { continue }
       key
     }
-    guard border_width_value(theme, key) is Some(value) else { continue }
-    return Some([
-      decl(style_property, "var(--tw-border-style)"),
-      decl(width_property, value),
-    ])
+    let width = fn(value : String) {
+      Some([
+        decl(style_property, "var(--tw-border-style)"),
+        decl(width_property, value),
+      ])
+    }
+    if key == "" {
+      return width(
+        theme_css_value(theme, "--default-border-width").unwrap_or("1px"),
+      )
+    }
+    // An arbitrary value picks its own branch: an explicit `[length:…]` or
+    // `[line-width:…]` is a width, anything else — including a bare `var()`,
+    // which upstream infers nothing from — is a color.
+    let (value, arbitrary, data_type) = unpack_functional_value(key)
+    if arbitrary {
+      return match data_type {
+        Some("length") | Some("line-width") => width(value)
+        Some(_) => Some([decl(color_property, value)])
+        None =>
+          if is_line_width_value(value) {
+            width(value)
+          } else {
+            Some([decl(color_property, value)])
+          }
+      }
+    }
+    // A named value is a theme color first, then a border width, then a bare
+    // pixel count.
+    match selector_color_value(theme, key, ["--border-color", "--color"]) {
+      Some(color) => return Some([decl(color_property, color)])
+      None => ()
+    }
+    match theme_css_value(theme, "--border-width-\{key}") {
+      Some(value) => return width(value)
+      None => ()
+    }
+    if is_nonnegative_integer(key) {
+      return width("\{key}px")
+    }
+    return None
   }
   None
 }
@@ -165,7 +248,24 @@ fn outline_utility(
       decl("outline-style", style),
     ])
   }
-  guard border_width_value(theme, key) is Some(value) else { return None }
+  let value = if key == "" {
+    Some("1px")
+  } else {
+    match arbitrary_value(key) {
+      Some(value) => Some(value)
+      None =>
+        match theme_css_value(theme, "--border-width-\{key}") {
+          Some(value) => Some(value)
+          None =>
+            if is_nonnegative_integer(key) {
+              Some("\{key}px")
+            } else {
+              None
+            }
+        }
+    }
+  }
+  guard value is Some(value) else { return None }
   Some([
     decl("outline-style", "var(--tw-outline-style)"),
     decl("outline-width", value),

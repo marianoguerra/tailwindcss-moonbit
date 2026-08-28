@@ -337,20 +337,39 @@ fn color_mix_fallback_nodes(
       ValueFunction("color-mix", children) => {
         let resolved = resolve_theme_var_literals(children, theme)
         let (inner, _) = color_mix_fallback_nodes(resolved, theme)
-        // A `color-mix()` involving `currentColor` cannot be reduced to a static
-        // colour, and an sRGB `color-mix()` still needs `color-mix` support, so
-        // the fallback drops the mix and keeps the bare `currentColor` token.
-        let mut current_color : String? = None
+        // A mix that still names `currentColor` or a variable nothing resolved
+        // cannot be reduced to a static color, so — as upstream does — the
+        // fallback drops the mix and keeps its first color argument.
+        let mut irreducible = false
         for child in inner {
           if child is ValueWord(word) && word.to_lower() == "currentcolor" {
-            current_color = Some(word)
+            irreducible = true
+            break
+          }
+          if child is ValueFunction("var", _) {
+            irreducible = true
             break
           }
         }
-        match current_color {
-          Some(word) => {
+        let first_color = if irreducible {
+          let mut index = 0
+          while index < inner.length() &&
+                !(inner[index] is ValueSeparator(separator) &&
+                separator.contains(",")) {
+            index += 1
+          }
+          if index + 1 < inner.length() {
+            Some(inner[index + 1])
+          } else {
+            None
+          }
+        } else {
+          None
+        }
+        match first_color {
+          Some(node) => {
             changed = true
-            output.push(ValueWord(word))
+            output.push(node)
           }
           None => {
             // Switch the first `oklab`/`oklch` color-space keyword to `srgb`.
