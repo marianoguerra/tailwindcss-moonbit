@@ -37,8 +37,13 @@ fn font_family_utility(
   name : String,
 ) -> Array[Declaration]? {
   guard prefixed_value(name, "font") is Some(key) else { return None }
-  match arbitrary_value(key) {
-    Some(value) => Some([decl("font-family", value)])
+  match arbitrary_typed_value(key) {
+    // A number is a weight; a family name — or anything else — is a family.
+    Some((value, Some("number"))) =>
+      Some([decl("--tw-font-weight", value), decl("font-weight", value)])
+    Some((value, None)) if is_plain_number(value) =>
+      Some([decl("--tw-font-weight", value), decl("font-weight", value)])
+    Some((value, _)) => Some([decl("font-family", value)])
     None =>
       match theme_css_value(theme, "--font-\{key}") {
         None => None
