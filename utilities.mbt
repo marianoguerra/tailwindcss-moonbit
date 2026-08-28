@@ -909,37 +909,40 @@ fn color_utility(
   guard c == 'b' || c == 't' || c == 'o' || c == 'd' || c == 'f' || c == 's' else {
     return None
   }
-  let entries : Array[(String, String)] = [
-    ("border-x", "border-inline-color"),
-    ("border-y", "border-block-color"),
-    ("border-s", "border-inline-start-color"),
-    ("border-e", "border-inline-end-color"),
-    ("border-bs", "border-block-start-color"),
-    ("border-be", "border-block-end-color"),
-    ("border-t", "border-top-color"),
-    ("border-r", "border-right-color"),
-    ("border-b", "border-bottom-color"),
-    ("border-l", "border-left-color"),
-    ("bg", "background-color"),
-    ("text", "color"),
-    ("border", "border-color"),
-    ("outline", "outline-color"),
-    ("decoration", "text-decoration-color"),
-    ("fill", "fill"),
-    ("stroke", "stroke"),
+  let entries : Array[(String, String, String)] = [
+    ("border-s", "border-inline-start-color", "--border-color"),
+    ("border-e", "border-inline-end-color", "--border-color"),
+    ("border-bs", "border-block-start-color", "--border-color"),
+    ("border-be", "border-block-end-color", "--border-color"),
+    ("border-t", "border-top-color", "--border-color"),
+    ("border-r", "border-right-color", "--border-color"),
+    ("border-b", "border-bottom-color", "--border-color"),
+    ("border-l", "border-left-color", "--border-color"),
+    ("bg", "background-color", "--background-color"),
+    ("text", "color", "--text-color"),
+    ("border", "border-color", "--border-color"),
+    ("outline", "outline-color", "--outline-color"),
+    ("decoration", "text-decoration-color", "--text-decoration-color"),
+    ("fill", "fill", "--fill"),
+    ("stroke", "stroke", "--stroke"),
   ]
   for entry in entries {
-    let (prefix, property) = entry
+    let (prefix, property, theme_namespace) = entry
     guard prefixed_value(name, prefix) is Some(key) else { continue }
     let value = match arbitrary_value(key) {
       Some(v) => Some(v)
       None =>
         match keyword_color(key) {
           Some(value) => Some(value)
+          // Each color utility reads its own namespace before `--color`.
           None =>
-            match theme_value(theme, "--color", key) {
-              Some(_) => theme_css_value(theme, "--color-\{key}")
-              None => None
+            match theme_value(theme, theme_namespace, key) {
+              Some(_) => theme_css_value(theme, "\{theme_namespace}-\{key}")
+              None =>
+                match theme_value(theme, "--color", key) {
+                  Some(_) => theme_css_value(theme, "--color-\{key}")
+                  None => None
+                }
             }
         }
     }
@@ -1650,6 +1653,23 @@ fn dynamic_utility(
         }
       None => ()
     }
+  }
+  if prefixed_value(name, "font-stretch") is Some(key) {
+    match arbitrary_value(key) {
+      Some(value) => return Some([decl("font-stretch", value)])
+      None => ()
+    }
+    // A percentage from 50% to 200%, whole numbers only.
+    if key.has_suffix("%") {
+      let number = key[:key.length() - 1].to_owned()
+      if is_nonnegative_integer(number) {
+        let percentage = @string.parse_double(number) catch { _ => 0.0 }
+        if percentage >= 50.0 && percentage <= 200.0 {
+          return Some([decl("font-stretch", key)])
+        }
+      }
+    }
+    return None
   }
   if prefixed_value(name, "zoom") is Some(key) {
     match arbitrary_value(key) {
