@@ -586,6 +586,8 @@ fn static_utility(name : String) -> Array[Declaration]? {
     "ring-inset" => Some([decl("--tw-ring-inset", "inset")])
     "content-none" =>
       Some([decl("--tw-content", "none"), decl("content", "none")])
+    "fill-none" => Some([decl("fill", "none")])
+    "stroke-none" => Some([decl("stroke", "none")])
     // Generated from the pinned upstream `staticUtility` registrations; every
     // arm here is a plain declaration list with no theme lookup.
     "order-first" => Some([decl("order", "-9999")])
@@ -1187,6 +1189,7 @@ fn columns_utility(
     None =>
       match theme_css_value(theme, "--columns-\{key}") {
         Some(value) => Some(value)
+        None if key == "auto" => Some("auto")
         None =>
           match theme_css_value(theme, "--container-\{key}") {
             // `columns-3xs` is a container width, not a count.
@@ -1368,7 +1371,12 @@ fn basis_utility(
         _ =>
           match theme_css_value(theme, "--flex-basis-\{key}") {
             Some(value) => Some(value)
-            None => resolved_value(theme, key, "--basis", true)
+            None =>
+              match resolved_value(theme, key, "--basis", true) {
+                Some(value) => Some(value)
+                // `basis-xl` is a container width, as it is for `w-*`.
+                None => theme_css_value(theme, "--container-\{key}")
+              }
           }
       }
   }

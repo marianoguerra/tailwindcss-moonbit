@@ -81,12 +81,31 @@ let fraction_utilities : @set.Set[String] = @set.Set([
   "inline", "min-inline", "max-inline", "block", "min-block", "max-block", "size",
   // `translate-z` is the one axis without fractions.
   "basis", "translate", "translate-x", "translate-y",
+  // Not `supportsFractions` upstream, but they read a `<n>/<m>` as a ratio, and
+  // the parser hands it over the same way.
+  "aspect", "flex",
 ])
 
 ///|
+/// Utilities that sit under a fraction-taking name without taking fractions.
+let non_fraction_utilities : @set.Set[String] = @set.Set(["translate-z"])
+
+///|
+/// The longest utility name answers, so `translate-z-1/2` is not a fraction
+/// even though `translate` takes them.
 fn supports_fractions(base : String) -> Bool {
+  let boundaries = []
   for index in 0..<base.length() {
-    if base[index] == '-' && fraction_utilities.contains(base[:index].to_owned()) {
+    if base[index] == '-' {
+      boundaries.push(index)
+    }
+  }
+  for offset in 0..<boundaries.length() {
+    let prefix = base[:boundaries[boundaries.length() - 1 - offset]].to_owned()
+    if non_fraction_utilities.contains(prefix) {
+      return false
+    }
+    if fraction_utilities.contains(prefix) {
       return true
     }
   }

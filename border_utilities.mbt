@@ -261,7 +261,7 @@ fn outline_utility(
     ])
   }
   let value = if key == "" {
-    Some("1px")
+    Some(theme.get("--default-outline-width").unwrap_or("1px"))
   } else {
     match arbitrary_typed_value(key) {
       Some((value, data_type)) =>
