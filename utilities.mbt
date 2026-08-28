@@ -157,6 +157,10 @@ fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
     return Some("1px")
   }
   guard is_spacing_number(value) else { return None }
+  // `--spacing: initial` clears the scale, so there is no multiplier to apply.
+  guard theme.get("--spacing") is Some(raw) && raw != "initial" else {
+    return None
+  }
   guard theme_css_value(theme, "--spacing") is Some(base) else { return None }
   if value == "0" {
     // No multiplier survives zero, so upstream folds it to a plain length.
@@ -977,9 +981,16 @@ fn color_utility(
 ///|
 /// `content-[…]` routes the value through `--tw-content` so the `before` and
 /// `after` variants can reuse it.
-fn content_utility(name : String) -> Array[Declaration]? {
+fn content_utility(
+  theme : Map[String, String],
+  name : String,
+) -> Array[Declaration]? {
   guard prefixed_value(name, "content") is Some(key) else { return None }
-  guard arbitrary_value(key) is Some(value) else { return None }
+  let value = match arbitrary_value(key) {
+    Some(value) => Some(value)
+    None => theme_css_value(theme, "--content-\{key}")
+  }
+  guard value is Some(value) else { return None }
   Some([decl("--tw-content", value), decl("content", "var(--tw-content)")])
 }
 
@@ -1623,7 +1634,7 @@ fn dynamic_utility(
     Some(_) as r => return r
     None => ()
   }
-  match content_utility(name) {
+  match content_utility(theme, name) {
     Some(_) as r => return r
     None => ()
   }

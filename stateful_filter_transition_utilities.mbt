@@ -86,18 +86,22 @@ fn one_filter_utility(
       guard prefixed_value(name, candidate_root) is Some(key) else { continue }
       key
     }
-    guard filter_value(theme, key, theme_namespace, default_value, percent)
-      is Some(value) else {
-      continue
-    }
     let property = if backdrop {
       "--tw-backdrop-\{root}"
     } else {
       "--tw-\{root}"
     }
-    let declarations : Array[Declaration] = [
-      decl(property, "\{function_name}(\{value})"),
-    ]
+    // `blur-none` empties the slot rather than filling it with a function.
+    let slot = if key == "none" {
+      " "
+    } else {
+      guard filter_value(theme, key, theme_namespace, default_value, percent)
+        is Some(value) else {
+        continue
+      }
+      "\{function_name}(\{value})"
+    }
+    let declarations : Array[Declaration] = [decl(property, slot)]
     if backdrop {
       declarations.push(
         decl("-webkit-backdrop-filter", filter_composition(true)),
@@ -243,6 +247,19 @@ fn transition_utility(
     "transition-all" =>
       Some([
         decl("transition-property", "all"),
+        decl("transition-timing-function", "var(--tw-ease, ease)"),
+        decl("transition-duration", "var(--tw-duration, 0s)"),
+      ])
+    "transition-opacity" | "transition-shadow" | "transition-transform" =>
+      Some([
+        decl(
+          "transition-property",
+          match name {
+            "transition-opacity" => "opacity"
+            "transition-shadow" => "box-shadow"
+            _ => "transform, translate, scale, rotate"
+          },
+        ),
         decl("transition-timing-function", "var(--tw-ease, ease)"),
         decl("transition-duration", "var(--tw-duration, 0s)"),
       ])
