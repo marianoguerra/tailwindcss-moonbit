@@ -7,7 +7,7 @@
 /// at all, however well their value would resolve. Derived from every
 /// `supportsNegative: true` registration and every `utilities.functional('-…')`
 /// in upstream `src/utilities.ts`.
-let negative_utilities : @set.Set[String] = @set.Set([
+let negative_utilities : @set.Set[String] = Set([
   // inset
   "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be", "top",
   "right", "bottom", "left",
@@ -39,7 +39,7 @@ let negative_utilities : @set.Set[String] = @set.Set([
 /// `inset-shadow` is not `inset` and `col-span` is not `col`, so a prefix match
 /// alone would let `-inset-shadow-sm` and `-col-span-4` through. Upstream
 /// registers `-translate-full` itself, which is why it is absent here.
-let non_negative_utilities : @set.Set[String] = @set.Set([
+let non_negative_utilities : @set.Set[String] = Set([
   "col-span", "row-span", "inset-ring", "inset-shadow", "inset-shadow-initial",
   "rotate-none", "scale-3d", "scale-none", "space-x-reverse", "space-y-reverse",
   "translate-3d", "translate-none",
@@ -75,7 +75,7 @@ fn supports_negative(base : String) -> Bool {
 /// Utilities upstream registers with `supportsFractions`. Only these read a
 /// `1/2` as a fraction; everywhere else a `/` is a modifier, which is why
 /// `leading-6/2` is not a candidate.
-let fraction_utilities : @set.Set[String] = @set.Set([
+let fraction_utilities : @set.Set[String] = Set([
   "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be",
   "top", "right", "bottom", "left", "w", "min-w", "max-w", "h", "min-h", "max-h",
   "inline", "min-inline", "max-inline", "block", "min-block", "max-block", "size",
@@ -88,7 +88,7 @@ let fraction_utilities : @set.Set[String] = @set.Set([
 
 ///|
 /// Utilities that sit under a fraction-taking name without taking fractions.
-let non_fraction_utilities : @set.Set[String] = @set.Set(["translate-z"])
+let non_fraction_utilities : @set.Set[String] = Set(["translate-z"])
 
 ///|
 /// The longest utility name answers, so `translate-z-1/2` is not a fraction

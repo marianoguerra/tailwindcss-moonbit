@@ -37,7 +37,7 @@ node tools/upstream/extract.mjs
 
 ## The baseline
 
-This is a partial reimplementation, so most of these tests do not pass yet.
+This is a partial reimplementation, so not all of these tests pass.
 `baseline.json` records every currently divergent test with the shape of its
 divergence:
 

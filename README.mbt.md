@@ -207,12 +207,19 @@ covers it.
 
 ## Conformance
 
-Run both the MoonBit tests and the pinned JavaScript oracle:
+Two suites compare this compiler against the pinned `tailwindcss@4.3.3`
+oracle. `tools/diff/cases.json` is the hand-written ledger, and
+`tools/upstream/` is every candidate list upstream asserts on in
+`packages/tailwindcss/src/utilities.test.ts` — 738 groups over 6856
+candidates, replayed through both compilers. 334 of those 360 tests match at
+this version; `tools/upstream/baseline.json` records the rest with the shape
+of each divergence.
 
 ```sh
 moon test
 npm install --prefix tools/oracle
 node tools/diff/compare.mjs
+just upstream-diff
 ```
 
 See `UPSTREAM.md` for provenance and the porting boundary.

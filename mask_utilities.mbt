@@ -124,7 +124,9 @@ fn mask_gradient_utility(
     let (root, kind, stops) = entry
     let slot = "--tw-mask-\{kind}"
     for stop in ["from", "to"] {
-      guard prefixed_value(name, "\{root}-\{stop}") is Some(key) else { continue }
+      guard prefixed_value(name, "\{root}-\{stop}") is Some(key) else {
+        continue
+      }
       guard mask_stop_value(theme, key) is Some((value, position)) else {
         return None
       }
@@ -173,7 +175,9 @@ fn mask_gradient_utility(
     guard resolved is Some(value) else { continue }
     let declarations = mask_composition_declarations()
     declarations.remove(2) |> ignore
-    declarations.push(decl(slot, "\{kind}-gradient(var(\{slot}-stops, var(\{property})))"))
+    declarations.push(
+      decl(slot, "\{kind}-gradient(var(\{slot}-stops, var(\{property})))"),
+    )
     declarations.push(decl(property, value))
     return Some(declarations)
   }

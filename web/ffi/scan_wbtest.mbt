@@ -260,7 +260,7 @@ test "scan_html: foreign content" {
 /// The walk keeps an explicit stack, so pathological nesting is fine.
 test "scan_html: deep nesting" {
   let depth = 5000
-  let builder = StringBuilder::new()
+  let builder = StringBuilder()
   for _ in 0..<depth {
     builder.write_string("<div class=\"deep\">")
   }
