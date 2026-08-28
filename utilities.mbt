@@ -69,20 +69,26 @@ fn negate_value(value : String) -> String {
       return "\{function_name}(calc(\{inner} * -1))"
     }
   }
-  let spacing_prefix = "calc(var(--spacing) * "
-  if value.has_prefix(spacing_prefix) && value.has_suffix(")") {
-    let factor = value[spacing_prefix.length():value.length() - 1].to_owned()
-    "calc(var(--spacing) * -\{factor})"
-  } else if value == "100%" {
-    "-100%"
-  } else if value == "1px" {
-    // The `-px` spacing static is registered as `-1px` upstream, not as a calc.
-    "-1px"
-  } else if value == "var(--spacing)" {
-    "calc(var(--spacing) * -1)"
-  } else {
-    "calc(\{value} * -1)"
+  // `calc(<base> * 4)` negates by negating the multiplier, which is how
+  // upstream writes `-m-4` and `-mask-conic-45`.
+  if value.has_prefix("calc(") && value.has_suffix(")") {
+    let inner = value[5:value.length() - 1].to_owned()
+    match inner.rev_find(" * ") {
+      Some(index) => {
+        let factor = inner[index + 3:].to_owned()
+        if is_plain_number(factor) {
+          return "calc(\{inner[:index].to_owned()} * -\{factor})"
+        }
+      }
+      None => ()
+    }
   }
+  // The three values upstream registers a literal negative static for; every
+  // other dimension negates as a calc, so `-mb-[4px]` is `calc(4px * -1)`.
+  if value == "1px" || value == "100%" || value == "1deg" {
+    return "-\{value}"
+  }
+  "calc(\{value} * -1)"
 }
 
 ///|
@@ -131,7 +137,9 @@ fn apply_candidate_value(
     }
     {
       property: declaration.property,
-      value: if negative && !declaration.value.contains("var(--tw-") {
+      value: if negative &&
+        !declaration.value.contains("var(--tw-") &&
+        is_negatable_value(declaration.value) {
         negate_value(value)
       } else {
         value
@@ -1528,6 +1536,14 @@ fn dynamic_utility(
   // form called every matching utility twice — the test and the return); `as r`
   // returns the already-computed Option without recomputing or rewrapping.
   match mask_edge_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
+  }
+  match mask_gradient_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
+  }
+  match mask_placement_utility(theme, name) {
     Some(_) as r => return r
     None => ()
   }

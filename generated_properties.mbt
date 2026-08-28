@@ -37,16 +37,54 @@ fn declaration_triggers(names : ArrayView[String]) -> Array[String] {
 fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
   [
     {
-      // The shared mask slots; every mask utility declares `--tw-mask-linear`.
-      triggers: ["--tw-mask-linear:"],
+      // The three gradient slots, registered by every mask utility.
+      triggers: ["var(--tw-mask-linear), var(--tw-mask-radial)"],
       members: [
         property_spec("--tw-mask-linear", "*", initial="linear-gradient(#fff, #fff)"),
         property_spec("--tw-mask-radial", "*", initial="linear-gradient(#fff, #fff)"),
         property_spec("--tw-mask-conic", "*", initial="linear-gradient(#fff, #fff)"),
+      ],
+    },
+    {
+      // The four sides, registered only by the edge masks that compose them.
+      triggers: ["var(--tw-mask-left), var(--tw-mask-right)"],
+      members: [
         property_spec("--tw-mask-left", "*", initial="linear-gradient(#fff, #fff)"),
         property_spec("--tw-mask-right", "*", initial="linear-gradient(#fff, #fff)"),
         property_spec("--tw-mask-bottom", "*", initial="linear-gradient(#fff, #fff)"),
         property_spec("--tw-mask-top", "*", initial="linear-gradient(#fff, #fff)"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-linear-position:", "--tw-mask-linear-stops:"],
+      members: [
+        property_spec("--tw-mask-linear-position", "*", initial="0deg"),
+        property_spec("--tw-mask-linear-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-linear-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-linear-from-color", "*", initial="black"),
+        property_spec("--tw-mask-linear-to-color", "*", initial="transparent"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-conic-position:", "--tw-mask-conic-stops:"],
+      members: [
+        property_spec("--tw-mask-conic-position", "*", initial="0deg"),
+        property_spec("--tw-mask-conic-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-conic-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-conic-from-color", "*", initial="black"),
+        property_spec("--tw-mask-conic-to-color", "*", initial="transparent"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-radial-stops:", "--tw-mask-radial-size:"],
+      members: [
+        property_spec("--tw-mask-radial-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-radial-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-radial-from-color", "*", initial="black"),
+        property_spec("--tw-mask-radial-to-color", "*", initial="transparent"),
+        property_spec("--tw-mask-radial-shape", "*", initial="ellipse"),
+        property_spec("--tw-mask-radial-size", "*", initial="farthest-corner"),
+        property_spec("--tw-mask-radial-position", "*", initial="center"),
       ],
     },
     {

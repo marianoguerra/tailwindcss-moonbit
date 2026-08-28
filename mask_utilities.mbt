@@ -96,3 +96,97 @@ fn mask_edge_utility(
   }
   None
 }
+
+///|
+/// The three gradient mask slots. Each composes a gradient of its own kind from
+/// a `*-stops` list, and takes `from`/`to` stops the way the edges do.
+let mask_gradients : Array[(String, String, String)] = [
+  (
+    "mask-linear", "linear", "var(--tw-mask-linear-position), var(--tw-mask-linear-from-color) var(--tw-mask-linear-from-position), var(--tw-mask-linear-to-color) var(--tw-mask-linear-to-position)",
+  ),
+  (
+    "mask-conic", "conic", "from var(--tw-mask-conic-position), var(--tw-mask-conic-from-color) var(--tw-mask-conic-from-position), var(--tw-mask-conic-to-color) var(--tw-mask-conic-to-position)",
+  ),
+  (
+    "mask-radial", "radial", "var(--tw-mask-radial-shape) var(--tw-mask-radial-size) at var(--tw-mask-radial-position), var(--tw-mask-radial-from-color) var(--tw-mask-radial-from-position), var(--tw-mask-radial-to-color) var(--tw-mask-radial-to-position)",
+  ),
+]
+
+///|
+/// `mask-linear-45`, `mask-conic-from-20%`, `mask-radial-[circle]` and the rest
+/// of the gradient masks.
+fn mask_gradient_utility(
+  theme : Map[String, String],
+  name : String,
+) -> Array[Declaration]? {
+  guard name.has_prefix("mask-") else { return None }
+  for entry in mask_gradients {
+    let (root, kind, stops) = entry
+    let slot = "--tw-mask-\{kind}"
+    for stop in ["from", "to"] {
+      guard prefixed_value(name, "\{root}-\{stop}") is Some(key) else { continue }
+      guard mask_stop_value(theme, key) is Some((value, position)) else {
+        return None
+      }
+      let declarations = mask_composition_declarations()
+      declarations.remove(2) |> ignore
+      declarations.push(decl("\{slot}-stops", stops))
+      declarations.push(decl(slot, "\{kind}-gradient(var(\{slot}-stops))"))
+      let field = if position { "position" } else { "color" }
+      declarations.push(decl("\{slot}-\{stop}-\{field}", value))
+      return Some(declarations)
+    }
+    guard prefixed_value(name, root) is Some(key) else { continue }
+    // The bare form sets the gradient's own parameter: an angle for the linear
+    // and conic masks, a size for the radial one.
+    let (property, value) = if kind == "radial" {
+      ("\{slot}-size", match arbitrary_value(key) {
+        Some(value) => value
+        None => return None
+      })
+    } else {
+      (
+        "\{slot}-position",
+        match arbitrary_value(key) {
+          Some(value) => value
+          None =>
+            if key == "0" {
+              // As with the spacing scale, a zero multiplier folds away.
+              "0deg"
+            } else if key == "1" {
+              "1deg"
+            } else if is_nonnegative_integer(key) {
+              "calc(1deg * \{key})"
+            } else {
+              return None
+            }
+        },
+      )
+    }
+    let declarations = mask_composition_declarations()
+    declarations.remove(2) |> ignore
+    declarations.push(decl(slot, "\{kind}-gradient(var(\{slot}-stops, var(\{property})))"))
+    declarations.push(decl(property, value))
+    return Some(declarations)
+  }
+  None
+}
+
+///|
+/// `mask-position-*` and `mask-size-*` write their property outright.
+fn mask_placement_utility(
+  theme : Map[String, String],
+  name : String,
+) -> Array[Declaration]? {
+  for entry in [("mask-position", "mask-position"), ("mask-size", "mask-size")] {
+    let (root, property) = entry
+    guard prefixed_value(name, root) is Some(key) else { continue }
+    let value = match arbitrary_value(key) {
+      Some(value) => Some(value)
+      None => theme_css_value(theme, "--\{property}-\{key}")
+    }
+    guard value is Some(value) else { return None }
+    return Some([decl(property, value)])
+  }
+  None
+}

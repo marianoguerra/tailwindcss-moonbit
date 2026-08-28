@@ -43,6 +43,8 @@ let non_negative_utilities : @set.Set[String] = @set.Set([
   "col-span", "row-span", "inset-ring", "inset-shadow", "inset-shadow-initial",
   "rotate-none", "scale-3d", "scale-none", "space-x-reverse", "space-y-reverse",
   "translate-3d", "translate-none",
+  // Only the bare angle forms of the gradient masks negate; their stops do not.
+  "mask-linear-from", "mask-linear-to", "mask-conic-from", "mask-conic-to",
 ])
 
 ///|

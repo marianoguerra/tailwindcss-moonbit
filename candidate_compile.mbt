@@ -2070,14 +2070,15 @@ fn render_candidate(
   if candidate.negative && base.static_value {
     return None
   }
-  // `apply_candidate_value` leaves `var(--tw-*)` values alone, so only the
-  // values it would actually negate have to be negatable.
+  // A negative candidate has to have something to negate. Plumbing keywords
+  // like `mask-composite: intersect` ride along untouched, but a utility whose
+  // whole body is one — `-top-auto` — is not a candidate.
   if candidate.negative &&
-    base.declarations
+    !base.declarations
     .iter()
     .any(fn(declaration) {
       !declaration.value.contains("var(--tw-") &&
-      !is_negatable_value(declaration.value)
+      is_negatable_value(declaration.value)
     }) {
     return None
   }
