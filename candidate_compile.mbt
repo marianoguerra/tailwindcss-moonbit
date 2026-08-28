@@ -1,17 +1,51 @@
 ///|
 fn property_order(property : String) -> Int {
+  // A transcription of upstream src/property-order.ts: the index a property
+  // sorts at inside a rule. Regenerate from that file rather than editing by
+  // hand. Anything upstream does not list sorts after everything it does.
   match property {
+    "container-type" => 0
+    "pointer-events" => 1
     "visibility" => 2
     "position" => 3
+    "inset" => 4
+    "inset-inline" => 5
+    "inset-block" => 6
+    "inset-inline-start" => 7
+    "inset-inline-end" => 8
+    "inset-block-start" => 9
+    "inset-block-end" => 10
+    "top" => 11
+    "right" => 12
+    "bottom" => 13
+    "left" => 14
+    "isolation" => 15
+    "z-index" => 16
     "order" => 17
+    "grid-column" => 18
+    "grid-column-start" => 19
+    "grid-column-end" => 20
+    "grid-row" => 21
+    "grid-row-start" => 22
+    "grid-row-end" => 23
+    "float" => 24
+    "clear" => 25
+    "--tw-container-component" => 26
     "margin" => 27
     "margin-inline" => 28
     "margin-block" => 29
+    "margin-inline-start" => 30
+    "margin-inline-end" => 31
+    "margin-block-start" => 32
+    "margin-block-end" => 33
     "margin-top" => 34
     "margin-right" => 35
     "margin-bottom" => 36
     "margin-left" => 37
+    "box-sizing" => 38
     "display" => 39
+    "field-sizing" => 40
+    "aspect-ratio" => 41
     "height" => 42
     "max-height" => 43
     "min-height" => 44
@@ -22,6 +56,9 @@ fn property_order(property : String) -> Int {
     "flex-shrink" => 49
     "flex-grow" => 50
     "flex-basis" => 51
+    "table-layout" => 52
+    "caption-side" => 53
+    "border-collapse" => 54
     "border-spacing" => 55
     "transform-origin" => 56
     "translate" => 57
@@ -39,21 +76,64 @@ fn property_order(property : String) -> Int {
     "--tw-skew-x" => 69
     "--tw-skew-y" => 70
     "transform" => 71
+    "zoom" => 72
     "animation" => 73
+    "cursor" => 74
     "touch-action" => 75
     "--tw-pan-x" => 76
     "--tw-pan-y" => 77
     "--tw-pinch-zoom" => 78
+    "resize" => 79
     "scroll-snap-type" => 80
     "--tw-scroll-snap-strictness" => 81
+    "scroll-snap-align" => 82
+    "scroll-snap-stop" => 83
     "scroll-margin" => 84
+    "scroll-margin-inline" => 85
+    "scroll-margin-block" => 86
     "scroll-margin-inline-start" => 87
+    "scroll-margin-inline-end" => 88
+    "scroll-margin-block-start" => 89
+    "scroll-margin-block-end" => 90
+    "scroll-margin-top" => 91
+    "scroll-margin-right" => 92
+    "scroll-margin-bottom" => 93
+    "scroll-margin-left" => 94
+    "scroll-padding" => 95
     "scroll-padding-inline" => 96
+    "scroll-padding-block" => 97
+    "scroll-padding-inline-start" => 98
+    "scroll-padding-inline-end" => 99
+    "scroll-padding-block-start" => 100
     "scroll-padding-block-end" => 101
+    "scroll-padding-top" => 102
+    "scroll-padding-right" => 103
+    "scroll-padding-bottom" => 104
+    "scroll-padding-left" => 105
+    "scrollbar-width" => 106
+    "scrollbar-color" => 107
+    "scrollbar-gutter" => 108
     "list-style-position" => 109
     "list-style-type" => 110
     "list-style-image" => 111
+    "appearance" => 112
     "columns" => 113
+    "break-before" => 114
+    "break-inside" => 115
+    "break-after" => 116
+    "grid-auto-columns" => 117
+    "grid-auto-flow" => 118
+    "grid-auto-rows" => 119
+    "grid-template-columns" => 120
+    "grid-template-rows" => 121
+    "flex-direction" => 122
+    "flex-wrap" => 123
+    "place-content" => 124
+    "place-items" => 125
+    "align-content" => 126
+    "align-items" => 127
+    "justify-content" => 128
+    "justify-items" => 129
     "gap" => 130
     "column-gap" => 131
     "row-gap" => 132
@@ -64,7 +144,16 @@ fn property_order(property : String) -> Int {
     "--tw-divide-y-reverse" => 137
     "divide-style" => 138
     "divide-color" => 139
+    "place-self" => 140
+    "align-self" => 141
+    "justify-self" => 142
     "overflow" => 143
+    "overflow-x" => 144
+    "overflow-y" => 145
+    "overscroll-behavior" => 146
+    "overscroll-behavior-x" => 147
+    "overscroll-behavior-y" => 148
+    "scroll-behavior" => 149
     "border-radius" => 150
     "border-start-radius" => 151
     "border-end-radius" => 152
@@ -124,22 +213,79 @@ fn property_order(property : String) -> Int {
     "--tw-gradient-via-position" => 206
     "--tw-gradient-to" => 207
     "--tw-gradient-to-position" => 208
+    "mask-image" => 209
+    "--tw-mask-top" => 210
+    "--tw-mask-top-from-color" => 211
+    "--tw-mask-top-from-position" => 212
+    "--tw-mask-top-to-color" => 213
+    "--tw-mask-top-to-position" => 214
+    "--tw-mask-right" => 215
+    "--tw-mask-right-from-color" => 216
+    "--tw-mask-right-from-position" => 217
+    "--tw-mask-right-to-color" => 218
+    "--tw-mask-right-to-position" => 219
+    "--tw-mask-bottom" => 220
+    "--tw-mask-bottom-from-color" => 221
+    "--tw-mask-bottom-from-position" => 222
+    "--tw-mask-bottom-to-color" => 223
+    "--tw-mask-bottom-to-position" => 224
+    "--tw-mask-left" => 225
+    "--tw-mask-left-from-color" => 226
+    "--tw-mask-left-from-position" => 227
+    "--tw-mask-left-to-color" => 228
+    "--tw-mask-left-to-position" => 229
+    "--tw-mask-linear" => 230
+    "--tw-mask-linear-position" => 231
+    "--tw-mask-linear-from-color" => 232
+    "--tw-mask-linear-from-position" => 233
+    "--tw-mask-linear-to-color" => 234
+    "--tw-mask-linear-to-position" => 235
+    "--tw-mask-radial" => 236
+    "--tw-mask-radial-shape" => 237
+    "--tw-mask-radial-size" => 238
+    "--tw-mask-radial-position" => 239
+    "--tw-mask-radial-from-color" => 240
+    "--tw-mask-radial-from-position" => 241
+    "--tw-mask-radial-to-color" => 242
+    "--tw-mask-radial-to-position" => 243
+    "--tw-mask-conic" => 244
+    "--tw-mask-conic-position" => 245
+    "--tw-mask-conic-from-color" => 246
+    "--tw-mask-conic-from-position" => 247
+    "--tw-mask-conic-to-color" => 248
+    "--tw-mask-conic-to-position" => 249
+    "box-decoration-break" => 250
     "background-size" => 251
     "background-attachment" => 252
     "background-clip" => 253
     "background-position" => 254
     "background-repeat" => 255
     "background-origin" => 256
+    "mask-composite" => 257
+    "mask-mode" => 258
+    "mask-type" => 259
+    "mask-size" => 260
+    "mask-clip" => 261
+    "mask-position" => 262
+    "mask-repeat" => 263
+    "mask-origin" => 264
     "fill" => 265
     "stroke" => 266
     "stroke-width" => 267
+    "object-fit" => 268
+    "object-position" => 269
     "padding" => 270
     "padding-inline" => 271
     "padding-block" => 272
+    "padding-inline-start" => 273
+    "padding-inline-end" => 274
+    "padding-block-start" => 275
+    "padding-block-end" => 276
     "padding-top" => 277
     "padding-right" => 278
     "padding-bottom" => 279
     "padding-left" => 280
+    "text-align" => 281
     "text-indent" => 282
     "vertical-align" => 283
     "font-family" => 284
@@ -148,14 +294,27 @@ fn property_order(property : String) -> Int {
     "line-height" => 287
     "font-weight" => 288
     "letter-spacing" => 289
+    "text-wrap" => 290
+    "overflow-wrap" => 291
+    "word-break" => 292
+    "text-overflow" => 293
+    "hyphens" => 294
+    "white-space" => 295
     "tab-size" => 296
     "color" => 297
+    "text-transform" => 298
+    "font-style" => 299
+    "font-stretch" => 300
     "font-variant-numeric" => 301
+    "text-decoration-line" => 302
     "text-decoration-color" => 303
     "text-decoration-style" => 304
     "text-decoration-thickness" => 305
     "text-underline-offset" => 306
+    "-webkit-font-smoothing" => 307
     "placeholder-color" => 308
+    "caret-color" => 309
+    "accent-color" => 310
     "color-scheme" => 311
     "opacity" => 312
     "background-blend-mode" => 313
@@ -196,9 +355,12 @@ fn property_order(property : String) -> Int {
     "--tw-backdrop-sepia" => 348
     "backdrop-filter" | "-webkit-backdrop-filter" => 349
     "transition-property" => 350
+    "transition-behavior" => 351
     "transition-delay" => 352
     "transition-duration" => 353
     "transition-timing-function" => 354
+    "will-change" => 355
+    "contain" => 356
     "content" => 357
     "forced-color-adjust" => 358
     _ => 500
@@ -1826,7 +1988,8 @@ fn render_candidate(
   guard parse_candidate(candidate_source) is Some(candidate) else {
     return None
   }
-  if candidate.negative && candidate.base().has_prefix("[") {
+  if candidate.negative &&
+    (candidate.base().has_prefix("[") || !supports_negative(candidate.base())) {
     return None
   }
   match
@@ -1896,9 +2059,26 @@ fn render_candidate(
     None => ()
   }
   guard compile_base(theme, candidate.base(), candidate.modifier_source())
-    is Some(base_declarations) else {
+    is Some(base) else {
     return None
   }
+  // A modifier nothing consumed is not a candidate upstream, so it must not be
+  // silently dropped here either.
+  if candidate.modifier_source() is Some(_) && !base.modifier_used {
+    return None
+  }
+  // `apply_candidate_value` leaves `var(--tw-*)` values alone, so only the
+  // values it would actually negate have to be negatable.
+  if candidate.negative &&
+    base.declarations
+    .iter()
+    .any(fn(declaration) {
+      !declaration.value.contains("var(--tw-") &&
+      !is_negatable_value(declaration.value)
+    }) {
+    return None
+  }
+  let base_declarations = base.declarations
   let declarations = apply_candidate_value(
     theme,
     base_declarations,

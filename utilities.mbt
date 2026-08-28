@@ -58,13 +58,7 @@ fn apply_candidate_value(
   declarations.map(fn(declaration) {
     let (value, fallback) = match modifier {
       Some(alpha) =>
-        if declaration.property == "color" ||
-          declaration.property.has_suffix("-color") ||
-          declaration.property == "fill" ||
-          declaration.property == "stroke" ||
-          declaration.property == "--tw-gradient-from" ||
-          declaration.property == "--tw-gradient-via" ||
-          declaration.property == "--tw-gradient-to" {
+        if is_alpha_property(declaration.property) {
           let advanced = apply_alpha(declaration.value, alpha)
           let fallback = theme_literal_for_value(theme, declaration.value).map(fn(
             literal,
@@ -104,6 +98,7 @@ fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
   if value == "auto" {
     return Some("auto")
   }
+  guard is_spacing_number(value) else { return None }
   guard theme_css_value(theme, "--spacing") is Some(base) else { return None }
   if value == "1" {
     Some(base)
@@ -133,6 +128,11 @@ fn resolved_value(
     None =>
       match theme_value(theme, theme_namespace, value) {
         Some(_) => theme_css_value(theme, "\{theme_namespace}-\{value}")
+        None if spacing && theme_value(theme, "--spacing", value) is Some(_) =>
+          // Upstream's spacing utilities resolve against two namespaces — their
+          // own and `--spacing` — so `mt-4` finds a `--spacing-4` theme key
+          // before it falls back to the `--spacing` multiplier.
+          theme_css_value(theme, "--spacing-\{value}")
         None =>
           match value.split_once("/") {
             Some((numerator, denominator)) if is_nonnegative_integer(
@@ -523,9 +523,9 @@ let directional_spacing_entries : Array[(String, Array[String])] = [
   ("pr", ["padding-right"]),
   ("pb", ["padding-bottom"]),
   ("pl", ["padding-left"]),
-  ("gap", ["gap"]),
   ("gap-x", ["column-gap"]),
   ("gap-y", ["row-gap"]),
+  ("gap", ["gap"]),
 ]
 
 ///|
@@ -1363,7 +1363,29 @@ fn dynamic_utility(
     }
   }
   if name.has_prefix("z-") {
-    return Some([decl("z-index", name[2:].to_owned())])
+    let key = name[2:].to_owned()
+    // Upstream: an arbitrary value, a `--z-index-*` theme key, a positive
+    // integer, or the static `auto`. Anything else is not a candidate.
+    let value = match arbitrary_value(key) {
+      Some(value) => Some(value)
+      None =>
+        match theme_css_value(theme, "--z-index-\{key}") {
+          Some(value) => Some(value)
+          None =>
+            if is_nonnegative_integer(key) {
+              Some(key)
+            } else if key == "auto" {
+              // A static value, and so last: `--z-index-auto` wins over it.
+              Some("auto")
+            } else {
+              None
+            }
+        }
+    }
+    match value {
+      Some(value) => return Some([decl("z-index", value)])
+      None => return None
+    }
   }
   if name.has_prefix("[") && name.has_suffix("]") {
     let inner = name[1:name.length() - 1].to_owned()
@@ -1374,37 +1396,61 @@ fn dynamic_utility(
 }
 
 ///|
+/// A compiled utility body, and whether the candidate's `/modifier` found a
+/// taker. Upstream's functional utilities bail out on a modifier nothing
+/// consumes, so `render_candidate` needs to know rather than quietly dropping it.
+priv struct CompiledBase {
+  declarations : Array[Declaration]
+  modifier_used : Bool
+}
+
+///|
+/// Most families never look at the modifier themselves: its only later reader is
+/// the alpha channel `apply_candidate_value` applies to a color declaration.
+fn alpha_base(declarations : Array[Declaration]) -> CompiledBase {
+  {
+    declarations,
+    modifier_used: declarations.iter().any(fn(declaration) {
+      is_alpha_property(declaration.property)
+    }),
+  }
+}
+
+///|
 fn compile_base(
   theme : Map[String, String],
   name : String,
   modifier : String?,
-) -> Array[Declaration]? {
+) -> CompiledBase? {
   match stateful_transform_utility(theme, name) {
-    Some(declarations) => return Some(declarations)
+    Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
   match stateful_effect_utility(theme, name) {
-    Some(declarations) => return Some(declarations)
+    Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
   match stateful_filter_transition_utility(theme, name) {
-    Some(declarations) => return Some(declarations)
+    Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
   match typography_utility(theme, name, modifier) {
-    Some(declarations) => return Some(declarations)
+    Some((declarations, used)) => {
+      let base = alpha_base(declarations)
+      return Some({ ..base, modifier_used: base.modifier_used || used })
+    }
     None => ()
   }
   match border_utility(theme, name) {
-    Some(declarations) => return Some(declarations)
+    Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
   match background_utility(theme, name) {
-    Some(declarations) => return Some(declarations)
+    Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
   match static_utility(name) {
-    Some(value) => Some(value)
+    Some(value) => Some(alpha_base(value))
     None => {
       let color_candidate = name.has_prefix("bg-") ||
         name.has_prefix("text-") ||
@@ -1415,11 +1461,16 @@ fn compile_base(
         name.has_prefix("stroke-") ||
         name.has_prefix("accent-") ||
         name.has_prefix("caret-")
+      // `w-1/2` is a fraction, not a modifier: the `/` goes back into the name
+      // and a match means the lookup itself consumed it.
       let dynamic_name = match modifier {
         Some(modifier) if !color_candidate => "\{name}/\{modifier}"
         _ => name
       }
-      dynamic_utility(theme, dynamic_name)
+      dynamic_utility(theme, dynamic_name).map(fn(declarations) {
+        let base = alpha_base(declarations)
+        { ..base, modifier_used: base.modifier_used || dynamic_name != name }
+      })
     }
   }
 }

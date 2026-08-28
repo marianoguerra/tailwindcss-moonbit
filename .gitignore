@@ -5,6 +5,10 @@ node_modules/
 tools/oracle/node_modules/
 tools/diff/.work/
 
+# Upstream test file downloaded by tools/upstream/extract.mjs; the extracted
+# tools/upstream/cases.json IS committed, so the comparison runs offline.
+tools/upstream/vendor/
+
 # Built MoonBit->JS module, copied next to the wrapper for local use / npm publish
 ffi/js/ffi.js
 

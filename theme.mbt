@@ -225,12 +225,50 @@ fn render_used_keyframes(
 }
 
 ///|
+/// Namespaces that overlap by prefix, and the longer ones each must not swallow.
+/// A port of upstream's `ignoredThemeKeyMap`: without it `inset-shadow-sm`
+/// resolves as the `--inset` utility reading `--inset-shadow-sm`.
+let ignored_theme_keys : Array[(String, Array[String])] = [
+  ("--font", ["--font-weight", "--font-size"]),
+  ("--inset", ["--inset-shadow", "--inset-ring"]),
+  (
+    "--text",
+    [
+      "--text-color", "--text-decoration-color", "--text-decoration-thickness",
+      "--text-indent", "--text-shadow", "--text-underline-offset",
+    ],
+  ),
+  ("--grid-column", ["--grid-column-start", "--grid-column-end"]),
+  ("--grid-row", ["--grid-row-start", "--grid-row-end"]),
+]
+
+///|
+fn is_ignored_theme_key(theme_key : String, theme_namespace : String) -> Bool {
+  for entry in ignored_theme_keys {
+    let (owner, ignored) = entry
+    if owner != theme_namespace {
+      continue
+    }
+    for candidate in ignored {
+      if theme_key == candidate || theme_key.has_prefix("\{candidate}-") {
+        return true
+      }
+    }
+  }
+  false
+}
+
+///|
 fn theme_value(
   theme : Map[String, String],
   theme_namespace : String,
   key : String,
 ) -> String? {
-  theme.get("\{theme_namespace}-\{key}")
+  let theme_key = "\{theme_namespace}-\{key}"
+  if is_ignored_theme_key(theme_key, theme_namespace) {
+    return None
+  }
+  theme.get(theme_key)
 }
 
 ///|

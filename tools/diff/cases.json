@@ -378,6 +378,32 @@
     ]
   },
   {
+    "name": "gap axis utilities",
+    "css": "@theme { --spacing: 0.25rem; }\n@tailwind utilities;",
+    "candidates": [
+      "gap-4",
+      "gap-x-4",
+      "gap-y-4",
+      "gap-x-1.5",
+      "gap-x-px",
+      "gap-x-[3px]",
+      "gap-y-[2rem]"
+    ]
+  },
+  {
+    "name": "non-numeric spacing values",
+    "css": "@theme { --spacing: 0.25rem; }\n@tailwind utilities;",
+    "candidates": [
+      "m-2",
+      "m-bar",
+      "p-baz",
+      "gap-foo",
+      "gap-x-bar",
+      "scroll-m-bogus",
+      "m-1.3"
+    ]
+  },
+  {
     "name": "inset utility",
     "css": "@tailwind utilities;",
     "candidates": [

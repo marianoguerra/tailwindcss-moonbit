@@ -61,6 +61,171 @@ async test "compile logical spacing inset and special sizing utilities" {
 }
 
 ///|
+/// `gap-x`/`gap-y` used to be shadowed by the shorter `gap` prefix, which
+/// compiled them to `gap: calc(var(--spacing) * x-4)`.
+async test "compile gap axis utilities" {
+  let compiler = @tailwindcss.compile(
+    "@theme { --spacing: 0.25rem; }\n@tailwind utilities;",
+  )
+  inspect(
+    compiler.build(["gap-4", "gap-x-4", "gap-y-4", "gap-x-px", "gap-x-[3px]"]),
+    content=(
+      #|:root, :host {
+      #|  --spacing: 0.25rem;
+      #|}
+      #|.gap-4 {
+      #|  gap: calc(var(--spacing) * 4);
+      #|}
+      #|.gap-x-4 {
+      #|  column-gap: calc(var(--spacing) * 4);
+      #|}
+      #|.gap-x-\[3px\] {
+      #|  column-gap: 3px;
+      #|}
+      #|.gap-x-px {
+      #|  column-gap: 1px;
+      #|}
+      #|.gap-y-4 {
+      #|  row-gap: calc(var(--spacing) * 4);
+      #|}
+      #|
+    ),
+  )
+}
+
+///|
+/// A spacing value that is not a multiple-of-0.25 number is not a candidate at
+/// all; it must not reach `calc()`.
+async test "reject non-numeric spacing values" {
+  let compiler = @tailwindcss.compile(
+    "@theme { --spacing: 0.25rem; }\n@tailwind utilities;",
+  )
+  inspect(
+    compiler.build([
+      "m-2", "m-bar", "p-baz", "gap-foo", "gap-x-bar", "scroll-m-bogus", "m-1.3",
+    ]),
+    content=(
+      #|:root, :host {
+      #|  --spacing: 0.25rem;
+      #|}
+      #|.m-2 {
+      #|  margin: calc(var(--spacing) * 2);
+      #|}
+      #|
+    ),
+  )
+}
+
+///|
+/// Upstream binds a utility's negative form only when it opts in, so `-gap-4`
+/// and `-p-4` are not candidates however well their value resolves.
+async test "reject negatives on utilities that do not support them" {
+  let compiler = @tailwindcss.compile(
+    "@theme { --spacing: 0.25rem; }\n@tailwind utilities;",
+  )
+  inspect(
+    compiler.build([
+      "-m-4", "-mt-4", "-inset-full", "-gap-4", "-p-4", "-px-4", "-scroll-p-4",
+      "-w-4", "-z-auto", "-top-auto",
+    ]),
+    content=(
+      #|:root, :host {
+      #|  --spacing: 0.25rem;
+      #|}
+      #|.-inset-full {
+      #|  inset: -100%;
+      #|}
+      #|.-m-4 {
+      #|  margin: calc(var(--spacing) * -4);
+      #|}
+      #|.-mt-4 {
+      #|  margin-top: calc(var(--spacing) * -4);
+      #|}
+      #|
+    ),
+  )
+}
+
+///|
+/// A `/modifier` no utility consumes makes the whole candidate invalid upstream;
+/// it must not be dropped and the utility emitted anyway.
+async test "reject modifiers no utility consumes" {
+  let compiler = @tailwindcss.compile(
+    (
+      #|@theme { --spacing: 0.25rem; --text-lg: 1.125rem; --leading-6: 1.5rem; }
+      #|@tailwind utilities;
+    ),
+  )
+  inspect(
+    compiler.build([
+      "text-lg/6", "w-4/50", "flex/foo", "visible/foo", "z-10/foo", "m-4/foo",
+      "leading-6/2",
+    ]),
+    content=(
+      #|:root, :host {
+      #|  --text-lg: 1.125rem;
+      #|  --leading-6: 1.5rem;
+      #|}
+      #|.w-4\/50 {
+      #|  width: calc(4 / 50 * 100%);
+      #|}
+      #|.text-lg\/6 {
+      #|  font-size: var(--text-lg);
+      #|  line-height: var(--leading-6);
+      #|}
+      #|
+    ),
+  )
+}
+
+///|
+/// `z` takes an arbitrary value, a `--z-index-*` key, a positive integer or the
+/// static `auto`; it used to pass whatever it was given straight through.
+async test "compile z-index values" {
+  let compiler = @tailwindcss.compile("@tailwind utilities;")
+  inspect(
+    compiler.build([
+      "z-10", "z-auto", "z-[123]", "-z-10", "z-unknown", "z-123.5", "z--1",
+    ]),
+    content=(
+      #|.-z-10 {
+      #|  z-index: calc(10 * -1);
+      #|}
+      #|.z-10 {
+      #|  z-index: 10;
+      #|}
+      #|.z-\[123\] {
+      #|  z-index: 123;
+      #|}
+      #|.z-auto {
+      #|  z-index: auto;
+      #|}
+      #|
+
+    ),
+  )
+}
+
+///|
+/// A port of upstream's `ignoredThemeKeyMap`: `--inset-shadow-*` belongs to the
+/// `--inset-shadow` namespace, so the `--inset` utilities must not read it.
+async test "overlapping theme namespaces do not bleed" {
+  let compiler = @tailwindcss.compile(
+    (
+      #|@theme { --inset-shadow-sm: 0 1px 1px #0000000d; --inset-shadowned: 1940px; }
+      #|@tailwind utilities;
+    ),
+  )
+  let output = compiler.build([
+    "inset-shadowned", "inset-shadow-sm", "inset-x-shadow-sm",
+  ])
+  assert_true(output.contains("inset: var(--inset-shadowned)"))
+  // `inset-shadow-sm` is the box-shadow utility, not `inset: <shadow>`.
+  assert_true(output.contains("--tw-inset-shadow: 0 1px 1px"))
+  assert_false(output.contains("inset-inline"))
+}
+
+///|
 async test "compile text flow list and vertical alignment utilities" {
   let compiler = @tailwindcss.compile("@tailwind utilities;")
   let output = compiler.build([

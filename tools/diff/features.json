@@ -37,6 +37,8 @@
       "differentialCases": [
         "spacing",
         "logical spacing utility",
+        "gap axis utilities",
+        "non-numeric spacing values",
         "inset utility",
         "special sizing utility"
       ],

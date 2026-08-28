@@ -245,33 +245,35 @@ fn numeric_variant_utility(name : String) -> Array[Declaration]? {
 }
 
 ///|
+/// `text-lg/6` reads its modifier as a line-height; every other member of the
+/// family ignores one, so the second field reports whether this call consumed it.
 fn typography_utility(
   theme : Map[String, String],
   name : String,
   modifier : String?,
-) -> Array[Declaration]? {
+) -> (Array[Declaration], Bool)? {
   match font_family_utility(theme, name) {
-    Some(value) => return Some(value)
+    Some(value) => return Some((value, false))
     None => ()
   }
   match font_size_utility(theme, name, modifier) {
-    Some(value) => return Some(value)
+    Some(value) => return Some((value, modifier is Some(_)))
     None => ()
   }
   match leading_utility(theme, name) {
-    Some(value) => return Some(value)
+    Some(value) => return Some((value, false))
     None => ()
   }
   match tracking_utility(theme, name) {
-    Some(value) => return Some(value)
+    Some(value) => return Some((value, false))
     None => ()
   }
   match text_indent_utility(theme, name) {
-    Some(value) => return Some(value)
+    Some(value) => return Some((value, false))
     None => ()
   }
   match decoration_shape_utility(theme, name) {
-    Some(value) => return Some(value)
-    None => numeric_variant_utility(name)
+    Some(value) => return Some((value, false))
+    None => numeric_variant_utility(name).map(fn(value) { (value, false) })
   }
 }

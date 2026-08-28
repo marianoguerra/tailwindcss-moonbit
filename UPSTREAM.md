@@ -15,6 +15,13 @@
 The development oracle is independently pinned to the matching published npm
 artifact in `tools/oracle/package-lock.json`.
 
+`tools/upstream/` is the mechanical companion to that ledger: every candidate
+list asserted on in `packages/tailwindcss/src/utilities.test.ts` at the commit
+above, extracted by executing the upstream file against a stubbed test harness
+and replayed through both compilers. It is a partial reimplementation, so
+`tools/upstream/baseline.json` records which of those 360 tests do not match yet
+and why; `just upstream-diff` fails on movement in either direction.
+
 The initial MoonBit tests are derived from the behavioral groups in
 `packages/tailwindcss/src/index.test.ts`,
 `packages/tailwindcss/src/utilities.test.ts`, and

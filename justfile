@@ -97,17 +97,39 @@ test:
 # Compiles every tools/diff/cases.json case with both this compiler and the
 # pinned oracle and compares them. Run `just oracle` once first.
 
-# Differential suite against real tailwindcss (85 cases).
+# Differential suite against real tailwindcss (87 cases).
 [group('test')]
 diff:
     node tools/diff/compare.mjs
 
-# Ordered so the cheapest check fails first. This is what the release workflow
-# enforces, plus the differential suite.
+# Every candidate list in upstream's utilities.test.ts, compared against the
+# oracle. Most do not pass yet: tools/upstream/baseline.json records the known
+# divergences, and this fails only on movement in either direction.
 
-# The full correctness gate: fmt-check, check, test, diff, web-smoke.
+# Differential suite against the ported upstream utility tests (360 tests).
 [group('test')]
-gate: fmt-check check test diff web-smoke
+upstream-diff: build-cli
+    node tools/upstream/compare.mjs
+
+# Divergences from upstream grouped by shape, with an example of each.
+[group('test')]
+upstream-report: build-cli
+    node tools/upstream/compare.mjs --report
+
+# Re-derives tools/upstream/cases.json from the pinned upstream test file,
+# downloading it into tools/upstream/vendor/ on first run. Needs network.
+
+# Re-extract the ported upstream tests (only when moving upstream versions).
+[group('test')]
+upstream-extract:
+    node tools/upstream/extract.mjs
+
+# Ordered so the cheapest check fails first. This is what the release workflow
+# enforces, plus the differential suites.
+
+# The full correctness gate: fmt-check, check, test, diff, upstream-diff, web-smoke.
+[group('test')]
+gate: fmt-check check test diff upstream-diff web-smoke
 
 # ---------------------------------------------------------------------------
 # Build
