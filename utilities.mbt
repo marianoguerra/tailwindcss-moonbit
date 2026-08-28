@@ -839,13 +839,11 @@ fn size_utility(
     let value = match special {
       Some(v) => Some(v)
       None =>
-        match resolved_value(theme, key, theme_namespace, false) {
+        // Upstream reads three namespaces in order: the utility's own,
+        // `--spacing`, then `--container`.
+        match resolved_value(theme, key, theme_namespace, true) {
           Some(value) => Some(value)
-          None =>
-            match theme_css_value(theme, "--container-\{key}") {
-              Some(value) => Some(value)
-              None => resolved_value(theme, key, theme_namespace, true)
-            }
+          None => theme_css_value(theme, "--container-\{key}")
         }
     }
     guard value is Some(v) else { return None }
@@ -1626,6 +1624,18 @@ fn dynamic_utility(
             ])
           None => ()
         }
+      None => ()
+    }
+  }
+  if prefixed_value(name, "zoom") is Some(key) {
+    match arbitrary_value(key) {
+      Some(value) => return Some([decl("zoom", value)])
+      None => ()
+    }
+  }
+  if prefixed_value(name, "will-change") is Some(key) {
+    match arbitrary_value(key) {
+      Some(value) => return Some([decl("will-change", value)])
       None => ()
     }
   }

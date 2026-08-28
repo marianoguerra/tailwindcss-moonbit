@@ -168,16 +168,17 @@ fn touch_snap_utility(name : String) -> Array[Declaration]? {
     "touch-auto" => Some([decl("touch-action", "auto")])
     "touch-none" => Some([decl("touch-action", "none")])
     "touch-manipulation" => Some([decl("touch-action", "manipulation")])
-    "touch-pan-x" =>
+    // The horizontal and vertical pans each have a directional form too.
+    "touch-pan-x" | "touch-pan-left" | "touch-pan-right" =>
       Some([
-        decl("--tw-pan-x", "pan-x"),
+        decl("--tw-pan-x", name[6:].to_owned()),
         decl(
           "touch-action", "var(--tw-pan-x,) var(--tw-pan-y,) var(--tw-pinch-zoom,)",
         ),
       ])
-    "touch-pan-y" =>
+    "touch-pan-y" | "touch-pan-up" | "touch-pan-down" =>
       Some([
-        decl("--tw-pan-y", "pan-y"),
+        decl("--tw-pan-y", name[6:].to_owned()),
         decl(
           "touch-action", "var(--tw-pan-x,) var(--tw-pan-y,) var(--tw-pinch-zoom,)",
         ),

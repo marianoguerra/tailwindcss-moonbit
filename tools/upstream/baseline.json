@@ -1,7 +1,6 @@
 {
   "note": "Tests in upstream utilities.test.ts that this compiler does not yet match. Regenerate with `node tools/upstream/compare.mjs --update-baseline` after reviewing the diff; the runner fails both when a test outside this list breaks and when a listed test starts passing.",
   "divergent": {
-    "--spacing-* variables take precedence over --container-* variables": "different output",
     "@container": "not implemented",
     "Multiple static utilities are merged": "different output",
     "`--spacing: initial` disables the spacing multiplier": "different output",
@@ -77,12 +76,9 @@
     "text": "different output",
     "text-shadow": "different output",
     "to": "different output + accepted, upstream rejects",
-    "touch-pan": "different output",
     "transition": "different output",
     "translate-z": "accepted, upstream rejects",
     "using `--spacing(…)` shorthand (inline theme)": "different output",
-    "via": "different output + accepted, upstream rejects",
-    "will-change": "different output",
-    "zoom": "different output"
+    "via": "different output + accepted, upstream rejects"
   }
 }
