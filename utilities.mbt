@@ -150,7 +150,10 @@ fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
   }
   guard is_spacing_number(value) else { return None }
   guard theme_css_value(theme, "--spacing") is Some(base) else { return None }
-  if value == "1" {
+  if value == "0" {
+    // No multiplier survives zero, so upstream folds it to a plain length.
+    Some("0px")
+  } else if value == "1" {
     Some(base)
   } else {
     Some("calc(\{base} * \{value})")
@@ -165,43 +168,52 @@ fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
 /// typehint runs up to the first `:` and is made only of lowercase letters and
 /// dashes, so `url(http` — with its `(` — is not one.
 fn arbitrary_typed_value(value : String) -> (String, String?)? {
-  guard value.has_prefix("[") && value.has_suffix("]") && value.length() >= 2 else {
-    return None
+  if value.has_prefix("[") && value.has_suffix("]") && value.length() >= 2 {
+    let inner = decode_arbitrary(value[1:value.length() - 1].to_owned())
+    return match typehint_split(inner) {
+      Some((data_type, rest)) => Some((rest, Some(data_type)))
+      None => Some((inner, None))
+    }
   }
-  let inner = decode_arbitrary(value[1:value.length() - 1].to_owned())
-  let mut index = 0
-  while index < inner.length() &&
-        ((inner[index] >= 'a' && inner[index] <= 'z') || inner[index] == '-') {
-    index += 1
-  }
-  if index > 0 && index < inner.length() && inner[index] == ':' {
-    return Some((inner[index + 1:].to_owned(), Some(inner[:index].to_owned())))
-  }
-  Some((inner, None))
-}
-
-///|
-/// The two ways a candidate can carry a value of its own: `[…]` for an
-/// arbitrary value and `(--x)` for the custom-property shorthand, which stands
-/// for `var(--x)` and may name a data type as `(<type>:--x)`. Underscores are
-/// decoded only in the bracket form — a custom property name keeps its own.
-fn arbitrary_value(value : String) -> String? {
-  match arbitrary_typed_value(value) {
-    Some((value, _)) => return Some(value)
-    None => ()
-  }
+  // The `(--x)` shorthand stands for `var(--x)` and may name a type the same
+  // way. Underscores are left alone here — a custom property name owns its own.
   guard value.length() >= 5 && value.has_prefix("(") && value.has_suffix(")") else {
     return None
   }
   let inner = value[1:value.length() - 1].to_owned()
   if inner.has_prefix("--") {
-    return Some("var(\{inner})")
+    return Some(("var(\{inner})", None))
   }
-  match inner.split_once(":") {
-    Some((_, variable)) if variable.has_prefix("--") =>
-      Some("var(\{variable.to_owned()})")
+  match typehint_split(inner) {
+    Some((data_type, variable)) if variable.has_prefix("--") =>
+      Some(("var(\{variable})", Some(data_type)))
     _ => None
   }
+}
+
+///|
+/// Splits a leading `<type>:` off a value. A typehint runs to the first `:` and
+/// is made only of lowercase letters and dashes, so `url(http://…)` has none.
+fn typehint_split(inner : String) -> (String, String)? {
+  let mut index = 0
+  while index < inner.length() &&
+        ((inner[index] >= 'a' && inner[index] <= 'z') || inner[index] == '-') {
+    index += 1
+  }
+  guard index > 0 && index < inner.length() && inner[index] == ':' else {
+    return None
+  }
+  Some((inner[:index].to_owned(), inner[index + 1:].to_owned()))
+}
+
+///|
+/// The two ways a candidate can carry a value of its own: `[…]` for an
+/// arbitrary value and `(--x)` for the custom-property shorthand.
+fn arbitrary_value(value : String) -> String? {
+  arbitrary_typed_value(value).map(fn(entry) {
+    let (value, _) = entry
+    value
+  })
 }
 
 ///|
@@ -1515,6 +1527,10 @@ fn dynamic_utility(
   // invoked ONCE (the previous `guard util(...) is None else { return util(...) }`
   // form called every matching utility twice — the test and the return); `as r`
   // returns the already-computed Option without recomputing or rewrapping.
+  match mask_edge_utility(theme, name) {
+    Some(_) as r => return r
+    None => ()
+  }
   match descriptor_utility(name) {
     Some(_) as r => return r
     None => ()

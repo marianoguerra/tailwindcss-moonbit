@@ -37,6 +37,55 @@ fn declaration_triggers(names : ArrayView[String]) -> Array[String] {
 fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
   [
     {
+      // The shared mask slots; every mask utility declares `--tw-mask-linear`.
+      triggers: ["--tw-mask-linear:"],
+      members: [
+        property_spec("--tw-mask-linear", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec("--tw-mask-radial", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec("--tw-mask-conic", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec("--tw-mask-left", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec("--tw-mask-right", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec("--tw-mask-bottom", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec("--tw-mask-top", "*", initial="linear-gradient(#fff, #fff)"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-top:"],
+      members: [
+        property_spec("--tw-mask-top-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-top-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-top-from-color", "*", initial="black"),
+        property_spec("--tw-mask-top-to-color", "*", initial="transparent"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-right:"],
+      members: [
+        property_spec("--tw-mask-right-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-right-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-right-from-color", "*", initial="black"),
+        property_spec("--tw-mask-right-to-color", "*", initial="transparent"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-bottom:"],
+      members: [
+        property_spec("--tw-mask-bottom-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-bottom-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-bottom-from-color", "*", initial="black"),
+        property_spec("--tw-mask-bottom-to-color", "*", initial="transparent"),
+      ],
+    },
+    {
+      triggers: ["--tw-mask-left:"],
+      members: [
+        property_spec("--tw-mask-left-from-position", "*", initial="0%"),
+        property_spec("--tw-mask-left-to-position", "*", initial="100%"),
+        property_spec("--tw-mask-left-from-color", "*", initial="black"),
+        property_spec("--tw-mask-left-to-color", "*", initial="transparent"),
+      ],
+    },
+    {
       triggers: ["--tw-border-spacing-x:", "--tw-border-spacing-y:"],
       members: [
         property_spec("--tw-border-spacing-x", "<length>", initial="0"),
