@@ -220,11 +220,19 @@ fn gradient_color_or_position(
   theme : Map[String, String],
   key : String,
 ) -> (String, Bool)? {
+  // A stop position is a percentage written as a plain number, so `from-25.0%`
+  // and `from--5%` are not candidates.
   if key.has_suffix("%") {
-    return Some((key, true))
+    let number = key[:key.length() - 1].to_owned()
+    return if is_canonical_number(number) { Some((key, true)) } else { None }
   }
-  match arbitrary_value(key) {
-    Some(value) =>
+  match arbitrary_typed_value(key) {
+    // A typehint says which of the two a stop is; without one, a length-looking
+    // value is a position and anything else is a color.
+    Some((value, Some("length"))) | Some((value, Some("percentage"))) =>
+      Some((value, true))
+    Some((value, Some("color"))) => Some((value, false))
+    Some((value, _)) =>
       Some(
         (
           value,
@@ -234,9 +242,13 @@ fn gradient_color_or_position(
         ),
       )
     None =>
-      match theme_css_value(theme, "--color-\{key}") {
+      match keyword_color(key) {
         Some(value) => Some((value, false))
-        None => None
+        None =>
+          match theme_css_value(theme, "--color-\{key}") {
+            Some(value) => Some((value, false))
+            None => None
+          }
       }
   }
 }

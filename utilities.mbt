@@ -158,13 +158,37 @@ fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
 }
 
 ///|
+/// An arbitrary value with the data type it names, if any.
+///
+/// `[color:var(--x)]` is a value with a `color` typehint; `[url(http://…)]` is
+/// a value with a colon in it. Upstream tells them apart syntactically: a
+/// typehint runs up to the first `:` and is made only of lowercase letters and
+/// dashes, so `url(http` — with its `(` — is not one.
+fn arbitrary_typed_value(value : String) -> (String, String?)? {
+  guard value.has_prefix("[") && value.has_suffix("]") && value.length() >= 2 else {
+    return None
+  }
+  let inner = decode_arbitrary(value[1:value.length() - 1].to_owned())
+  let mut index = 0
+  while index < inner.length() &&
+        ((inner[index] >= 'a' && inner[index] <= 'z') || inner[index] == '-') {
+    index += 1
+  }
+  if index > 0 && index < inner.length() && inner[index] == ':' {
+    return Some((inner[index + 1:].to_owned(), Some(inner[:index].to_owned())))
+  }
+  Some((inner, None))
+}
+
+///|
 /// The two ways a candidate can carry a value of its own: `[…]` for an
 /// arbitrary value and `(--x)` for the custom-property shorthand, which stands
 /// for `var(--x)` and may name a data type as `(<type>:--x)`. Underscores are
 /// decoded only in the bracket form — a custom property name keeps its own.
 fn arbitrary_value(value : String) -> String? {
-  if value.has_prefix("[") && value.has_suffix("]") && value.length() >= 2 {
-    return Some(decode_arbitrary(value[1:value.length() - 1].to_owned()))
+  match arbitrary_typed_value(value) {
+    Some((value, _)) => return Some(value)
+    None => ()
   }
   guard value.length() >= 5 && value.has_prefix("(") && value.has_suffix(")") else {
     return None

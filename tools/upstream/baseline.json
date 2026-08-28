@@ -29,7 +29,6 @@
     "font-features": "not implemented",
     "font-stretch": "different output",
     "fractions": "different output",
-    "from": "different output + accepted, upstream rejects",
     "functional utility with double-dash separator": "input rejected by this compiler",
     "inset-ring": "different output",
     "inset-shadow": "different output",
@@ -75,10 +74,8 @@
     "stroke": "different output",
     "text": "different output",
     "text-shadow": "different output",
-    "to": "different output + accepted, upstream rejects",
     "transition": "different output",
     "translate-z": "accepted, upstream rejects",
-    "using `--spacing(…)` shorthand (inline theme)": "different output",
-    "via": "different output + accepted, upstream rejects"
+    "using `--spacing(…)` shorthand (inline theme)": "different output"
   }
 }

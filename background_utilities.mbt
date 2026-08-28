@@ -1,9 +1,10 @@
 ///|
 fn typed_arbitrary(key : String, hint : String) -> String? {
-  guard arbitrary_value(key) is Some(value) else { return None }
-  let marker = "\{hint}:"
-  if value.has_prefix(marker) {
-    Some(value[marker.length():].to_owned())
+  guard arbitrary_typed_value(key) is Some((value, Some(data_type))) else {
+    return None
+  }
+  if data_type == hint {
+    Some(value)
   } else {
     None
   }
