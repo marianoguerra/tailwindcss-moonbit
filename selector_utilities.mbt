@@ -53,18 +53,28 @@ fn space_value(
             Some(value) => value
             None => return None
           }
-        None => {
-          if key == "px" {
-            return Some((if negative { "-1px" } else { "1px" }, false))
+        None =>
+          // The spacing utilities resolve two namespaces, their own and
+          // `--spacing`, so a `--spacing-4` key answers before the multiplier.
+          match theme_value(theme, "--spacing", key) {
+            Some(_) =>
+              match theme_css_value(theme, "--spacing-\{key}") {
+                Some(value) => value
+                None => return None
+              }
+            None => {
+              if key == "px" {
+                return Some((if negative { "-1px" } else { "1px" }, false))
+              }
+              if !is_spacing_number(key) {
+                return None
+              }
+              match numeric_spacing(theme, key) {
+                Some(value) => value
+                None => return None
+              }
+            }
           }
-          if !is_spacing_number(key) {
-            return None
-          }
-          match numeric_spacing(theme, key) {
-            Some(value) => value
-            None => return None
-          }
-        }
       }
   }
   let zero = is_zero_length(value) || key == "0"

@@ -190,7 +190,17 @@ fn scale_utility(
   }
   guard value is Some(value) else { return None }
   let declarations = properties.map(fn(property) { decl(property, value) })
-  declarations.push(decl("scale", "var(--tw-scale-x) var(--tw-scale-y)"))
+  // Touching the z axis puts it in the shorthand too.
+  declarations.push(
+    decl(
+      "scale",
+      if root == "scale-z" {
+        "var(--tw-scale-x) var(--tw-scale-y) var(--tw-scale-z)"
+      } else {
+        "var(--tw-scale-x) var(--tw-scale-y)"
+      },
+    ),
+  )
   Some(declarations)
 }
 

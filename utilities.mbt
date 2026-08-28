@@ -1037,6 +1037,10 @@ fn grid_track_utility(
             is_nonnegative_integer(key) &&
             key != "0" {
             Some("repeat(\{key}, minmax(0, 1fr))")
+          } else if prefix == "auto-cols" || prefix == "auto-rows" {
+            // `auto-cols-12` is a spacing multiplier, unlike the track counts
+            // the explicit grids take.
+            numeric_spacing(theme, key)
           } else {
             None
           }
@@ -1139,10 +1143,15 @@ fn columns_utility(
       match theme_css_value(theme, "--columns-\{key}") {
         Some(value) => Some(value)
         None =>
-          if is_nonnegative_integer(key) && key != "0" {
-            Some(key)
-          } else {
-            None
+          match theme_css_value(theme, "--container-\{key}") {
+            // `columns-3xs` is a container width, not a count.
+            Some(value) => Some(value)
+            None =>
+              if is_nonnegative_integer(key) && key != "0" {
+                Some(key)
+              } else {
+                None
+              }
           }
       }
   }
