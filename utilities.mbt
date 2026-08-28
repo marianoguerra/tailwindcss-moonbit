@@ -11,10 +11,35 @@ fn decl(property : String, value : String) -> Declaration {
 }
 
 ///|
-fn apply_alpha(value : String, modifier : String) -> String {
-  let alpha = match arbitrary_value(modifier) {
-    Some(value) => value
-    None => "\{modifier}%"
+/// Upstream's `asColor`: an arbitrary modifier is taken as written, a bare one
+/// must name an `--opacity-*` theme key or be a valid opacity value. Anything
+/// else means the candidate does not exist, hence the `None`.
+fn alpha_modifier_value(
+  theme : Map[String, String],
+  modifier : String,
+) -> String? {
+  match arbitrary_value(modifier) {
+    Some(value) => Some(value)
+    None =>
+      match theme_css_value(theme, "--opacity-\{modifier}") {
+        Some(value) => Some(value)
+        None => if is_spacing_number(modifier) { Some("\{modifier}%") } else { None }
+      }
+  }
+}
+
+///|
+/// Upstream's `withAlpha`: a numeric alpha becomes a percentage so `color-mix`
+/// accepts it, and a fully opaque color needs no mix at all.
+fn apply_alpha(value : String, alpha : String) -> String {
+  let parsed = @string.parse_double(alpha) catch { _ => @double.not_a_number }
+  let alpha = if parsed.is_nan() {
+    alpha
+  } else {
+    "\{parsed * 100.0}%"
+  }
+  if alpha == "100%" {
+    return value
   }
   "color-mix(in oklab, \{value} \{alpha}, transparent)"
 }
@@ -49,13 +74,30 @@ fn negate_value(value : String) -> String {
 }
 
 ///|
+/// `None` when the candidate carries an alpha modifier the colors cannot take —
+/// upstream's `asColor` returns null there, and a null value means no rule.
 fn apply_candidate_value(
   theme : Map[String, String],
   declarations : Array[Declaration],
   negative : Bool,
   modifier : String?,
-) -> Array[Declaration] {
-  declarations.map(fn(declaration) {
+) -> Array[Declaration]? {
+  let wants_alpha = declarations
+    .iter()
+    .any(fn(declaration) { is_alpha_property(declaration.property) })
+  let modifier = if wants_alpha {
+    match modifier {
+      Some(source) =>
+        match alpha_modifier_value(theme, source) {
+          Some(alpha) => Some(alpha)
+          None => return None
+        }
+      None => None
+    }
+  } else {
+    modifier
+  }
+  Some(declarations.map(fn(declaration) {
     let (value, fallback) = match modifier {
       Some(alpha) =>
         if is_alpha_property(declaration.property) {
@@ -84,7 +126,7 @@ fn apply_candidate_value(
       },
       fallback,
     }
-  })
+  }))
 }
 
 ///|
@@ -803,11 +845,9 @@ fn color_utility(
     let value = match arbitrary_value(key) {
       Some(v) => Some(v)
       None =>
-        match key {
-          "inherit" => Some("inherit")
-          "current" => Some("currentcolor")
-          "transparent" => Some("transparent")
-          _ =>
+        match keyword_color(key) {
+          Some(value) => Some(value)
+          None =>
             match theme_value(theme, "--color", key) {
               Some(_) => theme_css_value(theme, "--color-\{key}")
               None => None
@@ -860,6 +900,18 @@ fn cursor_utility(
 }
 
 ///|
+/// The three colors upstream's `resolveThemeColor` answers without consulting
+/// the theme at all, so every color utility accepts them.
+fn keyword_color(key : String) -> String? {
+  match key {
+    "inherit" => Some("inherit")
+    "current" => Some("currentcolor")
+    "transparent" => Some("transparent")
+    _ => None
+  }
+}
+
+///|
 fn interaction_color_utility(
   theme : Map[String, String],
   name : String,
@@ -875,12 +927,16 @@ fn interaction_color_utility(
   let value = match arbitrary_value(key) {
     Some(value) => Some(value)
     None =>
-      match theme_value(theme, theme_namespace, key) {
-        Some(_) => theme_css_value(theme, "\{theme_namespace}-\{key}")
+      match keyword_color(key) {
+        Some(value) => Some(value)
         None =>
-          match theme_value(theme, "--color", key) {
-            Some(_) => theme_css_value(theme, "--color-\{key}")
-            None => None
+          match theme_value(theme, theme_namespace, key) {
+            Some(_) => theme_css_value(theme, "\{theme_namespace}-\{key}")
+            None =>
+              match theme_value(theme, "--color", key) {
+                Some(_) => theme_css_value(theme, "--color-\{key}")
+                None => None
+              }
           }
       }
   }

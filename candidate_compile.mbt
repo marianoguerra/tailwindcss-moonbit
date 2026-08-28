@@ -2082,12 +2082,15 @@ fn render_candidate(
     return None
   }
   let base_declarations = base.declarations
-  let declarations = apply_candidate_value(
-    theme,
-    base_declarations,
-    candidate.negative,
-    candidate.modifier_source(),
-  )
+  guard apply_candidate_value(
+      theme,
+      base_declarations,
+      candidate.negative,
+      candidate.modifier_source(),
+    )
+    is Some(declarations) else {
+    return None
+  }
   let selector = ".\{escape_class_name(raw)}"
   let declaration_nodes = declarations_to_css_nodes(
     declarations,

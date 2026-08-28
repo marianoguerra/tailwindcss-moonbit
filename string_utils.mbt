@@ -301,47 +301,56 @@ fn is_valid_arbitrary(input : String) -> Bool {
 }
 
 ///|
+fn digit_run_end(input : String, start : Int) -> Int {
+  let mut end = start
+  while end < input.length() && input[end] >= '0' && input[end] <= '9' {
+    end += 1
+  }
+  end
+}
+
+///|
+/// Upstream's `compare`: a codepoint comparison, except that a run of digits on
+/// both sides is compared as a number. That is what puts `2.5` before `2.25`
+/// (the runs after the shared `2.` are 5 and 25) and `bg-red-500` before
+/// `bg-red-500/70`.
 fn lexical_compare(a : String, b : String) -> Int {
   let common = if a.length() < b.length() { a.length() } else { b.length() }
-  for i in 0..<common {
-    if a[i] < b[i] {
-      return -1
+  for index in 0..<common {
+    let left = a[index]
+    let right = b[index]
+    if left >= '0' && left <= '9' && right >= '0' && right <= '9' {
+      let a_number = a[index:digit_run_end(a, index)].to_owned()
+      let b_number = b[index:digit_run_end(b, index)].to_owned()
+      let a_value = @string.parse_double(a_number) catch { _ => 0.0 }
+      let b_value = @string.parse_double(b_number) catch { _ => 0.0 }
+      if a_value != b_value {
+        return if a_value < b_value { -1 } else { 1 }
+      }
+      // Same value, different spelling (`0123` vs `123`): fall back to text.
+      if a_number != b_number {
+        return if a_number < b_number { -1 } else { 1 }
+      }
+      // Only one character is consumed, so a shorter string still sorts first.
+      continue
     }
-    if a[i] > b[i] {
-      return 1
+    if left != right {
+      return if left < right { -1 } else { 1 }
     }
   }
   a.length().compare(b.length())
 }
 
 ///|
+/// `bg-linear-[…]` sorts after every other gradient candidate, which the plain
+/// comparison does not produce on its own.
 fn candidate_lexical_compare(a : String, b : String) -> Int {
   let a_gradient_arbitrary = a.has_prefix("bg-linear-[")
   let b_gradient_arbitrary = b.has_prefix("bg-linear-[")
   if a_gradient_arbitrary != b_gradient_arbitrary {
     return if a_gradient_arbitrary { 1 } else { -1 }
   }
-  let a_typography = a.has_prefix("font-") || a.has_prefix("text-")
-  let b_typography = b.has_prefix("font-") || b.has_prefix("text-")
-  let a_typography_rank = if a_typography && a.contains("/") {
-    2
-  } else if a_typography && (a.has_prefix("font-[") || a.has_prefix("text-[")) {
-    1
-  } else {
-    0
-  }
-  let b_typography_rank = if b_typography && b.contains("/") {
-    2
-  } else if b_typography && (b.has_prefix("font-[") || b.has_prefix("text-[")) {
-    1
-  } else {
-    0
-  }
-  if a_typography_rank != b_typography_rank {
-    a_typography_rank.compare(b_typography_rank)
-  } else {
-    lexical_compare(a, b)
-  }
+  lexical_compare(a, b)
 }
 
 ///|

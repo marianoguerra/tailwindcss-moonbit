@@ -296,6 +296,28 @@ fn resolve_theme_var_literals(
 }
 
 ///|
+/// Whether a `color-mix()` needs a fallback at all. Upstream sets
+/// `requiresPolyfill` only when the mix mentions a variable or `currentColor`,
+/// so `color-mix(in oklab, #0088cc 50%, transparent)` is emitted bare.
+fn color_mix_needs_fallback(nodes : ArrayView[ValueNode]) -> Bool {
+  for node in nodes {
+    match node {
+      ValueFunction("var", _) => return true
+      ValueWord(word) =>
+        if word.to_lower() == "currentcolor" {
+          return true
+        }
+      ValueFunction(_, children) =>
+        if color_mix_needs_fallback(children) {
+          return true
+        }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
 /// Rewrite `color-mix(in oklab|oklch, …)` to its sRGB compatibility form:
 /// resolve theme variables to literals and switch the interpolation space to
 /// `srgb`. Returns `None` when the value has no oklab/oklch `color-mix()`.
@@ -307,6 +329,11 @@ fn color_mix_fallback_nodes(
   let mut changed = false
   for node in nodes {
     match node {
+      ValueFunction("color-mix", children) if !color_mix_needs_fallback(children) =>
+        // A mix written entirely in literal colors works wherever `color-mix`
+        // itself does; upstream polyfills only the ones naming a variable or
+        // `currentColor`.
+        output.push(node)
       ValueFunction("color-mix", children) => {
         let resolved = resolve_theme_var_literals(children, theme)
         let (inner, _) = color_mix_fallback_nodes(resolved, theme)

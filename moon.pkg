@@ -2,6 +2,7 @@ import {
   "moonbitlang/core/string",
   "moonbitlang/core/math",
   "moonbitlang/core/set",
+  "moonbitlang/core/double",
 }
 
 import {

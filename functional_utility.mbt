@@ -17,7 +17,40 @@ fn is_nonnegative_integer(input : String) -> Bool {
 }
 
 ///|
+/// Whether a number is written the way `Number(value)` would print it again.
+///
+/// Upstream's `isMultipleOf` ends with `String(num) === String(value)`, which is
+/// what rejects `.75`, `2.50` and `01` while accepting `0.75`, `2.5` and `1`.
+fn is_canonical_number(input : String) -> Bool {
+  guard input.length() > 0 else { return false }
+  let mut dot = -1
+  for index in 0..<input.length() {
+    let character = input[index]
+    if character == '.' {
+      guard dot < 0 else { return false }
+      dot = index
+    } else if !(character >= '0' && character <= '9') {
+      return false
+    }
+  }
+  let integer_end = if dot < 0 { input.length() } else { dot }
+  // An integer part is required, and only a bare `0` may start with one.
+  guard integer_end > 0 else { return false }
+  if integer_end > 1 && input[0] == '0' {
+    return false
+  }
+  if dot >= 0 {
+    guard dot + 1 < input.length() else { return false }
+    guard input[input.length() - 1] != '0' else { return false }
+  }
+  true
+}
+
+///|
+/// Upstream's `isMultipleOf(value, 0.25)`, which backs both the spacing
+/// multiplier and the opacity modifier.
 fn is_spacing_number(input : String) -> Bool {
+  guard is_canonical_number(input) else { return false }
   let parsed = @string.parse_double(input) catch { _ => return false }
   if parsed < 0.0 {
     return false

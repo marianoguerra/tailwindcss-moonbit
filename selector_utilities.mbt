@@ -289,14 +289,18 @@ fn selector_utility(
         "--divide-color", "--border-color", "--color",
       ])
       is Some(color) {
-      return Some({
-        nested_selector: DIVIDE_CHILD_SELECTOR,
-        declarations: apply_candidate_value(
+      guard apply_candidate_value(
           theme,
           [decl("border-color", color)],
           false,
           modifier,
-        ),
+        )
+        is Some(declarations) else {
+        return None
+      }
+      return Some({
+        nested_selector: DIVIDE_CHILD_SELECTOR,
+        declarations,
         sort_key: "divide-color",
       })
     }
@@ -304,14 +308,13 @@ fn selector_utility(
   if prefixed_value(name, "placeholder") is Some(key) {
     if selector_color_value(theme, key, ["--placeholder-color", "--color"])
       is Some(color) {
+      guard apply_candidate_value(theme, [decl("color", color)], false, modifier)
+        is Some(declarations) else {
+        return None
+      }
       return Some({
         nested_selector: "&::placeholder",
-        declarations: apply_candidate_value(
-          theme,
-          [decl("color", color)],
-          false,
-          modifier,
-        ),
+        declarations,
         sort_key: "placeholder-color",
       })
     }
