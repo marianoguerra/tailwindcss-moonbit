@@ -97,13 +97,20 @@ fn supports_fractions(base : String) -> Bool {
 /// The modifier gate and `apply_candidate_value` have to agree on this, so both
 /// ask here.
 fn is_alpha_property(property : String) -> Bool {
+  // `scrollbar-color` names two colors at once; its alpha goes on the two
+  // custom properties it composes, which are listed below.
+  if property == "scrollbar-color" {
+    return false
+  }
   property == "color" ||
   property.has_suffix("-color") ||
   property == "fill" ||
   property == "stroke" ||
   property == "--tw-gradient-from" ||
   property == "--tw-gradient-via" ||
-  property == "--tw-gradient-to"
+  property == "--tw-gradient-to" ||
+  property == "--tw-scrollbar-thumb" ||
+  property == "--tw-scrollbar-track"
 }
 
 ///|

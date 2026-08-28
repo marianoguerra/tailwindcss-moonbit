@@ -37,6 +37,22 @@ fn declaration_triggers(names : ArrayView[String]) -> Array[String] {
 fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
   [
     {
+      triggers: ["--tw-contain-size:", "--tw-contain-layout:", "--tw-contain-paint:", "--tw-contain-style:"],
+      members: [
+        property_spec("--tw-contain-size", "*"),
+        property_spec("--tw-contain-layout", "*"),
+        property_spec("--tw-contain-paint", "*"),
+        property_spec("--tw-contain-style", "*"),
+      ],
+    },
+    {
+      triggers: ["--tw-scrollbar-thumb:", "--tw-scrollbar-track:"],
+      members: [
+        property_spec("--tw-scrollbar-thumb", "<color>", initial="#0000"),
+        property_spec("--tw-scrollbar-track", "<color>", initial="#0000"),
+      ],
+    },
+    {
       // The three gradient slots, registered by every mask utility.
       triggers: ["var(--tw-mask-linear), var(--tw-mask-radial)"],
       members: [

@@ -1690,6 +1690,66 @@ fn dynamic_utility(
       None => ()
     }
   }
+  // `contain-size` and friends each fill one slot of the composed `contain`.
+  for entry in [
+    ("contain-size", "--tw-contain-size", "size"),
+    ("contain-inline-size", "--tw-contain-size", "inline-size"),
+    ("contain-layout", "--tw-contain-layout", "layout"),
+    ("contain-paint", "--tw-contain-paint", "paint"),
+    ("contain-style", "--tw-contain-style", "style"),
+  ] {
+    let (candidate, property, value) = entry
+    if name == candidate {
+      return Some([
+        decl(property, value),
+        decl(
+          "contain", "var(--tw-contain-size,) var(--tw-contain-layout,) var(--tw-contain-paint,) var(--tw-contain-style,)",
+        ),
+      ])
+    }
+  }
+  if prefixed_value(name, "contain") is Some(key) {
+    match arbitrary_value(key) {
+      Some(value) => return Some([decl("contain", value)])
+      None => ()
+    }
+  }
+  for entry in [
+    ("scrollbar-thumb", "--tw-scrollbar-thumb"),
+    ("scrollbar-track", "--tw-scrollbar-track"),
+  ] {
+    let (root, property) = entry
+    guard prefixed_value(name, root) is Some(key) else { continue }
+    let color = match arbitrary_value(key) {
+      Some(value) => Some(value)
+      None =>
+        match keyword_color(key) {
+          Some(value) => Some(value)
+          None =>
+            match theme_value(theme, "--color", key) {
+              Some(_) => theme_css_value(theme, "--color-\{key}")
+              None => None
+            }
+        }
+    }
+    guard color is Some(color) else { return None }
+    return Some([
+      decl(property, color),
+      decl(
+        "scrollbar-color", "var(--tw-scrollbar-thumb) var(--tw-scrollbar-track)",
+      ),
+    ])
+  }
+  for entry in [("bg-position", "background-position"), ("bg-size", "background-size")] {
+    let (root, property) = entry
+    guard prefixed_value(name, root) is Some(key) else { continue }
+    let value = match arbitrary_value(key) {
+      Some(value) => Some(value)
+      None => theme_css_value(theme, "--\{property}-\{key}")
+    }
+    guard value is Some(value) else { return None }
+    return Some([decl(property, value)])
+  }
   if prefixed_value(name, "font-stretch") is Some(key) {
     match arbitrary_value(key) {
       Some(value) => return Some([decl("font-stretch", value)])
