@@ -1897,8 +1897,11 @@ fn compile_base(
     Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
-  match stateful_effect_utility(theme, name) {
-    Some(declarations) => return Some(alpha_base(declarations))
+  match stateful_effect_utility(theme, name, modifier) {
+    Some((declarations, used)) => {
+      let base = alpha_base(declarations)
+      return Some({ ..base, modifier_used: base.modifier_used || used })
+    }
     None => ()
   }
   match stateful_filter_transition_utility(theme, name) {

@@ -3,7 +3,27 @@
 /// `var(<custom_property>, <colour>)` so `shadow-<color>` utilities can recolour
 /// it. Handles multi-layer shadows and colours with internal spaces such as
 /// `rgb(0 0 0 / 0.1)`.
-fn shadow_value_with_color(value : String, custom_property : String) -> String {
+/// Wraps a shadow's color in the alpha the modifier asked for. A literal from
+/// the theme is rewritten in place with relative color syntax; `currentcolor`
+/// has to go through `color-mix`, which the fallback pass then polyfills.
+fn shadow_color_with_alpha(color : String, alpha : String?) -> String {
+  match alpha {
+    None => color
+    Some(alpha) =>
+      if color == "currentcolor" {
+        "color-mix(in oklab, currentcolor \{alpha}, transparent)"
+      } else {
+        "oklab(from \{color} l a b / \{alpha})"
+      }
+  }
+}
+
+///|
+fn shadow_value_with_color(
+  value : String,
+  custom_property : String,
+  alpha : String?,
+) -> String {
   let layers = split_function_arguments(value)
   if layers.length() == 0 {
     return value
@@ -21,19 +41,23 @@ fn shadow_value_with_color(value : String, custom_property : String) -> String {
       return layer
     }
     let is_color = match nodes[index] {
+      // A trailing `var()` is taken as the color, as upstream does.
       ValueFunction(name, _) =>
-        ["rgb", "rgba", "hsl", "hsla", "oklch", "oklab", "hwb", "color"].contains(
+        ["rgb", "rgba", "hsl", "hsla", "oklch", "oklab", "hwb", "color", "var"].contains(
           name,
         )
       ValueWord(word) => word.has_prefix("#")
       _ => false
     }
     if is_color {
-      let rendered = render_value([nodes[index]])
+      let rendered = shadow_color_with_alpha(render_value([nodes[index]]), alpha)
       nodes[index] = ValueWord("var(\{custom_property}, \{rendered})")
       render_value(nodes)
     } else {
-      layer
+      // A shadow written without a color still gets the slot, defaulting to
+      // `currentcolor`, so `shadow-<color>` can fill it in later.
+      let default_color = shadow_color_with_alpha("currentcolor", alpha)
+      "\{layer} var(\{custom_property}, \{default_color})"
     }
   })
   wrapped.join(", ")
@@ -71,6 +95,11 @@ fn shadow_color_pair(
   theme_namespace : String,
   key : String,
 ) -> (String, String)? {
+  // The universal keywords resolve to themselves, and are their own fallback.
+  match keyword_color(key) {
+    Some(value) => return Some((value, value))
+    None => ()
+  }
   for candidate_namespace in [theme_namespace, "--color"] {
     if theme.get("\{candidate_namespace}-\{key}") is Some(literal) &&
       theme_css_value(theme, "\{candidate_namespace}-\{key}") is Some(value) {
@@ -84,6 +113,7 @@ fn shadow_color_pair(
 fn shadow_ring_utility(
   theme : Map[String, String],
   name : String,
+  modifier : String?,
 ) -> Array[Declaration]? {
   let shadow_stack = "var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)"
   if name == "inset-ring" || name.has_prefix("inset-ring-") {
@@ -230,11 +260,30 @@ fn shadow_ring_utility(
       None => theme.get("\{theme_namespace}-\{key}")
     }
   }
+  // A modifier is the shadow's alpha, recorded in its own custom property and
+  // folded into the color slot's default.
+  let alpha = match modifier {
+    Some(source) =>
+      match alpha_modifier_value(theme, source) {
+        Some(alpha) => Some(alpha)
+        None => return None
+      }
+    None => None
+  }
   value.map(fn(value) {
-    [
-      decl(property, shadow_value_with_color(value, color_property)),
-      decl("box-shadow", shadow_stack),
-    ]
+    let declarations : Array[Declaration] = []
+    match alpha {
+      Some(alpha) =>
+        declarations.push(
+          decl("\{color_property[:color_property.length() - 6]}-alpha", alpha),
+        )
+      None => ()
+    }
+    declarations.push(
+      decl(property, shadow_value_with_color(value, color_property, alpha)),
+    )
+    declarations.push(decl("box-shadow", shadow_stack))
+    declarations
   })
 }
 
@@ -242,6 +291,7 @@ fn shadow_ring_utility(
 fn text_shadow_utility(
   theme : Map[String, String],
   name : String,
+  modifier : String?,
 ) -> Array[Declaration]? {
   guard prefixed_value(name, "text-shadow") is Some(key) else { return None }
   match shadow_color_pair(theme, "--text-shadow-color", key) {
@@ -259,13 +309,27 @@ fn text_shadow_utility(
     Some(value) => Some(value)
     None => theme.get("--text-shadow-\{key}")
   }
+  let alpha = match modifier {
+    Some(source) =>
+      match alpha_modifier_value(theme, source) {
+        Some(alpha) => Some(alpha)
+        None => return None
+      }
+    None => None
+  }
   value.map(fn(value) {
-    [
+    let declarations : Array[Declaration] = []
+    match alpha {
+      Some(alpha) => declarations.push(decl("--tw-text-shadow-alpha", alpha))
+      None => ()
+    }
+    declarations.push(
       decl(
         "text-shadow",
-        shadow_value_with_color(value, "--tw-text-shadow-color"),
+        shadow_value_with_color(value, "--tw-text-shadow-color", alpha),
       ),
-    ]
+    )
+    declarations
   })
 }
 
@@ -380,16 +444,27 @@ fn gradient_utility(
 }
 
 ///|
+/// The second field reports whether the utility consumed the candidate's
+/// modifier — the shadows take one as an alpha on their color slot.
 fn stateful_effect_utility(
   theme : Map[String, String],
   name : String,
-) -> Array[Declaration]? {
-  match shadow_ring_utility(theme, name) {
-    Some(value) => return Some(value)
+  modifier : String?,
+) -> (Array[Declaration], Bool)? {
+  // The alpha property is written exactly when a modifier was taken as a
+  // shadow's alpha, so its presence is the answer.
+  fn consumed(declarations : Array[Declaration]) -> Bool {
+    declarations
+    .iter()
+    .any(fn(declaration) { declaration.property.has_suffix("-alpha") })
+  }
+
+  match shadow_ring_utility(theme, name, modifier) {
+    Some(value) => return Some((value, consumed(value)))
     None => ()
   }
-  match text_shadow_utility(theme, name) {
-    Some(value) => return Some(value)
-    None => gradient_utility(theme, name)
+  match text_shadow_utility(theme, name, modifier) {
+    Some(value) => return Some((value, consumed(value)))
+    None => gradient_utility(theme, name).map(fn(value) { (value, false) })
   }
 }
