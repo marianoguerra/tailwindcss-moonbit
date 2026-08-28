@@ -2067,6 +2067,9 @@ fn render_candidate(
   if candidate.modifier_source() is Some(_) && !base.modifier_used {
     return None
   }
+  if candidate.negative && base.static_value {
+    return None
+  }
   // `apply_candidate_value` leaves `var(--tw-*)` values alone, so only the
   // values it would actually negate have to be negatable.
   if candidate.negative &&

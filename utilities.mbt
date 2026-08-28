@@ -478,6 +478,125 @@ fn static_utility(name : String) -> Array[Declaration]? {
     "ring-inset" => Some([decl("--tw-ring-inset", "inset")])
     "content-none" =>
       Some([decl("--tw-content", "none"), decl("content", "none")])
+    // Generated from the pinned upstream `staticUtility` registrations; every
+    // arm here is a plain declaration list with no theme lookup.
+    "order-first" => Some([decl("order", "-9999")])
+    "order-last" => Some([decl("order", "9999")])
+    "order-none" => Some([decl("order", "0")])
+    "perspective-origin-center" => Some([decl("perspective-origin", "center")])
+    "perspective-origin-top" => Some([decl("perspective-origin", "top")])
+    "perspective-origin-top-right" =>
+      Some([decl("perspective-origin", "100% 0")])
+    "perspective-origin-right" => Some([decl("perspective-origin", "100%")])
+    "perspective-origin-bottom-right" =>
+      Some([decl("perspective-origin", "100% 100%")])
+    "perspective-origin-bottom" => Some([decl("perspective-origin", "bottom")])
+    "perspective-origin-bottom-left" =>
+      Some([decl("perspective-origin", "0 100%")])
+    "perspective-origin-left" => Some([decl("perspective-origin", "0")])
+    "perspective-origin-top-left" => Some([decl("perspective-origin", "0 0")])
+    "zoom-50" => Some([decl("zoom", "50%")])
+    "zoom-100" => Some([decl("zoom", "100%")])
+    "break-before-auto" => Some([decl("break-before", "auto")])
+    "break-before-avoid" => Some([decl("break-before", "avoid")])
+    "break-before-all" => Some([decl("break-before", "all")])
+    "break-before-avoid-page" => Some([decl("break-before", "avoid-page")])
+    "break-before-page" => Some([decl("break-before", "page")])
+    "break-before-left" => Some([decl("break-before", "left")])
+    "break-before-right" => Some([decl("break-before", "right")])
+    "break-before-column" => Some([decl("break-before", "column")])
+    "break-inside-auto" => Some([decl("break-inside", "auto")])
+    "break-inside-avoid" => Some([decl("break-inside", "avoid")])
+    "break-inside-avoid-page" => Some([decl("break-inside", "avoid-page")])
+    "break-inside-avoid-column" => Some([decl("break-inside", "avoid-column")])
+    "break-after-auto" => Some([decl("break-after", "auto")])
+    "break-after-avoid" => Some([decl("break-after", "avoid")])
+    "break-after-all" => Some([decl("break-after", "all")])
+    "break-after-avoid-page" => Some([decl("break-after", "avoid-page")])
+    "break-after-page" => Some([decl("break-after", "page")])
+    "break-after-left" => Some([decl("break-after", "left")])
+    "break-after-right" => Some([decl("break-after", "right")])
+    "break-after-column" => Some([decl("break-after", "column")])
+    "flex-wrap-reverse" => Some([decl("flex-wrap", "wrap-reverse")])
+    "place-content-center" => Some([decl("place-content", "center")])
+    "place-content-center-safe" => Some([decl("place-content", "safe center")])
+    "place-content-start" => Some([decl("place-content", "start")])
+    "place-content-end" => Some([decl("place-content", "end")])
+    "place-content-end-safe" => Some([decl("place-content", "safe end")])
+    "place-content-between" => Some([decl("place-content", "space-between")])
+    "place-content-around" => Some([decl("place-content", "space-around")])
+    "place-content-evenly" => Some([decl("place-content", "space-evenly")])
+    "place-content-baseline" => Some([decl("place-content", "baseline")])
+    "place-content-stretch" => Some([decl("place-content", "stretch")])
+    "place-items-end-safe" => Some([decl("place-items", "safe end")])
+    "place-items-center-safe" => Some([decl("place-items", "safe center")])
+    "content-center-safe" => Some([decl("align-content", "safe center")])
+    "content-end-safe" => Some([decl("align-content", "safe flex-end")])
+    "justify-items-start" => Some([decl("justify-items", "start")])
+    "justify-items-end" => Some([decl("justify-items", "end")])
+    "justify-items-end-safe" => Some([decl("justify-items", "safe end")])
+    "justify-items-center" => Some([decl("justify-items", "center")])
+    "justify-items-center-safe" => Some([decl("justify-items", "safe center")])
+    "justify-items-stretch" => Some([decl("justify-items", "stretch")])
+    "place-self-end-safe" => Some([decl("place-self", "safe end")])
+    "place-self-center-safe" => Some([decl("place-self", "safe center")])
+    "self-end-safe" => Some([decl("align-self", "safe flex-end")])
+    "self-center-safe" => Some([decl("align-self", "safe center")])
+    "self-baseline-last" => Some([decl("align-self", "last baseline")])
+    "justify-self-end-safe" => Some([decl("justify-self", "safe flex-end")])
+    "justify-self-center-safe" => Some([decl("justify-self", "safe center")])
+    "break-words" => Some([decl("overflow-wrap", "break-word")])
+    "mask-circle" => Some([decl("--tw-mask-radial-shape", "circle")])
+    "mask-ellipse" => Some([decl("--tw-mask-radial-shape", "ellipse")])
+    "mask-radial-closest-side" =>
+      Some([decl("--tw-mask-radial-size", "closest-side")])
+    "mask-radial-farthest-side" =>
+      Some([decl("--tw-mask-radial-size", "farthest-side")])
+    "mask-radial-closest-corner" =>
+      Some([decl("--tw-mask-radial-size", "closest-corner")])
+    "mask-radial-farthest-corner" =>
+      Some([decl("--tw-mask-radial-size", "farthest-corner")])
+    "box-decoration-slice" =>
+      Some([
+        decl("-webkit-box-decoration-break", "slice"),
+        decl("box-decoration-break", "slice"),
+      ])
+    "box-decoration-clone" =>
+      Some([
+        decl("-webkit-box-decoration-break", "clone"),
+        decl("box-decoration-break", "clone"),
+      ])
+    "mask-clip-border" => Some([decl("mask-clip", "border-box")])
+    "mask-clip-padding" => Some([decl("mask-clip", "padding-box")])
+    "mask-clip-content" => Some([decl("mask-clip", "content-box")])
+    "mask-clip-fill" => Some([decl("mask-clip", "fill-box")])
+    "mask-clip-stroke" => Some([decl("mask-clip", "stroke-box")])
+    "mask-clip-view" => Some([decl("mask-clip", "view-box")])
+    "mask-no-clip" => Some([decl("mask-clip", "no-clip")])
+    "mask-origin-border" => Some([decl("mask-origin", "border-box")])
+    "mask-origin-padding" => Some([decl("mask-origin", "padding-box")])
+    "mask-origin-content" => Some([decl("mask-origin", "content-box")])
+    "mask-origin-fill" => Some([decl("mask-origin", "fill-box")])
+    "mask-origin-stroke" => Some([decl("mask-origin", "stroke-box")])
+    "mask-origin-view" => Some([decl("mask-origin", "view-box")])
+    "object-left-bottom" => Some([decl("object-position", "left bottom")])
+    "object-left-top" => Some([decl("object-position", "left top")])
+    "object-right-bottom" => Some([decl("object-position", "right bottom")])
+    "object-right-top" => Some([decl("object-position", "right top")])
+    "text-start" => Some([decl("text-align", "start")])
+    "text-end" => Some([decl("text-align", "end")])
+    "font-stretch-ultra-expanded" =>
+      Some([decl("font-stretch", "ultra-expanded")])
+    "transition-discrete" =>
+      Some([decl("transition-behavior", "allow-discrete")])
+    "transition-normal" => Some([decl("transition-behavior", "normal")])
+    "will-change-auto" => Some([decl("will-change", "auto")])
+    "will-change-contents" => Some([decl("will-change", "contents")])
+    "will-change-transform" => Some([decl("will-change", "transform")])
+    "will-change-scroll" => Some([decl("will-change", "scroll-position")])
+    "contain-none" => Some([decl("contain", "none")])
+    "contain-content" => Some([decl("contain", "content")])
+    "contain-strict" => Some([decl("contain", "strict")])
     _ => None
   }
 }
@@ -1402,6 +1521,9 @@ fn dynamic_utility(
 priv struct CompiledBase {
   declarations : Array[Declaration]
   modifier_used : Bool
+  /// Upstream reaches a utility's static values only when the candidate is not
+  /// negative, so `-order-first` and `-z-auto` do not exist.
+  static_value : Bool
 }
 
 ///|
@@ -1413,6 +1535,7 @@ fn alpha_base(declarations : Array[Declaration]) -> CompiledBase {
     modifier_used: declarations.iter().any(fn(declaration) {
       is_alpha_property(declaration.property)
     }),
+    static_value: false,
   }
 }
 
@@ -1449,9 +1572,7 @@ fn compile_base(
     Some(declarations) => return Some(alpha_base(declarations))
     None => ()
   }
-  match static_utility(name) {
-    Some(value) => Some(alpha_base(value))
-    None => {
+  {
       let color_candidate = name.has_prefix("bg-") ||
         name.has_prefix("text-") ||
         name.has_prefix("border-") ||
@@ -1467,10 +1588,17 @@ fn compile_base(
         Some(modifier) if !color_candidate => "\{name}/\{modifier}"
         _ => name
       }
-      dynamic_utility(theme, dynamic_name).map(fn(declarations) {
+    match dynamic_utility(theme, dynamic_name) {
+      Some(declarations) => {
         let base = alpha_base(declarations)
-        { ..base, modifier_used: base.modifier_used || dynamic_name != name }
-      })
+        Some({ ..base, modifier_used: base.modifier_used || dynamic_name != name })
+      }
+      // Static values come last: upstream resolves a utility's theme keys
+      // first, so `--order-first` in the theme beats the built-in `order-first`.
+      None =>
+        static_utility(name).map(fn(value) {
+          { ..alpha_base(value), static_value: true }
+        })
     }
   }
 }
