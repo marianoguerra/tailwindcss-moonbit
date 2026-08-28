@@ -260,29 +260,30 @@ fn selector_utility(
   if negative && !name.has_prefix("space-") {
     return None
   }
-  if modifier is Some(_) &&
-    !(name.has_prefix("divide-") || name.has_prefix("placeholder-")) {
-    return None
-  }
-  match space_reverse_utility(name) {
-    Some(utility) => return Some(utility)
-    None => ()
-  }
-  match divide_reverse_utility(name) {
-    Some(utility) => return Some(utility)
-    None => ()
-  }
-  match divide_style_utility(name) {
-    Some(utility) => return Some(utility)
-    None => ()
-  }
-  match space_utility(theme, name, negative) {
-    Some(utility) => return Some(utility)
-    None => ()
-  }
-  match divide_width_utility(theme, name) {
-    Some(utility) => return Some(utility)
-    None => ()
+  // Only the two color branches below read a modifier. The reverse, style and
+  // width utilities ignore one, and a modifier nothing consumes means there is
+  // no candidate — so they are not even consulted.
+  if modifier is None {
+    match space_reverse_utility(name) {
+      Some(utility) => return Some(utility)
+      None => ()
+    }
+    match divide_reverse_utility(name) {
+      Some(utility) => return Some(utility)
+      None => ()
+    }
+    match divide_style_utility(name) {
+      Some(utility) => return Some(utility)
+      None => ()
+    }
+    match space_utility(theme, name, negative) {
+      Some(utility) => return Some(utility)
+      None => ()
+    }
+    match divide_width_utility(theme, name) {
+      Some(utility) => return Some(utility)
+      None => ()
+    }
   }
   if prefixed_value(name, "divide") is Some(key) {
     if selector_color_value(theme, key, [
