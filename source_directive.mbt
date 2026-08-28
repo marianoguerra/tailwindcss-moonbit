@@ -34,7 +34,7 @@ fn parse_source_directives(
   nodes : ArrayView[CssNode],
   base : String,
 ) -> SourceDirectives raise CompileError {
-  let result = { sources: [], included: [], excluded: Map([]) }
+  let result = { sources: [], included: [], excluded: Map([]), }
   for node in nodes {
     match node {
       AtRule(name="@source", params~, ..) => {
@@ -55,7 +55,7 @@ fn parse_source_directives(
             }
           None =>
             match quoted_content(target) {
-              Some(pattern) => result.sources.push({ base, pattern, negated })
+              Some(pattern) => result.sources.push({ base, pattern, negated, })
               None => raise InvalidCss("Invalid @source directive: \{params}")
             }
         }

@@ -234,8 +234,8 @@ let ignored_theme_keys : Array[(String, Array[String])] = [
   (
     "--text",
     [
-      "--text-color", "--text-decoration-color", "--text-decoration-thickness",
-      "--text-indent", "--text-shadow", "--text-underline-offset",
+      "--text-color", "--text-decoration-color", "--text-decoration-thickness", "--text-indent",
+      "--text-shadow", "--text-underline-offset",
     ],
   ),
   ("--grid-column", ["--grid-column-start", "--grid-column-end"]),

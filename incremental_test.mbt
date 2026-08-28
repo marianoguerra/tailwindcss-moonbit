@@ -8,7 +8,7 @@ priv struct Lcg {
 
 ///|
 fn Lcg::new(seed : UInt64) -> Lcg {
-  { state: seed }
+  { state: seed, }
 }
 
 ///|

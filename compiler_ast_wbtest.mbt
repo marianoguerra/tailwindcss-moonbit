@@ -27,7 +27,7 @@ test "candidate compilation builds CSS AST nodes before rendering" {
             ..
           ),
         ],
-        ..,
+        ..
       }
     ) else {
     fail("expected a media/rule/declaration AST")
@@ -73,7 +73,7 @@ test "important and fallback declarations remain structured nodes" {
             ..
           ),
         ],
-        ..,
+        ..
       }
     ) else {
     fail("expected fallback and advanced declarations as AST nodes")

@@ -60,7 +60,7 @@ pub fn MemoryStylesheetLoader::new(
     let (path, content) = entry
     normalized[normalize_path(path)] = content
   }
-  { files: normalized }
+  { files: normalized, }
 }
 
 ///|
@@ -80,7 +80,7 @@ fn MemoryStylesheetLoader::resolve(
 ) -> LoadedStylesheet raise CompileError {
   let path = resolve_path(base, id)
   match self.files.get(path) {
-    Some(content) => { content, path, base: dirname(path) }
+    Some(content) => { content, path, base: dirname(path), }
     None => raise StylesheetNotFound(path)
   }
 }

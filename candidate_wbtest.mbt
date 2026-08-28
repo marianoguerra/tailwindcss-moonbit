@@ -128,7 +128,7 @@ test "candidate parser uses explicit semantic forms" {
           ..
         ),
         modifier: Some(NamedModifier(value="50", ..)),
-        ..,
+        ..
       }
     ) else {
     fail("expected a named functional candidate")
@@ -144,7 +144,7 @@ test "candidate parser uses explicit semantic forms" {
           ..
         ),
         modifier: Some(ArbitraryModifier(value="50%", ..)),
-        ..,
+        ..
       }
     ) else {
     fail("expected an arbitrary functional candidate")
@@ -157,7 +157,7 @@ test "candidate parser uses explicit semantic forms" {
           value="luminance",
           ..
         ),
-        ..,
+        ..
       }
     ) else {
     fail("expected an arbitrary property candidate")
@@ -173,7 +173,7 @@ test "candidate parser uses explicit semantic forms" {
             ..
           ),
         ],
-        ..,
+        ..
       }
     ) else {
     fail("expected a nested compound variant")
@@ -212,7 +212,7 @@ test "candidate canonicalization normalizes arbitrary selectors and forwarded mo
             ..
           ),
         ],
-        ..,
+        ..
       }
     ) else {
     fail("modifier should move from not to its nested group")

@@ -460,7 +460,7 @@ fn parse_candidate(raw : String) -> ParsedCandidate? {
   guard parse_candidate_form(base, parsed_modifier) is Some(form) else {
     return None
   }
-  Some({ form, negative, important, modifier: parsed_modifier, variants, raw })
+  Some({ form, negative, important, modifier: parsed_modifier, variants, raw, })
 }
 
 ///|

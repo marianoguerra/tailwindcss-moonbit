@@ -75,8 +75,12 @@ fn border_width_utility(
   name : String,
 ) -> Array[Declaration]? {
   let entries : Array[(String, String, String, String)] = [
-    ("border-x", "border-inline-style", "border-inline-width", "border-inline-color"),
-    ("border-y", "border-block-style", "border-block-width", "border-block-color"),
+    (
+      "border-x", "border-inline-style", "border-inline-width", "border-inline-color",
+    ),
+    (
+      "border-y", "border-block-style", "border-block-width", "border-block-color",
+    ),
     (
       "border-s", "border-inline-start-style", "border-inline-start-width", "border-inline-start-color",
     ),
@@ -90,8 +94,12 @@ fn border_width_utility(
       "border-be", "border-block-end-style", "border-block-end-width", "border-block-end-color",
     ),
     ("border-t", "border-top-style", "border-top-width", "border-top-color"),
-    ("border-r", "border-right-style", "border-right-width", "border-right-color"),
-    ("border-b", "border-bottom-style", "border-bottom-width", "border-bottom-color"),
+    (
+      "border-r", "border-right-style", "border-right-width", "border-right-color",
+    ),
+    (
+      "border-b", "border-bottom-style", "border-bottom-width", "border-bottom-color",
+    ),
     ("border-l", "border-left-style", "border-left-width", "border-left-color"),
     ("border", "border-style", "border-width", "border-color"),
   ]

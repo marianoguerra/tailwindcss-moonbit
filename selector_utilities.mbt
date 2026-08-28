@@ -88,9 +88,7 @@ fn space_value(
 /// Resolve the width of a `divide-x-*` / `divide-y-*` candidate.
 fn divide_width_value(theme : Map[String, String], key : String) -> String? {
   if key == "" {
-    return Some(
-      theme.get("--default-border-width").unwrap_or("1px"),
-    )
+    return Some(theme.get("--default-border-width").unwrap_or("1px"))
   }
   match arbitrary_value(key) {
     Some(value) => Some(value)
@@ -211,7 +209,7 @@ fn space_utility(
       decl(end, "calc(\{value} * calc(1 - var(\{reverse})))"),
     ]
   }
-  Some({ nested_selector: DIVIDE_CHILD_SELECTOR, declarations, sort_key })
+  Some({ nested_selector: DIVIDE_CHILD_SELECTOR, declarations, sort_key, })
 }
 
 ///|
@@ -319,7 +317,12 @@ fn selector_utility(
   if prefixed_value(name, "placeholder") is Some(key) {
     if selector_color_value(theme, key, ["--placeholder-color", "--color"])
       is Some(color) {
-      guard apply_candidate_value(theme, [decl("color", color)], false, modifier)
+      guard apply_candidate_value(
+          theme,
+          [decl("color", color)],
+          false,
+          modifier,
+        )
         is Some(declarations) else {
         return None
       }

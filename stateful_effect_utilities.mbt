@@ -50,7 +50,10 @@ fn shadow_value_with_color(
       _ => false
     }
     if is_color {
-      let rendered = shadow_color_with_alpha(render_value([nodes[index]]), alpha)
+      let rendered = shadow_color_with_alpha(
+        render_value([nodes[index]]),
+        alpha,
+      )
       nodes[index] = ValueWord("var(\{custom_property}, \{rendered})")
       render_value(nodes)
     } else {

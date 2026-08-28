@@ -25,7 +25,7 @@ fn property_spec(
   initial? : String,
   initial_before_inherits? : Bool = false,
 ) -> GeneratedPropertySpec {
-  { name, syntax, initial, initial_before_inherits }
+  { name, syntax, initial, initial_before_inherits, }
 }
 
 ///|
@@ -37,7 +37,9 @@ fn declaration_triggers(names : ArrayView[String]) -> Array[String] {
 fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
   [
     {
-      triggers: ["--tw-contain-size:", "--tw-contain-layout:", "--tw-contain-paint:", "--tw-contain-style:"],
+      triggers: [
+        "--tw-contain-size:", "--tw-contain-layout:", "--tw-contain-paint:", "--tw-contain-style:",
+      ],
       members: [
         property_spec("--tw-contain-size", "*"),
         property_spec("--tw-contain-layout", "*"),
@@ -56,19 +58,47 @@ fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
       // The three gradient slots, registered by every mask utility.
       triggers: ["var(--tw-mask-linear), var(--tw-mask-radial)"],
       members: [
-        property_spec("--tw-mask-linear", "*", initial="linear-gradient(#fff, #fff)"),
-        property_spec("--tw-mask-radial", "*", initial="linear-gradient(#fff, #fff)"),
-        property_spec("--tw-mask-conic", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec(
+          "--tw-mask-linear",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
+        property_spec(
+          "--tw-mask-radial",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
+        property_spec(
+          "--tw-mask-conic",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
       ],
     },
     {
       // The four sides, registered only by the edge masks that compose them.
       triggers: ["var(--tw-mask-left), var(--tw-mask-right)"],
       members: [
-        property_spec("--tw-mask-left", "*", initial="linear-gradient(#fff, #fff)"),
-        property_spec("--tw-mask-right", "*", initial="linear-gradient(#fff, #fff)"),
-        property_spec("--tw-mask-bottom", "*", initial="linear-gradient(#fff, #fff)"),
-        property_spec("--tw-mask-top", "*", initial="linear-gradient(#fff, #fff)"),
+        property_spec(
+          "--tw-mask-left",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
+        property_spec(
+          "--tw-mask-right",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
+        property_spec(
+          "--tw-mask-bottom",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
+        property_spec(
+          "--tw-mask-top",
+          "*",
+          initial="linear-gradient(#fff, #fff)",
+        ),
       ],
     },
     {
@@ -317,7 +347,7 @@ fn generated_property_blocks() -> Array[GeneratedPropertyBlock] {
       triggers: ["--tw-duration:"],
       members: [property_spec("--tw-duration", "*")],
     },
-    { triggers: ["--tw-ease:"], members: [property_spec("--tw-ease", "*")] },
+    { triggers: ["--tw-ease:"], members: [property_spec("--tw-ease", "*")], },
     {
       // Trigger on the utility's own custom property rather than a plain
       // `text-shadow:` declaration, so author `text-shadow` rules don't register
@@ -565,7 +595,7 @@ fn render_generated_properties(
       a_index.compare(b_index)
     }
   })
-  let span : SourceSpan = { start: 0, end: 0 }
+  let span : SourceSpan = { start: 0, end: 0, }
   let registrations : Array[CssNode] = []
   let defaults : Array[CssNode] = []
   let content_first = content_registered_by_variant(css)

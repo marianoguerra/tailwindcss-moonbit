@@ -125,8 +125,8 @@ async test "reject negatives on utilities that do not support them" {
   )
   inspect(
     compiler.build([
-      "-m-4", "-mt-4", "-inset-full", "-gap-4", "-p-4", "-px-4", "-scroll-p-4",
-      "-w-4", "-z-auto", "-top-auto",
+      "-m-4", "-mt-4", "-inset-full", "-gap-4", "-p-4", "-px-4", "-scroll-p-4", "-w-4",
+      "-z-auto", "-top-auto",
     ]),
     content=(
       #|:root, :host {
@@ -158,8 +158,7 @@ async test "reject modifiers no utility consumes" {
   )
   inspect(
     compiler.build([
-      "text-lg/6", "w-4/50", "flex/foo", "visible/foo", "z-10/foo", "m-4/foo",
-      "leading-6/2",
+      "text-lg/6", "w-4/50", "flex/foo", "visible/foo", "z-10/foo", "m-4/foo", "leading-6/2",
     ]),
     content=(
       #|:root, :host {
@@ -201,7 +200,6 @@ async test "compile z-index values" {
       #|  z-index: auto;
       #|}
       #|
-
     ),
   )
 }

@@ -161,7 +161,7 @@ fn theme_rule_nodes(
       used[name] = ()
     }
   }
-  let span : SourceSpan = { start: 0, end: 0 }
+  let span : SourceSpan = { start: 0, end: 0, }
   let declarations : Array[CssNode] = []
   for name, value in theme {
     if name.has_prefix(theme_meta_prefix) ||
@@ -501,7 +501,7 @@ pub fn Compiler::build(
     self.stylesheet,
     theme_rule_nodes(self.theme, usage),
     generated_nodes,
-    { emitted_theme: false, emitted_utilities: false },
+    { emitted_theme: false, emitted_utilities: false, },
   )
   let composed = merge_adjacent_at_rules(
     if (self.polyfills & POLYFILL_COLOR_MIX) != 0 {

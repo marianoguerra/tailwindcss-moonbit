@@ -98,7 +98,7 @@ fn collect_classes(doc : @html5.Document, root : Int) -> Scan {
       _ => ()
     }
   }
-  { candidates, elements, class_attrs }
+  { candidates, elements, class_attrs, }
 }
 
 ///|

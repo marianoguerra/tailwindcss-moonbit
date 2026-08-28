@@ -7,7 +7,7 @@ priv struct CssParser {
 
 ///|
 fn CssParser::new(input : String) -> CssParser {
-  { input, pos: 0, license_comments: [] }
+  { input, pos: 0, license_comments: [], }
 }
 
 ///|
@@ -322,7 +322,7 @@ fn CssParser::parse_custom_property(
   if self.current() is Some(';') {
     self.pos += 1
   }
-  Declaration(name~, value~, important~, span={ start, end: self.pos })
+  Declaration(name~, value~, important~, span={ start, end: self.pos, })
 }
 
 ///|
@@ -340,7 +340,7 @@ fn CssParser::parse_statement(self : CssParser) -> CssNode raise CompileError {
     match terminal {
       Some(';') => {
         self.pos += 1
-        AtRule(name~, params~, nodes=None, span={ start, end: self.pos })
+        AtRule(name~, params~, nodes=None, span={ start, end: self.pos, })
       }
       Some('{') => {
         self.pos += 1
@@ -351,8 +351,8 @@ fn CssParser::parse_statement(self : CssParser) -> CssNode raise CompileError {
         })
       }
       Some('}') =>
-        AtRule(name~, params~, nodes=None, span={ start, end: self.pos })
-      _ => AtRule(name~, params~, nodes=None, span={ start, end: self.pos })
+        AtRule(name~, params~, nodes=None, span={ start, end: self.pos, })
+      _ => AtRule(name~, params~, nodes=None, span={ start, end: self.pos, })
     }
   } else {
     let (statement, terminal) = self.read_until_top_level([';', '{', '}'])
@@ -363,7 +363,7 @@ fn CssParser::parse_statement(self : CssParser) -> CssNode raise CompileError {
         }
         self.pos += 1
         let children = self.parse_nodes(stop_at_closing_brace=true)
-        Rule(selector=statement, nodes=children, span={ start, end: self.pos })
+        Rule(selector=statement, nodes=children, span={ start, end: self.pos, })
       }
       Some(';') => {
         guard statement.split_once(":") is Some((name, raw_value)) else {

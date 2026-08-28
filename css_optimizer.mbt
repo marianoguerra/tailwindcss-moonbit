@@ -303,10 +303,7 @@ fn color_mix_needs_fallback(nodes : ArrayView[ValueNode]) -> Bool {
   for node in nodes {
     match node {
       ValueFunction("var", _) => return true
-      ValueWord(word) =>
-        if word.to_lower() == "currentcolor" {
-          return true
-        }
+      ValueWord(word) => if word.to_lower() == "currentcolor" { return true }
       ValueFunction(_, children) =>
         if color_mix_needs_fallback(children) {
           return true
@@ -329,7 +326,9 @@ fn color_mix_fallback_nodes(
   let mut changed = false
   for node in nodes {
     match node {
-      ValueFunction("color-mix", children) if !color_mix_needs_fallback(children) =>
+      ValueFunction("color-mix", children) if !color_mix_needs_fallback(
+          children,
+        ) =>
         // A mix written entirely in literal colors works wherever `color-mix`
         // itself does; upstream polyfills only the ones naming a variable or
         // `currentColor`.

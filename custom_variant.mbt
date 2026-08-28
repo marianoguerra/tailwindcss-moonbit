@@ -39,7 +39,7 @@ fn custom_variant_selector_template(
   if at_rules.is_empty() {
     return CustomVariantSelector(selectors.join(", "))
   }
-  let span : SourceSpan = { start: 0, end: 0 }
+  let span : SourceSpan = { start: 0, end: 0, }
   let slot : CssNode = AtRule(name="@slot", params="", nodes=None, span~)
   let template : Array[CssNode] = []
   if !selectors.is_empty() {

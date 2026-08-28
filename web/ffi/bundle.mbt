@@ -173,7 +173,7 @@ pub fn compiler_open(bundle : Int) -> String {
   }
   let compile_us = @clock.monotonic_clock_end(started)
   let handle = take_handle()
-  warm_compilers[handle] = { bundle_handle: bundle, bundle: loaded, compiler }
+  warm_compilers[handle] = { bundle_handle: bundle, bundle: loaded, compiler, }
   Json::object(
     Map([
       ("ok", Json::boolean(true)),

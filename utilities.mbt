@@ -7,7 +7,7 @@ priv struct Declaration {
 
 ///|
 fn decl(property : String, value : String) -> Declaration {
-  { property, value, fallback: None }
+  { property, value, fallback: None, }
 }
 
 ///|
@@ -23,7 +23,12 @@ fn alpha_modifier_value(
     None =>
       match theme_css_value(theme, "--opacity-\{modifier}") {
         Some(value) => Some(value)
-        None => if is_spacing_number(modifier) { Some("\{modifier}%") } else { None }
+        None =>
+          if is_spacing_number(modifier) {
+            Some("\{modifier}%")
+          } else {
+            None
+          }
       }
   }
 }
@@ -33,11 +38,7 @@ fn alpha_modifier_value(
 /// accepts it, and a fully opaque color needs no mix at all.
 fn apply_alpha(value : String, alpha : String) -> String {
   let parsed = @string.parse_double(alpha) catch { _ => @double.not_a_number }
-  let alpha = if parsed.is_nan() {
-    alpha
-  } else {
-    "\{parsed * 100.0}%"
-  }
+  let alpha = if parsed.is_nan() { alpha } else { "\{parsed * 100.0}%" }
   if alpha == "100%" {
     return value
   }
@@ -115,38 +116,41 @@ fn apply_candidate_value(
   } else {
     modifier
   }
-  Some(declarations.map(fn(declaration) {
-    let (value, fallback) = match modifier {
-      Some(alpha) =>
-        if is_alpha_property(declaration.property) {
-          let advanced = apply_alpha(declaration.value, alpha)
-          let fallback = theme_literal_for_value(theme, declaration.value).map(fn(
-            literal,
-          ) {
-            replace_all(
-              advanced,
-              "in oklab, \{declaration.value}",
-              "in srgb, \{literal}",
+  Some(
+    declarations.map(fn(declaration) {
+      let (value, fallback) = match modifier {
+        Some(alpha) =>
+          if is_alpha_property(declaration.property) {
+            let advanced = apply_alpha(declaration.value, alpha)
+            let fallback = theme_literal_for_value(theme, declaration.value).map(fn(
+                literal,
+              ) {
+                replace_all(
+                  advanced,
+                  "in oklab, \{declaration.value}",
+                  "in srgb, \{literal}",
+                )
+              },
             )
-          })
-          (advanced, fallback)
+            (advanced, fallback)
+          } else {
+            (declaration.value, None)
+          }
+        None => (declaration.value, declaration.fallback)
+      }
+      {
+        property: declaration.property,
+        value: if negative &&
+          !declaration.value.contains("var(--tw-") &&
+          is_negatable_value(declaration.value) {
+          negate_value(value)
         } else {
-          (declaration.value, None)
-        }
-      None => (declaration.value, declaration.fallback)
-    }
-    {
-      property: declaration.property,
-      value: if negative &&
-        !declaration.value.contains("var(--tw-") &&
-        is_negatable_value(declaration.value) {
-        negate_value(value)
-      } else {
-        value
-      },
-      fallback,
-    }
-  }))
+          value
+        },
+        fallback,
+      }
+    }),
+  )
 }
 
 ///|
@@ -1714,13 +1718,14 @@ fn dynamic_utility(
     }
   }
   // `contain-size` and friends each fill one slot of the composed `contain`.
-  for entry in [
-    ("contain-size", "--tw-contain-size", "size"),
-    ("contain-inline-size", "--tw-contain-size", "inline-size"),
-    ("contain-layout", "--tw-contain-layout", "layout"),
-    ("contain-paint", "--tw-contain-paint", "paint"),
-    ("contain-style", "--tw-contain-style", "style"),
-  ] {
+  for
+    entry in [
+      ("contain-size", "--tw-contain-size", "size"),
+      ("contain-inline-size", "--tw-contain-size", "inline-size"),
+      ("contain-layout", "--tw-contain-layout", "layout"),
+      ("contain-paint", "--tw-contain-paint", "paint"),
+      ("contain-style", "--tw-contain-style", "style"),
+    ] {
     let (candidate, property, value) = entry
     if name == candidate {
       return Some([
@@ -1737,10 +1742,11 @@ fn dynamic_utility(
       None => ()
     }
   }
-  for entry in [
-    ("scrollbar-thumb", "--tw-scrollbar-thumb"),
-    ("scrollbar-track", "--tw-scrollbar-track"),
-  ] {
+  for
+    entry in [
+      ("scrollbar-thumb", "--tw-scrollbar-thumb"),
+      ("scrollbar-track", "--tw-scrollbar-track"),
+    ] {
     let (root, property) = entry
     guard prefixed_value(name, root) is Some(key) else { continue }
     let color = match arbitrary_value(key) {
@@ -1763,7 +1769,11 @@ fn dynamic_utility(
       ),
     ])
   }
-  for entry in [("bg-position", "background-position"), ("bg-size", "background-size")] {
+  for
+    entry in [
+      ("bg-position", "background-position"),
+      ("bg-size", "background-size"),
+    ] {
     let (root, property) = entry
     guard prefixed_value(name, root) is Some(key) else { continue }
     let value = match arbitrary_value(key) {
@@ -1853,9 +1863,9 @@ priv struct CompiledBase {
 fn alpha_base(declarations : Array[Declaration]) -> CompiledBase {
   {
     declarations,
-    modifier_used: declarations.iter().any(fn(declaration) {
-      is_alpha_property(declaration.property)
-    }),
+    modifier_used: declarations
+    .iter()
+    .any(fn(declaration) { is_alpha_property(declaration.property) }),
     static_value: false,
   }
 }
@@ -1888,7 +1898,7 @@ fn compile_base(
     }
     if is_spacing_number(numerator) && is_spacing_number(fraction) {
       match compile_base(theme, "\{name}/\{fraction}", None) {
-        Some(base) => return Some({ ..base, modifier_used: true })
+        Some(base) => return Some({ ..base, modifier_used: true, })
         None => ()
       }
     }
@@ -1900,7 +1910,7 @@ fn compile_base(
   match stateful_effect_utility(theme, name, modifier) {
     Some((declarations, used)) => {
       let base = alpha_base(declarations)
-      return Some({ ..base, modifier_used: base.modifier_used || used })
+      return Some({ ..base, modifier_used: base.modifier_used || used, })
     }
     None => ()
   }
@@ -1911,7 +1921,7 @@ fn compile_base(
   match typography_utility(theme, name, modifier) {
     Some((declarations, used)) => {
       let base = alpha_base(declarations)
-      return Some({ ..base, modifier_used: base.modifier_used || used })
+      return Some({ ..base, modifier_used: base.modifier_used || used, })
     }
     None => ()
   }
@@ -1929,7 +1939,7 @@ fn compile_base(
     // first, so `--order-first` in the theme beats the built-in `order-first`.
     None =>
       static_utility(name).map(fn(value) {
-        { ..alpha_base(value), static_value: true }
+        { ..alpha_base(value), static_value: true, }
       })
   }
 }

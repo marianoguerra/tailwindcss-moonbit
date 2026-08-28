@@ -90,7 +90,7 @@ pub fn CompileOptions::new(
   sync_loader? : &SyncStylesheetLoader,
   polyfills? : Int = POLYFILL_ALL,
 ) -> CompileOptions {
-  { base, from, loader, sync_loader, polyfills }
+  { base, from, loader, sync_loader, polyfills, }
 }
 
 ///|

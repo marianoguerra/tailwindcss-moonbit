@@ -475,7 +475,7 @@ fn compile_functional_utility(
       return None
     }
     let result = if context.resolved_ratio {
-      keep_ratio_declarations(substituted, context.ratios, { val: 0 })
+      keep_ratio_declarations(substituted, context.ratios, { val: 0, })
     } else {
       substituted
     }

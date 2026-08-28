@@ -12,26 +12,26 @@ let negative_utilities : @set.Set[String] = Set([
   "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be", "top",
   "right", "bottom", "left",
   // grid placement
-  "z", "order", "col", "col-start", "col-end", "row", "row-start", "row-end",
+   "z", "order", "col", "col-start", "col-end", "row", "row-start", "row-end",
   // margin
-  "m", "mx", "my", "ms", "me", "mbs", "mbe", "mt", "mr", "mb", "ml",
+   "m", "mx", "my", "ms", "me", "mbs", "mbe", "mt", "mr", "mb", "ml",
   // scroll margin
-  "scroll-m", "scroll-mx", "scroll-my", "scroll-ms", "scroll-me", "scroll-mbs",
+   "scroll-m", "scroll-mx", "scroll-my", "scroll-ms", "scroll-me", "scroll-mbs",
   "scroll-mbe", "scroll-mt", "scroll-mr", "scroll-mb", "scroll-ml",
   // transforms
-  "translate", "translate-x", "translate-y", "translate-z", "scale", "scale-x",
+   "translate", "translate-x", "translate-y", "translate-z", "scale", "scale-x",
   "scale-y", "scale-z", "rotate", "rotate-x", "rotate-y", "rotate-z", "skew", "skew-x",
   "skew-y",
   // spacing between children
-  "space-x", "space-y",
+   "space-x", "space-y",
   // typography
-  "indent", "tracking", "underline-offset",
+   "indent", "tracking", "underline-offset",
   // gradients and masks
-  "bg-linear", "bg-conic", "mask-linear", "mask-conic",
+   "bg-linear", "bg-conic", "mask-linear", "mask-conic",
   // filters
-  "hue-rotate", "backdrop-hue-rotate",
+   "hue-rotate", "backdrop-hue-rotate",
   // misc
-  "outline-offset",
+   "outline-offset",
 ])
 
 ///|
@@ -40,11 +40,11 @@ let negative_utilities : @set.Set[String] = Set([
 /// alone would let `-inset-shadow-sm` and `-col-span-4` through. Upstream
 /// registers `-translate-full` itself, which is why it is absent here.
 let non_negative_utilities : @set.Set[String] = Set([
-  "col-span", "row-span", "inset-ring", "inset-shadow", "inset-shadow-initial",
-  "rotate-none", "scale-3d", "scale-none", "space-x-reverse", "space-y-reverse",
-  "translate-3d", "translate-none",
+  "col-span", "row-span", "inset-ring", "inset-shadow", "inset-shadow-initial", "rotate-none",
+  "scale-3d", "scale-none", "space-x-reverse", "space-y-reverse", "translate-3d",
+  "translate-none",
   // Only the bare angle forms of the gradient masks negate; their stops do not.
-  "mask-linear-from", "mask-linear-to", "mask-conic-from", "mask-conic-to",
+   "mask-linear-from", "mask-linear-to", "mask-conic-from", "mask-conic-to",
 ])
 
 ///|
@@ -76,14 +76,14 @@ fn supports_negative(base : String) -> Bool {
 /// `1/2` as a fraction; everywhere else a `/` is a modifier, which is why
 /// `leading-6/2` is not a candidate.
 let fraction_utilities : @set.Set[String] = Set([
-  "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be",
-  "top", "right", "bottom", "left", "w", "min-w", "max-w", "h", "min-h", "max-h",
-  "inline", "min-inline", "max-inline", "block", "min-block", "max-block", "size",
+  "inset", "inset-x", "inset-y", "inset-s", "inset-e", "inset-bs", "inset-be", "top",
+  "right", "bottom", "left", "w", "min-w", "max-w", "h", "min-h", "max-h", "inline",
+  "min-inline", "max-inline", "block", "min-block", "max-block", "size",
   // `translate-z` is the one axis without fractions.
-  "basis", "translate", "translate-x", "translate-y",
+   "basis", "translate", "translate-x", "translate-y",
   // Not `supportsFractions` upstream, but they read a `<n>/<m>` as a ratio, and
   // the parser hands it over the same way.
-  "aspect", "flex",
+   "aspect", "flex",
 ])
 
 ///|
@@ -150,4 +150,3 @@ fn is_negatable_value(value : String) -> Bool {
   }
   false
 }
-

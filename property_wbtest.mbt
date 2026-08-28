@@ -12,7 +12,7 @@ priv struct Rng {
 
 ///|
 fn Rng::new(seed : UInt64) -> Rng {
-  { state: seed }
+  { state: seed, }
 }
 
 ///|

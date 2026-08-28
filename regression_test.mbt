@@ -94,7 +94,7 @@ async test "compile and build never panic on random candidates" {
     "-", "!", "bg-brand", "m-[", "]", "text-brand/", "50", "w-1/2", "space-x-4",
     "flex", "(", ")", "/", "\\", "[color:red]", "divide-y-", "@md:",
   ]
-  let state : FuzzState = { seed: 0x1357_9bdf_2468_ace0 }
+  let state : FuzzState = { seed: 0x1357_9bdf_2468_ace0, }
   let candidates : Array[String] = []
   for _ in 0..<500 {
     let builder = StringBuilder()

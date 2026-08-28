@@ -208,10 +208,11 @@ fn mask_placement_utility(
 /// or an edge; the two-word ones join with a space.
 fn mask_radial_position_utility(name : String) -> Array[Declaration]? {
   guard prefixed_value(name, "mask-radial-at") is Some(key) else { return None }
-  for position in [
-    "center", "top", "right", "bottom", "left", "top-left", "top-right",
-    "bottom-left", "bottom-right",
-  ] {
+  for
+    position in [
+      "center", "top", "right", "bottom", "left", "top-left", "top-right", "bottom-left",
+      "bottom-right",
+    ] {
     if key == position {
       return Some([
         decl("--tw-mask-radial-position", replace_all(position, "-", " ")),

@@ -406,7 +406,7 @@ fn declarations_to_css_nodes(
   important~ : Bool,
 ) -> Array[CssNode] {
   let nodes : Array[CssNode] = []
-  let span : SourceSpan = { start: 0, end: 0 }
+  let span : SourceSpan = { start: 0, end: 0, }
   for declaration in declarations {
     match declaration.fallback {
       Some(fallback) => {
@@ -790,7 +790,7 @@ fn add_content_declaration(
               name="content",
               value="var(--tw-content)",
               important=false,
-              span={ start: 0, end: 0 },
+              span={ start: 0, end: 0, },
             ),
           ]
           next_children.append(children)
@@ -934,7 +934,7 @@ fn apply_variant_to_nodes(
         None => ()
       }
     }
-    let synthetic_span : SourceSpan = { start: 0, end: 0 }
+    let synthetic_span : SourceSpan = { start: 0, end: 0, }
     let synthetic : Array[CssNode] = [
       Rule(selector="&", nodes=[], span=synthetic_span),
     ]
@@ -1227,7 +1227,7 @@ fn apply_has_variant(
       ),
     )
   }
-  let synthetic_span : SourceSpan = { start: 0, end: 0 }
+  let synthetic_span : SourceSpan = { start: 0, end: 0, }
   let next_stack = variant_stack.copy()
   next_stack.push(variant)
   guard apply_variant_to_nodes(
@@ -1280,7 +1280,7 @@ fn apply_group_peer_variant(
   if is_never_compound_variant(inner) {
     return None
   }
-  let synthetic_span : SourceSpan = { start: 0, end: 0 }
+  let synthetic_span : SourceSpan = { start: 0, end: 0, }
   let next_stack = variant_stack.copy()
   next_stack.push(variant)
   guard apply_variant_to_nodes(
@@ -1500,7 +1500,7 @@ fn variant_key(
   if variant.has_prefix("[") && variant.has_suffix("]") {
     let decoded = decode_arbitrary(variant[1:variant.length() - 1].to_owned())
     let key = if decoded.contains("&") { decoded } else { "&:is(\{decoded})" }
-    return { ..VariantKey::simple(10000), arbitrary: Some(key) }
+    return { ..VariantKey::simple(10000), arbitrary: Some(key), }
   }
   // Compound variants take their root's order and defer to the inner variant.
   let compound = if variant.has_prefix("not-") {
@@ -2098,7 +2098,7 @@ fn render_candidate(
     important=candidate.important,
   )
   if candidate.base() == "outline-hidden" {
-    let span : SourceSpan = { start: 0, end: 0 }
+    let span : SourceSpan = { start: 0, end: 0, }
     declaration_nodes.push(
       AtRule(
         name="@media",
@@ -2123,7 +2123,7 @@ fn render_candidate(
   }
   if candidate.base().has_prefix("bg-linear-to-") &&
     !candidate.base().contains("[") {
-    let span : SourceSpan = { start: 0, end: 0 }
+    let span : SourceSpan = { start: 0, end: 0, }
     let direction = declarations[0].value
     declaration_nodes.insert(
       1,
@@ -2144,7 +2144,7 @@ fn render_candidate(
   }
   guard apply_candidate_variants(
       candidate,
-      [Rule(selector~, nodes=declaration_nodes, span={ start: 0, end: 0 })],
+      [Rule(selector~, nodes=declaration_nodes, span={ start: 0, end: 0, })],
       selector,
       theme,
       custom_variants,
@@ -2288,7 +2288,7 @@ fn render_custom_utility_candidate(
   let (property_orders, declaration_count) = node_property_sort(children)
   guard apply_candidate_variants(
       candidate,
-      [Rule(selector~, nodes=children, span={ start: 0, end: 0 })],
+      [Rule(selector~, nodes=children, span={ start: 0, end: 0, })],
       selector,
       theme,
       custom_variants,
@@ -2373,7 +2373,10 @@ fn render_selector_candidate(
   guard apply_candidate_variants(
       candidate,
       [
-        Rule(selector=nested, nodes=declaration_nodes, span={ start: 0, end: 0 }),
+        Rule(selector=nested, nodes=declaration_nodes, span={
+          start: 0,
+          end: 0,
+        }),
       ],
       selector,
       theme,

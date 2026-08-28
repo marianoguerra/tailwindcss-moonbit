@@ -210,8 +210,7 @@ fn decoration_shape_utility(
         }
     }
     match value {
-      Some(value) =>
-        return Some([decl("text-decoration-thickness", value)])
+      Some(value) => return Some([decl("text-decoration-thickness", value)])
       None => return None
     }
   }

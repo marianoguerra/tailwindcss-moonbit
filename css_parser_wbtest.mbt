@@ -180,7 +180,7 @@ test "CSS parser handles escaped selectors and body-less nested at-rules" {
 
 ///|
 test "internal context and at-root nodes render through their children" {
-  let span : SourceSpan = { start: 0, end: 0 }
+  let span : SourceSpan = { start: 0, end: 0, }
   let declaration = Declaration(
     name="color",
     value="red",

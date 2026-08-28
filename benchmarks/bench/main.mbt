@@ -121,7 +121,7 @@ fn parse_request(request : String) -> Request raise {
       }
     _ => ()
   }
-  { css, candidates, loader, base, from, polyfills }
+  { css, candidates, loader, base, from, polyfills, }
 }
 
 ///|

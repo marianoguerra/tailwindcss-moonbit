@@ -150,7 +150,11 @@ fn filter_utility(
     }
     match raw_value {
       Some(value) => {
-        let colored = shadow_value_with_color(value, "--tw-drop-shadow-color", None)
+        let colored = shadow_value_with_color(
+          value,
+          "--tw-drop-shadow-color",
+          None,
+        )
         return Some([
           decl("--tw-drop-shadow-size", "drop-shadow(\{colored})"),
           decl("--tw-drop-shadow", "drop-shadow(var(--drop-shadow-\{key}))"),
