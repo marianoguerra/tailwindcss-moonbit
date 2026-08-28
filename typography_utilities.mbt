@@ -184,8 +184,15 @@ fn decoration_shape_utility(
     if key == "auto" || key == "from-font" {
       return Some([decl("text-decoration-thickness", key)])
     }
-    let value = match arbitrary_value(key) {
-      Some(value) => Some(value)
+    // An arbitrary value is a thickness only when it reads as one; a color
+    // belongs to `text-decoration-color`, which the color table handles.
+    let value = match arbitrary_typed_value(key) {
+      Some((value, data_type)) =>
+        if is_measure_value(value, data_type) {
+          Some(value)
+        } else {
+          None
+        }
       None =>
         match theme_css_value(theme, "--text-decoration-thickness-\{key}") {
           Some(value) => Some(value)
@@ -197,7 +204,11 @@ fn decoration_shape_utility(
             }
         }
     }
-    return value.map(fn(value) { [decl("text-decoration-thickness", value)] })
+    match value {
+      Some(value) =>
+        return Some([decl("text-decoration-thickness", value)])
+      None => return None
+    }
   }
   guard name.has_prefix("underline-offset-") else { return None }
   let key = name[17:].to_owned()

@@ -1601,6 +1601,10 @@ fn dynamic_utility(
   }
   if name.has_prefix("animate-") {
     let key = name[8:].to_owned()
+    match arbitrary_value(key) {
+      Some(value) => return Some([decl("animation", value)])
+      None => ()
+    }
     match theme_css_value(theme, "--animate-\{key}") {
       Some(value) => return Some([decl("animation", value)])
       None => ()

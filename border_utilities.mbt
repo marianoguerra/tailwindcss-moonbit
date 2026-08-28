@@ -1,4 +1,16 @@
 ///|
+/// Whether an arbitrary value is a measurement rather than a color: either it
+/// says so with a typehint, or it reads as a number with a unit.
+fn is_measure_value(value : String, data_type : String?) -> Bool {
+  match data_type {
+    Some("length") | Some("number") | Some("percentage") | Some("line-width") =>
+      true
+    Some(_) => false
+    None => is_number_with_unit(value)
+  }
+}
+
+///|
 /// Upstream's `line-width` data type: every space-separated part is a length, a
 /// number, or one of the three width keywords. It is what tells `border-[12px]`
 /// (a width) from `border-[#0088cc]` (a color).
@@ -251,8 +263,13 @@ fn outline_utility(
   let value = if key == "" {
     Some("1px")
   } else {
-    match arbitrary_value(key) {
-      Some(value) => Some(value)
+    match arbitrary_typed_value(key) {
+      Some((value, data_type)) =>
+        if is_measure_value(value, data_type) {
+          Some(value)
+        } else {
+          None
+        }
       None =>
         match theme_css_value(theme, "--border-width-\{key}") {
           Some(value) => Some(value)
@@ -278,8 +295,14 @@ fn stroke_width_utility(
   name : String,
 ) -> Array[Declaration]? {
   guard prefixed_value(name, "stroke") is Some(key) else { return None }
-  let value = match arbitrary_value(key) {
-    Some(value) => Some(value)
+  // As with `decoration-*`, an arbitrary color here is a `stroke`, not a width.
+  let value = match arbitrary_typed_value(key) {
+    Some((value, data_type)) =>
+      if is_measure_value(value, data_type) {
+        Some(value)
+      } else {
+        None
+      }
     None =>
       match theme_css_value(theme, "--stroke-width-\{key}") {
         Some(value) => Some(value)
