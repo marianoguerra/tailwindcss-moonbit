@@ -1880,9 +1880,17 @@ fn compile_base(
     name.has_prefix("accent-") ||
     name.has_prefix("caret-")
   if modifier is Some(fraction) && !color_candidate && supports_fractions(name) {
-    match compile_base(theme, "\{name}/\{fraction}", None) {
-      Some(base) => return Some({ ..base, modifier_used: true })
-      None => ()
+    // Both halves of a fraction are bare values, so `aspect-1.23/4.56` is a
+    // value with a modifier, not a ratio.
+    let numerator = match name.rev_find("-") {
+      Some(index) => name[index + 1:].to_owned()
+      None => name
+    }
+    if is_spacing_number(numerator) && is_spacing_number(fraction) {
+      match compile_base(theme, "\{name}/\{fraction}", None) {
+        Some(base) => return Some({ ..base, modifier_used: true })
+        None => ()
+      }
     }
   }
   match stateful_transform_utility(theme, name) {

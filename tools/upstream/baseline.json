@@ -2,7 +2,6 @@
   "note": "Tests in upstream utilities.test.ts that this compiler does not yet match. Regenerate with `node tools/upstream/compare.mjs --update-baseline` after reviewing the diff; the runner fails both when a test outside this list breaks and when a listed test starts passing.",
   "divergent": {
     "@container": "not implemented",
-    "aspect-ratio": "accepted, upstream rejects",
     "backdrop-filter": "different output",
     "bg": "different output + accepted, upstream rejects",
     "can override specific versions of a functional utility with a static utility": "different output",
@@ -16,7 +15,6 @@
     "font": "different output + accepted, upstream rejects",
     "font-features": "not implemented",
     "fractions": "different output",
-    "inset-ring": "different output",
     "inset-shadow": "different output",
     "left": "different output",
     "mask": "not implemented",
