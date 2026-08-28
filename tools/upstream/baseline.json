@@ -92,7 +92,6 @@
     "resolve theme values with sub-namespace (--value(--text --line-height))": "different output",
     "ring": "different output",
     "ring-offset": "different output",
-    "rotate": "different output",
     "rotate-x": "different output",
     "rotate-y": "different output",
     "rotate-z": "different output",

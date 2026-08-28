@@ -146,11 +146,25 @@ fn numeric_spacing(theme : Map[String, String], value : String) -> String? {
 }
 
 ///|
+/// The two ways a candidate can carry a value of its own: `[…]` for an
+/// arbitrary value and `(--x)` for the custom-property shorthand, which stands
+/// for `var(--x)` and may name a data type as `(<type>:--x)`. Underscores are
+/// decoded only in the bracket form — a custom property name keeps its own.
 fn arbitrary_value(value : String) -> String? {
   if value.has_prefix("[") && value.has_suffix("]") && value.length() >= 2 {
-    Some(decode_arbitrary(value[1:value.length() - 1].to_owned()))
-  } else {
-    None
+    return Some(decode_arbitrary(value[1:value.length() - 1].to_owned()))
+  }
+  guard value.length() >= 5 && value.has_prefix("(") && value.has_suffix(")") else {
+    return None
+  }
+  let inner = value[1:value.length() - 1].to_owned()
+  if inner.has_prefix("--") {
+    return Some("var(\{inner})")
+  }
+  match inner.split_once(":") {
+    Some((_, variable)) if variable.has_prefix("--") =>
+      Some("var(\{variable.to_owned()})")
+    _ => None
   }
 }
 
