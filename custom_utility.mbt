@@ -1,6 +1,13 @@
 ///|
 /// Names accepted by `@utility`, matching the upstream grammar.
-fn is_valid_utility_name(name : String) -> Bool {
+/// Upstream's root pattern is `/^-?[a-z][a-zA-Z0-9_-]*/`, so a name may lead
+/// with a `-` for a negative utility. A root ending in `-` is only valid for a
+/// functional name, which is what makes `@utility border--*` legal.
+fn is_valid_utility_name(name : String, functional~ : Bool) -> Bool {
+  if name == "" {
+    return false
+  }
+  let name = if name.has_prefix("-") { name[1:].to_owned() } else { name }
   if name == "" {
     return false
   }
@@ -20,7 +27,7 @@ fn is_valid_utility_name(name : String) -> Bool {
       return false
     }
   }
-  !name.has_suffix("-") && !name.has_suffix("_")
+  functional || (!name.has_suffix("-") && !name.has_suffix("_"))
 }
 
 ///|
@@ -64,7 +71,7 @@ fn collect_custom_utilities(
         } else {
           utility_name
         }
-        if !is_valid_utility_name(root) {
+        if !is_valid_utility_name(root, functional=is_functional) {
           raise InvalidCss("Invalid @utility name: \{utility_name}")
         }
         if children.is_empty() {
@@ -77,10 +84,15 @@ fn collect_custom_utilities(
             _ => ()
           }
         }
-        if is_functional {
-          functional[root] = children.copy()
-        } else {
-          utilities[root] = children.copy()
+        // Two `@utility` blocks with the same name merge in document order
+        // rather than the later one replacing the earlier.
+        let target = if is_functional { functional } else { utilities }
+        match target.get(root) {
+          Some(existing) =>
+            for child in children {
+              existing.push(child)
+            }
+          None => target[root] = children.copy()
         }
       }
       Context(nodes~, ..) | AtRoot(nodes~, ..) =>
