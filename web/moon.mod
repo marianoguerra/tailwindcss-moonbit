@@ -8,5 +8,5 @@ description = "Browser showcase editor for the MoonBit Tailwind CSS compiler"
 
 import {
   "marianoguerra/tailwindcss@0.4.0",
-  "moonbit-community/html@0.1.2",
+  "moonbit-community/html@0.2.1",
 }

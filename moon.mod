@@ -14,16 +14,5 @@ description = "A MoonBit implementation of the Tailwind CSS v4 compiler"
 
 import {
   "moonbitlang/x@0.5.1",
-  "moonbitlang/async@0.21.0",
+  "moonbitlang/async@0.21.3",
 }
-
-options(
-  exclude: [
-    "tools",
-    "examples",
-    "benchmarks",
-    "web",
-    "package.json",
-    "moon.work",
-  ],
-)
