@@ -199,7 +199,7 @@ fn theme_rule_nodes(
 /// async runtime (e.g. wasm-gc) should use `compile_sync` instead.
 pub async fn compile(
   css : String,
-  options? : CompileOptions = CompileOptions::new(),
+  options~ : CompileOptions = CompileOptions::new(),
 ) -> Compiler {
   let ast = parse_css(css)
   let had_imports = contains_import(ast)
@@ -223,7 +223,7 @@ pub async fn compile(
 /// `MemoryStylesheetLoader` implements the required `SyncStylesheetLoader`.
 pub fn compile_sync(
   css : String,
-  options? : CompileOptions = CompileOptions::new(),
+  options~ : CompileOptions = CompileOptions::new(),
 ) -> Compiler raise CompileError {
   let ast = parse_css(css)
   let had_imports = contains_import(ast)

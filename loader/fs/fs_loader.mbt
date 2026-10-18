@@ -35,3 +35,6 @@ pub impl @tw.StylesheetLoader for FsStylesheetLoader with fn load(
     _ => raise StylesheetNotFound(requested)
   }
 }
+
+///|
+pub extend FsStylesheetLoader with @tw.StylesheetLoader::{load}

@@ -1,7 +1,7 @@
 ///|
 struct SourceSpan {
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -36,7 +36,7 @@ enum CustomVariantTemplate {
 }
 
 ///|
-fn render_css_nodes(nodes : ArrayView[CssNode], indent? : Int = 0) -> String {
+fn render_css_nodes(nodes : ArrayView[CssNode], indent~ : Int32 = 0) -> String {
   let out = StringBuilder()
   for node in nodes {
     render_css_node(node, out, indent~)
@@ -45,14 +45,18 @@ fn render_css_nodes(nodes : ArrayView[CssNode], indent? : Int = 0) -> String {
 }
 
 ///|
-fn write_indent(out : StringBuilder, indent : Int) -> Unit {
+fn write_indent(out : StringBuilder, indent : Int32) -> Unit {
   for _ in 0..<indent {
     out.write_string("  ")
   }
 }
 
 ///|
-fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
+fn render_css_node(
+  node : CssNode,
+  out : StringBuilder,
+  indent~ : Int32,
+) -> Unit {
   // Write each fragment directly to the builder instead of interpolating a
   // throwaway string per node (`"\{name}: \{value}"` allocates before appending).
   // This function renders every node of the output tree, so for large stylesheets
@@ -120,3 +124,19 @@ fn render_css_node(node : CssNode, out : StringBuilder, indent~ : Int) -> Unit {
       }
   }
 }
+
+///|
+#deprecated("use `==` instead")
+pub extend SourceSpan with Eq::{equal, not_equal}
+
+///|
+#deprecated("use `debug_inspect` or `Repr` instead")
+pub extend SourceSpan with @debug.Debug::{to_repr}
+
+///|
+#deprecated("use `==` instead")
+pub extend CssNode with Eq::{equal, not_equal}
+
+///|
+#deprecated("use `debug_inspect` or `Repr` instead")
+pub extend CssNode with @debug.Debug::{to_repr}

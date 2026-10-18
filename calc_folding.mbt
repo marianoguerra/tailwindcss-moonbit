@@ -188,7 +188,7 @@ fn fold_calc_children(nodes : ArrayView[ValueNode]) -> ValueNode? {
 fn canonicalize_calc_expressions(
   value : String,
   rem? : Double,
-  convert_units? : Bool = true,
+  convert_units~ : Bool = true,
 ) -> String {
   render_value(fold_calc_nodes(parse_value(value), rem, convert_units))
 }

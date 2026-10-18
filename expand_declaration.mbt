@@ -35,7 +35,7 @@ fn expand_sides(
   properties : ArrayView[String],
   parts : ArrayView[String],
 ) -> Array[Declaration]? {
-  let picks : Array[Int] = match parts.length() {
+  let picks : Array[Int32] = match parts.length() {
     1 => [0, 0, 0, 0]
     2 => [0, 1, 0, 1]
     3 => [0, 1, 2, 1]
@@ -55,7 +55,7 @@ fn expand_pair(
   properties : ArrayView[String],
   parts : ArrayView[String],
 ) -> Array[Declaration]? {
-  let picks : Array[Int] = match parts.length() {
+  let picks : Array[Int32] = match parts.length() {
     1 => [0, 0]
     2 => [0, 1]
     _ => return None
@@ -161,7 +161,7 @@ fn logical_border_shorthand(property : String) -> Array[String]? {
 #warnings("-unused_value")
 fn expand_declaration(
   declaration : Declaration,
-  logical_to_physical? : Bool = false,
+  logical_to_physical~ : Bool = false,
 ) -> Array[Declaration]? {
   let parts = split_top_level(declaration.value, ' ')
   if logical_to_physical {

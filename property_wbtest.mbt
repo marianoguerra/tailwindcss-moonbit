@@ -22,7 +22,7 @@ fn Rng::next(self : Rng) -> UInt64 {
 }
 
 ///|
-fn Rng::below(self : Rng, bound : Int) -> Int {
+fn Rng::below(self : Rng, bound : Int32) -> Int32 {
   (self.next() >> 33).to_int() % bound
 }
 

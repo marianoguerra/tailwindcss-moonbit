@@ -20,7 +20,7 @@ fn split_function_arguments(input : String) -> Array[String] {
 }
 
 ///|
-fn find_function_end(input : String, open : Int) -> Int raise CompileError {
+fn find_function_end(input : String, open : Int32) -> Int32 raise CompileError {
   let mut depth = 1
   let mut quote : UInt16? = None
   for i = open + 1; i < input.length(); i = i + 1 {

@@ -13,6 +13,6 @@ keywords = [ "css", "tailwindcss", "compiler" ]
 description = "A MoonBit implementation of the Tailwind CSS v4 compiler"
 
 import {
-  "moonbitlang/x@0.5.1",
-  "moonbitlang/async@0.21.3",
+  "moonbitlang/x@0.5.5",
+  "moonbitlang/async@0.22.5",
 }

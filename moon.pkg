@@ -3,6 +3,7 @@ import {
   "moonbitlang/core/math",
   "moonbitlang/core/set",
   "moonbitlang/core/double",
+  "moonbitlang/core/debug",
 }
 
 import {

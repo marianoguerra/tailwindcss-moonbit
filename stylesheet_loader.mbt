@@ -53,7 +53,7 @@ pub struct MemoryStylesheetLoader {
 
 ///|
 pub fn MemoryStylesheetLoader::new(
-  files? : Array[(String, String)] = [],
+  files~ : Array[(String, String)] = [],
 ) -> MemoryStylesheetLoader {
   let normalized : Map[String, String] = Map([])
   for entry in files {
@@ -102,3 +102,7 @@ pub impl SyncStylesheetLoader for MemoryStylesheetLoader with fn load(
 ) {
   self.resolve(id, base)
 }
+
+///|
+#deprecated("call through `StylesheetLoader` or `SyncStylesheetLoader` instead")
+pub extend MemoryStylesheetLoader with StylesheetLoader::{load}

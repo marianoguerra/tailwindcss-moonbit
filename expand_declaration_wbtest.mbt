@@ -1,7 +1,7 @@
 ///|
 fn expanded_pairs(
   declaration : Declaration,
-  logical_to_physical? : Bool = false,
+  logical_to_physical~ : Bool = false,
 ) -> Array[(String, String)]? {
   expand_declaration(declaration, logical_to_physical~).map(fn(declarations) {
     declarations.map(fn(entry) { (entry.property, entry.value) })

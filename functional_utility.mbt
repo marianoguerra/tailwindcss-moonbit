@@ -395,7 +395,7 @@ fn substitute_functional_body(
 fn keep_ratio_declarations(
   nodes : ArrayView[CssNode],
   ratios : ArrayView[Bool],
-  cursor : Ref[Int],
+  cursor : Ref[Int32],
 ) -> Array[CssNode] {
   let output : Array[CssNode] = []
   for node in nodes {
@@ -485,7 +485,7 @@ fn compile_functional_utility(
 }
 
 ///|
-fn count_declarations(nodes : ArrayView[CssNode]) -> Int {
+fn count_declarations(nodes : ArrayView[CssNode]) -> Int32 {
   let mut total = 0
   for node in nodes {
     match node {

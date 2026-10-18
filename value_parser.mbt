@@ -20,9 +20,9 @@ fn is_value_separator(c : UInt16) -> Bool {
 ///|
 fn parse_value_nodes(
   input : String,
-  start : Int,
+  start : Int32,
   nested : Bool,
-) -> (Array[ValueNode], Int) {
+) -> (Array[ValueNode], Int32) {
   let nodes : Array[ValueNode] = []
   let mut buffer = ""
   let mut index = start

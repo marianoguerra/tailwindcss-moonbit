@@ -23,7 +23,7 @@ fn property_spec(
   name : String,
   syntax : String,
   initial? : String,
-  initial_before_inherits? : Bool = false,
+  initial_before_inherits~ : Bool = false,
 ) -> GeneratedPropertySpec {
   { name, syntax, initial, initial_before_inherits, }
 }
@@ -405,9 +405,9 @@ let generated_property_block_table : Array[GeneratedPropertyBlock] = generated_p
 /// trigger would have to begin and reject most candidates on one comparison.
 priv struct GeneratedPropertyTrigger {
   text : String
-  offset : Int
+  offset : Int32
   key : UInt16
-  block : Int
+  block : Int32
 }
 
 ///|
@@ -440,7 +440,7 @@ let generated_property_triggers : Array[GeneratedPropertyTrigger] = build_genera
 /// ~66 full scans per `build`. Since every trigger contains `--tw-`, one pass
 /// that stops at each `--tw-` and tests only the triggers whose next code unit
 /// matches finds all of them.
-fn generated_property_block_positions(css : String) -> Array[Int] {
+fn generated_property_block_positions(css : String) -> Array[Int32] {
   let positions = Array::make(generated_property_block_table.length(), -1)
   let length = css.length()
   let mut pos = 0
@@ -571,10 +571,10 @@ fn author_property_defaults(
 fn render_generated_properties(
   css : String,
   author_properties : ArrayView[CssNode],
-  at_property_fallback? : Bool = true,
+  at_property_fallback~ : Bool = true,
 ) -> (String, String) {
   let positions = generated_property_block_positions(css)
-  let blocks : Array[(GeneratedPropertyBlock, Int, Int)] = []
+  let blocks : Array[(GeneratedPropertyBlock, Int32, Int32)] = []
   for index, block in generated_property_block_table {
     if positions[index] >= 0 {
       blocks.push((block, positions[index], index))

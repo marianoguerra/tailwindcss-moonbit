@@ -66,7 +66,7 @@ fn split_top_level(input : String, separator : Char) -> Array[String] {
 /// at every offset, which the profiler put at ~45% of a full compile: the
 /// `@property` trigger table searches the whole generated stylesheet once per
 /// trigger, so the matcher runs over the entire output ~66 times per build.
-fn index_of(haystack : String, needle : String) -> Int? {
+fn index_of(haystack : String, needle : String) -> Int32? {
   haystack.find(needle)
 }
 
@@ -75,7 +75,7 @@ fn escape_class_name(s : String) -> String {
   let out = StringBuilder()
   for c in s {
     match c {
-      'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' => out.write_char(c)
+      'a'..<='z' | 'A'..<='Z' | '0'..<='9' | '-' | '_' => out.write_char(c)
       _ => {
         out.write_char('\\')
         out.write_char(c)
@@ -301,7 +301,7 @@ fn is_valid_arbitrary(input : String) -> Bool {
 }
 
 ///|
-fn digit_run_end(input : String, start : Int) -> Int {
+fn digit_run_end(input : String, start : Int32) -> Int32 {
   let mut end = start
   while end < input.length() && input[end] >= '0' && input[end] <= '9' {
     end += 1
@@ -314,7 +314,7 @@ fn digit_run_end(input : String, start : Int) -> Int {
 /// both sides is compared as a number. That is what puts `2.5` before `2.25`
 /// (the runs after the shared `2.` are 5 and 25) and `bg-red-500` before
 /// `bg-red-500/70`.
-fn lexical_compare(a : String, b : String) -> Int {
+fn lexical_compare(a : String, b : String) -> Int32 {
   let common = if a.length() < b.length() { a.length() } else { b.length() }
   for index in 0..<common {
     let left = a[index]
@@ -344,7 +344,7 @@ fn lexical_compare(a : String, b : String) -> Int {
 ///|
 /// `bg-linear-[…]` sorts after every other gradient candidate, which the plain
 /// comparison does not produce on its own.
-fn candidate_lexical_compare(a : String, b : String) -> Int {
+fn candidate_lexical_compare(a : String, b : String) -> Int32 {
   let a_gradient_arbitrary = a.has_prefix("bg-linear-[")
   let b_gradient_arbitrary = b.has_prefix("bg-linear-[")
   if a_gradient_arbitrary != b_gradient_arbitrary {

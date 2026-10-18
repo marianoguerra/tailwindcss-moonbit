@@ -17,10 +17,10 @@ fn selector_function_is_structured(name : String) -> Bool {
 ///|
 fn selector_matching_end(
   input : String,
-  start : Int,
+  start : Int32,
   opening : UInt16,
   closing : UInt16,
-) -> Int {
+) -> Int32 {
   let mut depth = 1
   let mut quote : UInt16? = None
   let mut index = start + 1
@@ -77,7 +77,7 @@ fn selector_is_token_start(character : UInt16) -> Bool {
 }
 
 ///|
-fn selector_find_top_level_of(input : String) -> Int {
+fn selector_find_top_level_of(input : String) -> Int32 {
   let mut index = 0
   while index + 2 < input.length() {
     if input[index] == '\\' {
@@ -299,7 +299,7 @@ fn parse_selector(input : String) -> Array[SelectorNode] {
 ///|
 fn render_selector(
   nodes : ArrayView[SelectorNode],
-  minify? : Bool = false,
+  minify~ : Bool = false,
 ) -> String {
   let output = StringBuilder()
   for node in nodes {

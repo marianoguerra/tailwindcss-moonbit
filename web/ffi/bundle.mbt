@@ -10,15 +10,15 @@ priv struct Bundle {
   loader : @tw.MemoryStylesheetLoader
   base : String
   from : String?
-  polyfills : Int
-  import_count : Int
-  import_chars : Int
+  polyfills : Int32
+  import_count : Int32
+  import_chars : Int32
 }
 
 ///|
 /// A `Bundle` plus a live `Compiler`, for the incremental mode.
 priv struct Warm {
-  bundle_handle : Int
+  bundle_handle : Int32
   bundle : Bundle
   compiler : @tw.Compiler
 }
@@ -26,16 +26,16 @@ priv struct Warm {
 ///|
 /// Handles live in these tables rather than crossing the boundary as pointers,
 /// so the contract is identical on wasm-gc and on the js fallback.
-let bundles : Map[Int, Bundle] = Map([])
+let bundles : Map[Int32, Bundle] = Map([])
 
 ///|
-let warm_compilers : Map[Int, Warm] = Map([])
+let warm_compilers : Map[Int32, Warm] = Map([])
 
 ///|
-let next_handle : Ref[Int] = Ref(1)
+let next_handle : Ref[Int32] = Ref(1)
 
 ///|
-fn take_handle() -> Int {
+fn take_handle() -> Int32 {
   let handle = next_handle.val
   next_handle.val = handle + 1
   handle
@@ -126,9 +126,9 @@ pub fn bundle_load(bundle_json : String) -> String {
 
 ///|
 /// Release a bundle handle. Any warm compilers opened from it are dropped too.
-pub fn bundle_free(bundle : Int) -> Unit {
+pub fn bundle_free(bundle : Int32) -> Unit {
   bundles.remove(bundle)
-  let stale : Array[Int] = []
+  let stale : Array[Int32] = []
   for handle, warm in warm_compilers {
     if warm.bundle_handle == bundle {
       stale.push(handle)
@@ -145,7 +145,7 @@ pub fn bundle_free(bundle : Int) -> Unit {
 /// A *fresh* `Compiler` per call, which is the honest cost of a live editor: the
 /// import graph is re-read every time, and the output therefore shrinks again
 /// when classes are deleted. `compiler_open` trades that away for speed.
-pub fn compile_html(bundle : Int, html : String) -> String {
+pub fn compile_html(bundle : Int32, html : String) -> String {
   match bundles.get(bundle) {
     Some(loaded) => compile_with_bundle(loaded, html, [])
     None => error_result("unknown bundle handle: " + bundle.to_string())
@@ -163,7 +163,7 @@ pub fn compile_html(bundle : Int, html : String) -> String {
 /// ```json
 /// { "ok": true, "compiler": 2, "timings": { "compileUs": 17100.0 } }
 /// ```
-pub fn compiler_open(bundle : Int) -> String {
+pub fn compiler_open(bundle : Int32) -> String {
   guard bundles.get(bundle) is Some(loaded) else {
     return error_result("unknown bundle handle: " + bundle.to_string())
   }
@@ -186,7 +186,7 @@ pub fn compiler_open(bundle : Int) -> String {
 ///|
 /// Scan a fragment and build against an already-open compiler: no graph parse, so
 /// `timings` has no `compileUs`.
-pub fn compiler_build_html(compiler : Int, html : String) -> String {
+pub fn compiler_build_html(compiler : Int32, html : String) -> String {
   guard warm_compilers.get(compiler) is Some(warm) else {
     return error_result("unknown compiler handle: " + compiler.to_string())
   }
@@ -209,7 +209,7 @@ pub fn compiler_build_html(compiler : Int, html : String) -> String {
 
 ///|
 /// Release a warm compiler handle.
-pub fn compiler_close(compiler : Int) -> Unit {
+pub fn compiler_close(compiler : Int32) -> Unit {
   warm_compilers.remove(compiler)
 }
 

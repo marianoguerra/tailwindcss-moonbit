@@ -39,7 +39,7 @@ fn json_strings(node : Json?) -> Array[String] {
 }
 
 ///|
-fn json_count(value : Int) -> Json {
+fn json_count(value : Int32) -> Json {
   Json::number(value.to_double())
 }
 

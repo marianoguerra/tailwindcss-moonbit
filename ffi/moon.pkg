@@ -1,6 +1,5 @@
 import {
   "marianoguerra/tailwindcss" @tw,
-  "moonbitlang/core/string",
   "moonbitlang/core/json",
 }
 

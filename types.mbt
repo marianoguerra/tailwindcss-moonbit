@@ -54,19 +54,19 @@ pub(open) trait SyncStylesheetLoader {
 
 ///|
 /// Emit no optional polyfill.
-pub const POLYFILL_NONE : Int = 0
+pub const POLYFILL_NONE : Int32 = 0
 
 ///|
 /// Emit the `@layer properties` fallback for registered custom properties.
-pub const POLYFILL_AT_PROPERTY : Int = 1
+pub const POLYFILL_AT_PROPERTY : Int32 = 1
 
 ///|
 /// Emit the `color-mix()` fallback guarded by `@supports`.
-pub const POLYFILL_COLOR_MIX : Int = 2
+pub const POLYFILL_COLOR_MIX : Int32 = 2
 
 ///|
 /// Emit every optional polyfill, which is the default.
-pub const POLYFILL_ALL : Int = 3
+pub const POLYFILL_ALL : Int32 = 3
 
 ///|
 /// Options controlling stylesheet compilation.
@@ -75,7 +75,7 @@ pub struct CompileOptions {
   from : String?
   loader : &StylesheetLoader?
   sync_loader : &SyncStylesheetLoader?
-  polyfills : Int
+  polyfills : Int32
 }
 
 ///|
@@ -84,11 +84,11 @@ pub struct CompileOptions {
 /// `loader` resolves `@import`s for the async `compile`; `sync_loader` does the
 /// same for `compile_sync`. Supply whichever matches the entry point in use.
 pub fn CompileOptions::new(
-  base? : String = "",
+  base~ : String = "",
   from? : String,
   loader? : &StylesheetLoader,
   sync_loader? : &SyncStylesheetLoader,
-  polyfills? : Int = POLYFILL_ALL,
+  polyfills~ : Int32 = POLYFILL_ALL,
 ) -> CompileOptions {
   { base, from, loader, sync_loader, polyfills, }
 }
@@ -108,7 +108,7 @@ pub(all) struct Source {
 /// incremental behavior of Tailwind CSS v4's JavaScript compiler.
 pub struct Compiler {
   input : String
-  polyfills : Int
+  polyfills : Int32
   stylesheet : Array[CssNode]
   theme : Map[String, String]
   sources : Array[Source]
@@ -119,3 +119,35 @@ pub struct Compiler {
   custom_variants : Map[String, CustomVariantTemplate]
   has_utilities : Bool
 }
+
+///|
+/// Keep `err.to_string()` available as a method for hosts reporting failures.
+pub extend CompileError with Show::{to_string, output}
+
+///|
+#deprecated("use `==` instead")
+pub extend CompileError with Eq::{equal, not_equal}
+
+///|
+#deprecated("use `debug_inspect` or `Repr` instead")
+pub extend CompileError with @debug.Debug::{to_repr}
+
+///|
+#deprecated("use `==` instead")
+pub extend LoadedStylesheet with Eq::{equal, not_equal}
+
+///|
+#deprecated("use `debug_inspect` or `Repr` instead")
+pub extend LoadedStylesheet with @debug.Debug::{to_repr}
+
+///|
+#deprecated("use `==` instead")
+pub extend Source with Eq::{equal, not_equal}
+
+///|
+#deprecated("use `debug_inspect` or `Repr` instead")
+pub extend Source with @debug.Debug::{to_repr}
+
+///|
+#deprecated("use `ToJson::to_json` instead")
+pub extend Source with ToJson::{to_json}

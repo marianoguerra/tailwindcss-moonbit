@@ -12,7 +12,7 @@ fn Lcg::new(seed : UInt64) -> Lcg {
 }
 
 ///|
-fn Lcg::below(self : Lcg, bound : Int) -> Int {
+fn Lcg::below(self : Lcg, bound : Int32) -> Int32 {
   self.state = self.state * 6364136223846793005UL + 1442695040888963407UL
   ((self.state >> 33).to_int() % bound + bound) % bound
 }

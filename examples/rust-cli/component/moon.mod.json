@@ -1,7 +1,0 @@
-{
-  "name": "tw/compiler",
-  "preferred-target": "wasm",
-  "deps": {
-    "marianoguerra/tailwindcss": { "path": "../../.." }
-  }
-}

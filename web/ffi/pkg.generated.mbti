@@ -27,4 +27,3 @@ pub fn scan_html_json(String) -> String
 // Type aliases
 
 // Traits
-

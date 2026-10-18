@@ -2,7 +2,6 @@ import {
   "marianoguerra/tailwindcss" @tw,
   "moonbit-community/html/src" @html5,
   "moonbitlang/core/bench" @clock,
-  "moonbitlang/core/string",
   "moonbitlang/core/json",
 }
 

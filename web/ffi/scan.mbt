@@ -5,8 +5,8 @@ priv struct Scan {
   /// generated CSS (the compiler sorts internally); it only makes the editor's
   /// candidate list stable while typing.
   candidates : Array[String]
-  elements : Int
-  class_attrs : Int
+  elements : Int32
+  class_attrs : Int32
 }
 
 ///|
@@ -53,7 +53,7 @@ fn scan_html(html : String) -> Scan {
 ///
 /// Node ids are indices into `Document::nodes` and the wrapper is created before
 /// anything it contains, so the first match in that array is always ours.
-fn first_template(doc : @html5.Document) -> Int? {
+fn first_template(doc : @html5.Document) -> Int32? {
   for id, node in doc.nodes {
     match node {
       ElementNode(element) =>
@@ -72,7 +72,7 @@ fn first_template(doc : @html5.Document) -> Int? {
 /// The walk keeps its own stack rather than recursing: the input is untrusted
 /// and can nest thousands of elements deep. Nested `<template>` elements hold
 /// their children in a detached fragment, so their content is pushed explicitly.
-fn collect_classes(doc : @html5.Document, root : Int) -> Scan {
+fn collect_classes(doc : @html5.Document, root : Int32) -> Scan {
   let seen : Map[String, Unit] = Map([])
   let candidates : Array[String] = []
   let stack = [root]
@@ -104,7 +104,7 @@ fn collect_classes(doc : @html5.Document, root : Int) -> Scan {
 ///|
 /// Push children in reverse so the LIFO stack pops them in document order,
 /// which is what makes the candidate list a stable pre-order walk.
-fn push_children(stack : Array[Int], children : Array[Int]) -> Unit {
+fn push_children(stack : Array[Int32], children : Array[Int32]) -> Unit {
   let count = children.length()
   for offset in 0..<count {
     stack.push(children[count - 1 - offset])

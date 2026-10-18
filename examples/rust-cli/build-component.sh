@@ -18,7 +18,8 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$here"
 
-core="component/_build/wasm/release/build/gen/gen.wasm"
+# moon.work namespaces artifacts by module name (tw/compiler).
+core="component/_build/wasm/release/build/tw/compiler/gen/gen.wasm"
 out="tw-compiler.component.wasm"
 
 echo ">> moon build --target wasm --release"

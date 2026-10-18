@@ -52,7 +52,7 @@ fn main {
   // backend supplies one, is simply ignored — `--emit` and the trailing two
   // integers are located explicitly).
   let mut emit = false
-  let ints : Array[Int] = []
+  let ints : Array[Int32] = []
   for i in 0..<marker {
     if raw[i] == "--emit" {
       emit = true
@@ -81,7 +81,7 @@ struct Request {
   loader : @tw.MemoryStylesheetLoader
   base : String
   from : String?
-  polyfills : Int
+  polyfills : Int32
 }
 
 ///|
@@ -151,7 +151,7 @@ fn run_emit(request : String) -> Unit {
 }
 
 ///|
-fn run_timed(request : String, warmup : Int, iters : Int) -> Unit {
+fn run_timed(request : String, warmup : Int32, iters : Int32) -> Unit {
   let req = parse_request(request) catch {
     err => {
       println(

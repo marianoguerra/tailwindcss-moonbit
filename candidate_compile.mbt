@@ -1,5 +1,5 @@
 ///|
-fn property_order(property : String) -> Int {
+fn property_order(property : String) -> Int32 {
   // A transcription of upstream src/property-order.ts: the index a property
   // sorts at inside a rule. Regenerate from that file rather than editing by
   // hand. Anything upstream does not list sorts after everything it does.
@@ -370,8 +370,8 @@ fn property_order(property : String) -> Int {
 ///|
 priv struct RenderedCandidate {
   candidate : String
-  property_orders : Array[Int]
-  declaration_count : Int
+  property_orders : Array[Int32]
+  declaration_count : Int32
   variant_orders : Array[VariantKey]
   nodes : Array[CssNode]
 }
@@ -381,7 +381,7 @@ priv struct RenderedCandidate {
 fn compare_rendered_candidates(
   a : RenderedCandidate,
   b : RenderedCandidate,
-) -> Int {
+) -> Int32 {
   let by_variant = compare_variant_orders(a.variant_orders, b.variant_orders)
   if by_variant != 0 {
     return by_variant
@@ -1362,7 +1362,7 @@ fn has_top_level_comma(input : String) -> Bool {
 /// width, functional families by their value, compound variants by their inner
 /// variant and modifier, and arbitrary variants by their selector.
 priv struct VariantKey {
-  base : Int
+  base : Int32
   width : (String, Double)?
   descending : Bool
   value : String?
@@ -1373,7 +1373,7 @@ priv struct VariantKey {
 } derive(Eq)
 
 ///|
-fn VariantKey::simple(base : Int) -> VariantKey {
+fn VariantKey::simple(base : Int32) -> VariantKey {
   {
     base,
     width: None,
@@ -1388,7 +1388,7 @@ fn VariantKey::simple(base : Int) -> VariantKey {
 
 ///|
 /// Registration order of a static variant, or `None` when it is not one.
-fn static_variant_base(name : String) -> Int? {
+fn static_variant_base(name : String) -> Int32? {
   match name {
     "*" => Some(1)
     "**" => Some(2)
@@ -1610,7 +1610,7 @@ fn variant_key(
 
 ///|
 /// Compare two variant sort keys.
-fn VariantKey::compare(self : VariantKey, other : VariantKey) -> Int {
+fn VariantKey::compare(self : VariantKey, other : VariantKey) -> Int32 {
   let by_base = self.base.compare(other.base)
   if by_base != 0 {
     return by_base
@@ -1666,7 +1666,7 @@ fn VariantKey::compare(self : VariantKey, other : VariantKey) -> Int {
 fn compare_variant_orders(
   a : ArrayView[VariantKey],
   b : ArrayView[VariantKey],
-) -> Int {
+) -> Int32 {
   let limit = if a.length() < b.length() { a.length() } else { b.length() }
   for index in 0..<limit {
     let comparison = a[index].compare(b[index])
@@ -1678,7 +1678,7 @@ fn compare_variant_orders(
 }
 
 ///|
-fn compare_property_orders(a : ArrayView[Int], b : ArrayView[Int]) -> Int {
+fn compare_property_orders(a : ArrayView[Int32], b : ArrayView[Int32]) -> Int32 {
   let limit = if a.length() < b.length() { a.length() } else { b.length() }
   for index in 0..<limit {
     let comparison = a[index].compare(b[index])
@@ -1973,7 +1973,7 @@ fn render_candidate(
   functional_utilities : Map[String, Array[CssNode]],
   custom_variants : Map[String, CustomVariantTemplate],
   raw : String,
-  skip_custom? : Bool = false,
+  skip_custom~ : Bool = false,
 ) -> RenderedCandidate? {
   let candidate_source = match theme_prefix(theme) {
     Some(prefix) => {
@@ -2167,7 +2167,7 @@ fn render_candidate(
       } else {
         None
       }
-      let orders : Array[Int] = []
+      let orders : Array[Int32] = []
       match special {
         Some(order) => orders.push(order)
         None => ()
@@ -2205,8 +2205,8 @@ fn render_candidate(
 /// Declarations are visited breadth first; a `--tw-sort` declaration replaces
 /// the property order and stops further order collection, but every visited
 /// declaration still counts.
-fn node_property_sort(nodes : ArrayView[CssNode]) -> (Array[Int], Int) {
-  let orders : Array[Int] = []
+fn node_property_sort(nodes : ArrayView[CssNode]) -> (Array[Int32], Int32) {
+  let orders : Array[Int32] = []
   let mut count = 0
   let mut sorted = false
   let queue : Array[CssNode] = nodes.to_owned()
@@ -2385,7 +2385,7 @@ fn render_selector_candidate(
     is Some(ast_nodes) else {
     return None
   }
-  let orders : Array[Int] = []
+  let orders : Array[Int32] = []
   let sort_order = if utility.sort_key == "" {
     500
   } else {

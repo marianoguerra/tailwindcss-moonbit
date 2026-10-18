@@ -1,7 +1,7 @@
 ///|
 priv struct CssParser {
   input : String
-  mut pos : Int
+  mut pos : Int32
   license_comments : Array[CssNode]
 }
 
@@ -122,8 +122,8 @@ fn CssParser::finish_token(
   self : CssParser,
   output : StringBuilder,
   verbatim : Bool,
-  content_start : Int,
-  content_end : Int,
+  content_start : Int32,
+  content_end : Int32,
 ) -> String {
   if verbatim {
     if content_start < 0 {

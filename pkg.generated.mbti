@@ -29,6 +29,14 @@ pub(all) suberror CompileError {
   UnsupportedJsCompatibility(String)
   InvalidApplyCandidate(String)
 } derive(Eq, @debug.Debug)
+#deprecated
+pub fn CompileError::equal(Self, Self) -> Bool
+#deprecated
+pub fn CompileError::not_equal(Self, Self) -> Bool
+pub fn CompileError::output(Self, &Logger) -> Unit
+#deprecated
+pub fn CompileError::to_repr(Self) -> @debug.Repr
+pub fn CompileError::to_string(Self) -> String
 pub impl Show for CompileError
 
 // Types and methods
@@ -58,6 +66,12 @@ pub fn Compiler::build(Self, ArrayView[String]) -> String
 pub fn Compiler::sources(Self) -> Array[Source]
 
 type CssNode derive(Eq, @debug.Debug)
+#deprecated
+pub fn CssNode::equal(Self, Self) -> Bool
+#deprecated
+pub fn CssNode::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn CssNode::to_repr(Self) -> @debug.Repr
 
 type CustomVariantTemplate
 
@@ -66,11 +80,19 @@ pub(all) struct LoadedStylesheet {
   path : String
   base : String
 } derive(Eq, @debug.Debug)
+#deprecated
+pub fn LoadedStylesheet::equal(Self, Self) -> Bool
+#deprecated
+pub fn LoadedStylesheet::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn LoadedStylesheet::to_repr(Self) -> @debug.Repr
 
 pub struct MemoryStylesheetLoader {
   files : Map[String, String]
 }
 pub fn MemoryStylesheetLoader::add(Self, String, String) -> Unit
+#deprecated
+pub async fn MemoryStylesheetLoader::load(Self, String, String) -> LoadedStylesheet raise CompileError
 pub fn MemoryStylesheetLoader::new(files? : Array[(String, String)]) -> Self
 pub impl StylesheetLoader for MemoryStylesheetLoader
 pub impl SyncStylesheetLoader for MemoryStylesheetLoader
@@ -80,8 +102,22 @@ pub(all) struct Source {
   pattern : String
   negated : Bool
 } derive(Eq, ToJson, @debug.Debug)
+#deprecated
+pub fn Source::equal(Self, Self) -> Bool
+#deprecated
+pub fn Source::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Source::to_json(Self) -> Json
+#deprecated
+pub fn Source::to_repr(Self) -> @debug.Repr
 
 type SourceSpan derive(Eq, @debug.Debug)
+#deprecated
+pub fn SourceSpan::equal(Self, Self) -> Bool
+#deprecated
+pub fn SourceSpan::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn SourceSpan::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 
@@ -93,4 +129,3 @@ pub(open) trait StylesheetLoader {
 pub(open) trait SyncStylesheetLoader {
   fn load(Self, String, String) -> LoadedStylesheet raise CompileError
 }
-

@@ -4,7 +4,7 @@ const TEST_CSS : String = "@theme { --spacing: 0.25rem; } @tailwind utilities;\n
 
 ///|
 /// A two-file graph, to prove `imports` resolution and the counts reported for it.
-fn test_request(html~ : String, extra? : Array[String] = []) -> String {
+fn test_request(html~ : String, extra~ : Array[String] = []) -> String {
   Json::object(
     Map([
       ("html", Json::string(html)),
@@ -164,7 +164,7 @@ test "build_info: reports the linked versions" {
   debug_inspect(
     build_info(),
     content=(
-      #|"{\"compiler\":\"0.4.1\",\"html\":\"0.2.1\",\"polyfillsDefault\":3}"
+      #|"{\"compiler\":\"0.4.1\",\"html\":\"0.2.2\",\"polyfillsDefault\":3}"
     ),
   )
 }

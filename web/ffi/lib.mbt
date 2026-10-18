@@ -4,7 +4,7 @@ const COMPILER_VERSION : String = "0.4.1"
 
 ///|
 /// The `moonbit-community/html` version, mirroring `../moon.mod`.
-const HTML_VERSION : String = "0.2.1"
+const HTML_VERSION : String = "0.2.2"
 
 ///|
 /// Compile an HTML fragment straight to CSS: scan it for `class` tokens, then
