@@ -1,7 +1,7 @@
 # Attribution
 
 The stylesheets and example markup under this directory are generated from
-[margaui](https://github.com/marianoguerra/margaui) (`de7b235`, MIT), a Tailwind CSS v4
+[margaui](https://github.com/marianoguerra/margaui) (`7200e5f`, MIT), a Tailwind CSS v4
 component library by Mariano Guerra, itself modelled on
 [daisyUI](https://daisyui.com/) (MIT) and built on
 [Tailwind CSS](https://tailwindcss.com/) (MIT).
