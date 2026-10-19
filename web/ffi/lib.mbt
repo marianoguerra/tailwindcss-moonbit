@@ -1,6 +1,6 @@
 ///|
 /// The compiler version this module links, mirroring `../../moon.mod`.
-const COMPILER_VERSION : String = "0.4.2"
+const COMPILER_VERSION : String = "0.4.3"
 
 ///|
 /// The `moonbit-community/html` version, mirroring `../moon.mod`.
