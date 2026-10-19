@@ -6,13 +6,13 @@ import {
 }
 
 // Values
-pub const POLYFILL_ALL : Int = 3
+pub const POLYFILL_ALL : Int32 = 3
 
-pub const POLYFILL_AT_PROPERTY : Int = 1
+pub const POLYFILL_AT_PROPERTY : Int32 = 1
 
-pub const POLYFILL_COLOR_MIX : Int = 2
+pub const POLYFILL_COLOR_MIX : Int32 = 2
 
-pub const POLYFILL_NONE : Int = 0
+pub const POLYFILL_NONE : Int32 = 0
 
 pub async fn collect_imports(String, &StylesheetLoader, base? : String) -> Map[String, String] raise CompileError
 
@@ -45,13 +45,13 @@ pub struct CompileOptions {
   from : String?
   loader : &StylesheetLoader?
   sync_loader : &SyncStylesheetLoader?
-  polyfills : Int
+  polyfills : Int32
 }
-pub fn CompileOptions::new(base? : String, from? : String, loader? : &StylesheetLoader, sync_loader? : &SyncStylesheetLoader, polyfills? : Int) -> Self
+pub fn CompileOptions::new(base? : String, from? : String, loader? : &StylesheetLoader, sync_loader? : &SyncStylesheetLoader, polyfills? : Int32) -> Self
 
 pub struct Compiler {
   input : String
-  polyfills : Int
+  polyfills : Int32
   stylesheet : Array[CssNode]
   theme : Map[String, String]
   sources : Array[Source]

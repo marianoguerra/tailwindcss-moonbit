@@ -4,19 +4,19 @@ package "marianoguerra/tailwindcss-web/ffi"
 // Values
 pub fn build_info() -> String
 
-pub fn bundle_free(Int) -> Unit
+pub fn bundle_free(Int32) -> Unit
 
 pub fn bundle_load(String) -> String
 
-pub fn compile_html(Int, String) -> String
+pub fn compile_html(Int32, String) -> String
 
 pub fn compile_html_json(String) -> String
 
-pub fn compiler_build_html(Int, String) -> String
+pub fn compiler_build_html(Int32, String) -> String
 
-pub fn compiler_close(Int) -> Unit
+pub fn compiler_close(Int32) -> Unit
 
-pub fn compiler_open(Int) -> String
+pub fn compiler_open(Int32) -> String
 
 pub fn scan_html_json(String) -> String
 
