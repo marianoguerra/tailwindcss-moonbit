@@ -1,7 +1,7 @@
 name = "tw/compiler"
 
 import {
-  "marianoguerra/tailwindcss@0.4.3",
+  "marianoguerra/tailwindcss@0.5.0",
 }
 
 preferred_target = "wasm"
