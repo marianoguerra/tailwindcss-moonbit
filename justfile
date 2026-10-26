@@ -181,9 +181,15 @@ build-web-fallback:
     moon build --release --target js web/ffi
     cp _build/js/release/build/{{web}}/ffi/ffi.js web/site/assets/twffi.js
 
-# Both browser artifacts.
+# The margaui-css demo under web/site/margaui-css, as the pages workflow builds it.
 [group('site')]
-build-site: build-web build-web-fallback
+build-site-margaui: build-margaui
+    mkdir -p web/site/margaui-css
+    cp web/margaui/margaui-css.wasm web/margaui/demo.html web/site/margaui-css/
+
+# Both browser artifacts, plus the margaui-css demo the editor links to.
+[group('site')]
+build-site: build-web build-web-fallback build-site-margaui
 
 # The editor's margaui bundle compiled into one wasm-gc module whose only export
 # is `css(classes) -> css`: no host imports, so it cannot reach the network, the

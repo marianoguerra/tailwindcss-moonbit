@@ -19,6 +19,7 @@ benchmarks/results/
 # the pages workflow. Everything else under web/site/assets IS committed.
 web/site/assets/twffi.wasm
 web/site/assets/twffi.js
+web/site/margaui-css/
 
 # Screenshots from browser-driven checks
 .playwright-mcp/

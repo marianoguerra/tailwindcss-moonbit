@@ -136,8 +136,9 @@ const { instance } = await WebAssembly.instantiate(bytes, {},
 instance.exports.css('btn btn-primary flex')  // -> CSS string
 ```
 
-See [`web/margaui/`](web/margaui/README.md) for requirements, a demo page and how
-to verify the sandbox yourself.
+Try it in the [live demo](https://marianoguerra.github.io/tailwindcss-moonbit/margaui-css/demo.html),
+and see [`web/margaui/`](web/margaui/README.md) for requirements and how to verify
+the sandbox yourself.
 
 ## Current compiler surface
 

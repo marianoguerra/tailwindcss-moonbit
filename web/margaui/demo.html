@@ -59,7 +59,7 @@
   }
   input, textarea { font-family: ui-monospace, monospace; font-size: .9rem; }
   textarea { height: 26rem; resize: vertical; white-space: pre; }
-  #status { color: var(--muted); font-size: .9rem; margin-top: .4rem; }
+  #status, .build { color: var(--muted); font-size: .9rem; margin-top: .4rem; }
   #status.error { color: var(--bad); }
 </style>
 </head>
@@ -75,6 +75,7 @@
     to see the whole integration, about 10 lines. Open the <strong>console</strong>
     (<kbd>F12</kbd>) to see the checks that show the module can do nothing but turn
     class names into CSS.</p>
+  <!-- build-info: the GitHub Pages deploy replaces this with the commit it built -->
 
   <label for="example">Load an example</label>
   <select id="example"></select>

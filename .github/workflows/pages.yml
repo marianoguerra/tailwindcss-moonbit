@@ -22,6 +22,7 @@ on:
       - "moon.work"
       - "tools/gen-web-assets.mjs"
       - "tools/web-smoke.mjs"
+      - "tools/margaui-smoke.mjs"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -62,11 +63,28 @@ jobs:
           cp _build/wasm-gc/release/build/marianoguerra/tailwindcss-web/ffi/ffi.wasm web/site/assets/twffi.wasm
           cp _build/js/release/build/marianoguerra/tailwindcss-web/ffi/ffi.js web/site/assets/twffi.js
 
+      # The margaui-css demo, built from this commit rather than downloaded from
+      # the latest release, so between releases its SHA-256 will not match the
+      # released .sha256; the page says which commit it is.
+      - name: Build margaui-css demo
+        run: |
+          node web/margaui/gen.mjs --check
+          moon build --release --target wasm-gc web/margaui
+          mkdir -p web/site/margaui-css
+          cp _build/wasm-gc/release/build/marianoguerra/tailwindcss-web/margaui/margaui.wasm web/site/margaui-css/margaui-css.wasm
+          short="${GITHUB_SHA::7}"
+          url="https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+          sed "s|<!-- build-info:.*-->|<p class=\"build\">Built from <a href=\"${url}\">${short}</a> on main, which may be ahead of the <a href=\"https://github.com/${GITHUB_REPOSITORY}/releases/latest\">latest release</a>.</p>|" \
+            web/margaui/demo.html > web/site/margaui-css/demo.html
+          grep -q "Built from" web/site/margaui-css/demo.html
+
       - uses: actions/setup-node@v5
         with:
           node-version: 24   # instantiating the wasm-gc module needs JS String Builtins
       - name: Smoke-test the artifacts
-        run: node tools/web-smoke.mjs
+        run: |
+          node tools/web-smoke.mjs
+          node tools/margaui-smoke.mjs
 
       - name: Report payload sizes
         run: |
@@ -75,7 +93,8 @@ jobs:
             echo "|---|--:|--:|"
             for f in web/site/assets/twffi.wasm web/site/assets/twffi.js \
                      web/site/assets/margaui-bundle.json web/site/assets/shell.css \
-                     web/site/vendor/codemirror/codemirror.js; do
+                     web/site/vendor/codemirror/codemirror.js \
+                     web/site/margaui-css/margaui-css.wasm; do
               printf '| `%s` | %s | %s |\n' "${f#web/site/}" \
                 "$(stat -c%s "$f")" "$(gzip -9c "$f" | wc -c)"
             done

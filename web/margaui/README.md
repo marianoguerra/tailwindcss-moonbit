@@ -65,8 +65,10 @@ engines reject the module at compile time.
 
 ## Try the demo
 
-Put `demo.html` and `margaui-css.wasm` in one folder and serve it (browsers do
-not let `fetch` read `file://` URLs):
+It is live at <https://marianoguerra.github.io/tailwindcss-moonbit/margaui-css/demo.html>,
+built from `main`. To run a released copy locally, put `demo.html` and
+`margaui-css.wasm` in one folder and serve it (browsers do not let `fetch` read
+`file://` URLs):
 
 ```sh
 python3 -m http.server 8000   # open http://localhost:8000/demo.html
