@@ -35,7 +35,7 @@ and collecting `class` attributes, all inside MoonBit. Source and notes in
 
 ## Using it
 
-The compiler is exposed three ways. In every case candidate discovery is the
+The compiler is exposed four ways. In every case candidate discovery is the
 **caller's** responsibility: pass the class names you want generated. This
 package does not scan content files (HTML/JS/templates) for classes; `@source`
 directives are parsed and surfaced via `Compiler::sources()` for hosts that want
@@ -46,7 +46,9 @@ to scan themselves.
 `compile(css, options?)` resolves `@import`s through an async
 `StylesheetLoader`; `compile_sync(css, options?)` does the same through a
 `SyncStylesheetLoader`. Both return a reusable `Compiler`; call `build` with
-candidate class names (candidates accumulate across calls). Use `compile_sync`
+candidate class names (candidates accumulate across calls), or `render` to build
+for exactly the given candidates without remembering them, so one parsed
+stylesheet can serve many independent builds. Use `compile_sync`
 on hosts without an async runtime — notably the **wasm-gc** backend.
 
 ```mbt check
@@ -118,6 +120,24 @@ so it must match the keys used in `imports`.
 `ffi/js/` ships an ergonomic, dependency-free wrapper (`compile({ input,
 candidates, imports, ... })`); see `ffi/js/README.md` for the build and usage
 steps.
+
+### As a single function with margaui built in
+
+Each GitHub Release carries `margaui-css.wasm`: this compiler with the
+[margaui](https://github.com/marianoguerra/margaui) component library embedded,
+exporting one function, `css(classes) -> css`. It imports nothing from the host,
+so it cannot do anything but turn class names into CSS. No MoonBit toolchain
+needed:
+
+```js
+const bytes = await (await fetch('margaui-css.wasm')).arrayBuffer()
+const { instance } = await WebAssembly.instantiate(bytes, {},
+  { builtins: ['js-string'], importedStringConstants: '_' })
+instance.exports.css('btn btn-primary flex')  // -> CSS string
+```
+
+See [`web/margaui/`](web/margaui/README.md) for requirements, a demo page and how
+to verify the sandbox yourself.
 
 ## Current compiler surface
 

@@ -1,0 +1,85 @@
+name: margaui-wasm
+
+# Builds and checks the single-function margaui module (web/margaui) and
+# uploads it as the `margaui-css` workflow artifact:
+#
+#   margaui-css.wasm         the module: one export, css(classes) -> css
+#   margaui-css.wasm.sha256  its checksum
+#   demo.html                the self-documenting demo page
+#   RELEASE_NOTES.md         the section release.yml appends to the notes
+#
+# release.yml calls this and attaches the files to the GitHub Release. Run it
+# by hand (Actions -> margaui-wasm -> Run workflow) for a dry run: download the
+# artifact and try it before spending a version tag.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Fetch registry index
+        run: moon update   # populate the registry index so deps resolve
+      # JS String Builtins are on by default from Node 24 (V8 13.6), which the
+      # smoke test needs to instantiate the module at all.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Check the embedded bundle is current
+        run: node web/margaui/gen.mjs --check
+      - name: Build
+        run: moon build --release --target wasm-gc web/margaui
+      - name: Smoke test (no host imports, only css exported, no state leaks)
+        run: node tools/margaui-smoke.mjs
+      - name: Package
+        run: |
+          mkdir dist
+          cp _build/wasm-gc/release/build/marianoguerra/tailwindcss-web/margaui/margaui.wasm dist/margaui-css.wasm
+          cp web/margaui/demo.html dist/demo.html
+          (cd dist && sha256sum margaui-css.wasm > margaui-css.wasm.sha256)
+      - name: Write release notes section
+        run: |
+          sha=$(cut -d' ' -f1 dist/margaui-css.wasm.sha256)
+          margaui=$(node -p 'require("./web/site/assets/margaui-bundle.json").source.commit')
+          size=$(stat -c%s dist/margaui-css.wasm)
+          gzip=$(gzip -9c dist/margaui-css.wasm | wc -c)
+          cat > dist/RELEASE_NOTES.md <<EOF
+
+          ## margaui-css.wasm: Tailwind + margaui as one function
+
+          \`margaui-css.wasm\` is this compiler with the [margaui](https://github.com/marianoguerra/margaui)
+          component library (commit \`${margaui}\`) built in. It exports one function,
+          \`css(classes) -> css\`, and imports nothing from the host, so it cannot reach the
+          network, storage, the DOM, timers or randomness. No MoonBit toolchain needed:
+
+          \`\`\`js
+          const bytes = await (await fetch('margaui-css.wasm')).arrayBuffer()
+          const { instance } = await WebAssembly.instantiate(bytes, {},
+            { builtins: ['js-string'], importedStringConstants: '_' })
+          instance.exports.css('btn btn-primary flex')  // -> CSS string
+          \`\`\`
+
+          Needs JS String Builtins: Chrome 130+, Firefox 134+, Safari 18.4+, Node 24+.
+          Download \`demo.html\` next to it and serve the folder
+          (\`python3 -m http.server\`) for a live demo whose source is the docs and whose
+          console shows the security checks. Full docs: [web/margaui](https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}/web/margaui).
+
+          | file | size | SHA-256 |
+          |---|---|---|
+          | \`margaui-css.wasm\` | ${size} bytes (${gzip} gzipped) | \`${sha}\` |
+          EOF
+          cat dist/RELEASE_NOTES.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: margaui-css
+          path: dist/
+          if-no-files-found: error

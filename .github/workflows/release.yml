@@ -4,6 +4,8 @@ name: release
 #   - the JS library to npm (@marianoguerra/tailwindcss)
 #   - wasm + wasm-gc modules as GitHub Release assets
 #   - native CLI binaries for Linux and macOS as Release assets
+#   - margaui-css.wasm, its checksum and demo.html as Release assets
+#     (built by margaui-wasm.yml)
 #   - the MoonBit source package to mooncakes.io
 #
 # Windows native binaries are intentionally deferred: the native CLI links
@@ -35,9 +37,15 @@ jobs:
       - name: Check all targets
         run: moon check --target all
 
+  # --- The single-function margaui module, built and boundary-checked --------
+  # A second gate: a module that gained a host import must not ship, and
+  # neither should anything else from this tag.
+  margaui-build:
+    uses: ./.github/workflows/margaui-wasm.yml
+
   # --- Create the Release once; later jobs attach assets to it ---------------
   create-release:
-    needs: gate
+    needs: [gate, margaui-build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -159,9 +167,33 @@ jobs:
           gh release upload "${GITHUB_REF_NAME}" \
             "${{ matrix.asset }}.tar.gz" --clobber
 
+  # --- margaui-css.wasm -> Release assets + a release notes section ----------
+  margaui:
+    needs: [create-release, margaui-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: margaui-css
+          path: dist
+      - name: Attach margaui-css to Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
+            dist/margaui-css.wasm dist/margaui-css.wasm.sha256 dist/demo.html --clobber
+      - name: Append usage notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
+            --json body --jq .body > notes.md
+          cat dist/RELEASE_NOTES.md >> notes.md
+          gh release edit "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --notes-file notes.md
+
   # --- MoonBit source package -> mooncakes.io --------------------------------
   mooncakes:
-    needs: gate
+    needs: [gate, margaui-build]
     runs-on: ubuntu-latest
     # MOONCAKES_TOKEN is an Environment secret scoped to this environment.
     # Create an environment named `release` (Settings -> Environments) holding

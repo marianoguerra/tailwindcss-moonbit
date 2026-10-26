@@ -25,6 +25,8 @@ web/
     scan.mbt           class extraction, via moonbit-community/html
     bundle.mbt         bundle + compiler handles
     lib.mbt            the exported JSON API
+  margaui/             margaui-css.wasm: one css(classes) export, no host
+                       imports; released as a GitHub asset (see its README)
   site/                what GitHub Pages publishes
     index.html
     js/
