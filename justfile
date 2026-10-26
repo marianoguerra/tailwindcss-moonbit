@@ -127,9 +127,9 @@ upstream-extract:
 # Ordered so the cheapest check fails first. This is what the release workflow
 # enforces, plus the differential suites.
 
-# The full correctness gate: fmt-check, check, test, diff, upstream-diff, web-smoke.
+# The full correctness gate: fmt-check, check, test, diff, upstream-diff, web-smoke, margaui-smoke.
 [group('test')]
-gate: fmt-check check test diff upstream-diff web-smoke
+gate: fmt-check check test diff upstream-diff web-smoke margaui-smoke
 
 # ---------------------------------------------------------------------------
 # Build
@@ -184,6 +184,29 @@ build-web-fallback:
 # Both browser artifacts.
 [group('site')]
 build-site: build-web build-web-fallback
+
+# The editor's margaui bundle compiled into one wasm-gc module whose only export
+# is `css(classes) -> css`: no host imports, so it cannot reach the network, the
+# clock or the DOM. It needs no glue beyond the JS String Builtins options:
+#   WebAssembly.instantiate(bytes, {}, { builtins: ['js-string'], importedStringConstants: '_' })
+# Run `just margaui-gen` after `just web-assets` refreshes the bundle.
+
+# Build the single-function margaui module to margaui.wasm.
+[group('site')]
+build-margaui:
+    moon build --release --target wasm-gc web/margaui
+    cp _build/wasm-gc/release/build/{{web}}/margaui/margaui.wasm web/margaui/margaui.wasm
+
+# Re-embed web/site/assets/margaui-bundle.json into web/margaui/bundle_data.mbt.
+[group('site')]
+margaui-gen:
+    node web/margaui/gen.mjs
+
+# Fail if bundle_data.mbt is stale, then check the boundary and the output.
+[group('site')]
+margaui-smoke: build-margaui
+    node web/margaui/gen.mjs --check
+    node tools/margaui-smoke.mjs
 
 # Regenerating needs a margaui checkout (MARGAUI_DIR, default
 # /home/mariano/src/margaui); building and deploying the site never does,

@@ -1,0 +1,10 @@
+import {
+  "marianoguerra/tailwindcss" @tw,
+}
+
+options(
+  link: {
+    "wasm-gc": { "exports": [ "css" ], "use-js-builtin-string": true },
+    "js": { "exports": [ "css" ], "format": "esm" },
+  },
+)

@@ -27,3 +27,6 @@ web/site/assets/twffi.js
 # unanchored, this pattern also swallows every nested README (web/, ffi/, ...).
 /README.md
 
+
+# Single-function margaui module, built by `just build-margaui`
+web/margaui/margaui.wasm
