@@ -7,6 +7,6 @@ license = "MIT"
 description = "Browser showcase editor for the MoonBit Tailwind CSS compiler"
 
 import {
-  "marianoguerra/tailwindcss@0.4.3",
+  "marianoguerra/tailwindcss@0.5.0",
   "moonbit-community/html@0.2.2",
 }
