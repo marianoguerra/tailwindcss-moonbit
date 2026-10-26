@@ -191,11 +191,11 @@ build-site: build-web build-web-fallback
 #   WebAssembly.instantiate(bytes, {}, { builtins: ['js-string'], importedStringConstants: '_' })
 # Run `just margaui-gen` after `just web-assets` refreshes the bundle.
 
-# Build the single-function margaui module to margaui.wasm.
+# Build the single-function margaui module to web/margaui/margaui-css.wasm.
 [group('site')]
 build-margaui:
     moon build --release --target wasm-gc web/margaui
-    cp _build/wasm-gc/release/build/{{web}}/margaui/margaui.wasm web/margaui/margaui.wasm
+    cp _build/wasm-gc/release/build/{{web}}/margaui/margaui.wasm web/margaui/margaui-css.wasm
 
 # Re-embed web/site/assets/margaui-bundle.json into web/margaui/bundle_data.mbt.
 [group('site')]
@@ -207,6 +207,14 @@ margaui-gen:
 margaui-smoke: build-margaui
     node web/margaui/gen.mjs --check
     node tools/margaui-smoke.mjs
+
+# The same folder a user gets by downloading demo.html and margaui-css.wasm
+# from a release.
+
+# Serve the margaui-css demo at http://localhost:PORT/demo.html.
+[group('site')]
+margaui-demo port="8000": build-margaui
+    python3 -m http.server --directory web/margaui {{port}}
 
 # Regenerating needs a margaui checkout (MARGAUI_DIR, default
 # /home/mariano/src/margaui); building and deploying the site never does,

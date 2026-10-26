@@ -29,4 +29,4 @@ web/site/assets/twffi.js
 
 
 # Single-function margaui module, built by `just build-margaui`
-web/margaui/margaui.wasm
+web/margaui/margaui-css.wasm

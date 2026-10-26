@@ -1,0 +1,287 @@
+<!doctype html>
+<!--
+  margaui-css demo — the whole integration is in the <script> at the bottom.
+
+  margaui-css.wasm is the Tailwind CSS v4 compiler (written in MoonBit) with
+  the margaui component library baked in. It exports exactly one function:
+
+      css(classes: string) -> string
+
+  Pass whitespace-separated class names, get back the CSS those classes need.
+  There is no configuration, no file access and no state you can observe: the
+  same input always gives the same output.
+
+  To run this page, put demo.html and margaui-css.wasm in one folder and serve
+  it over HTTP (browsers do not let `fetch` read files from file:// URLs):
+
+      python3 -m http.server 8000      # then open http://localhost:8000/demo.html
+
+  Requires JS String Builtins: Chrome 130+, Firefox 134+, Safari 18.4+, Node 24+.
+  The page has no dependencies; everything it uses is in this file.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>margaui-css demo</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #fafaf9; --fg: #1c1917; --muted: #78716c; --line: #d6d3d1;
+    --panel: #ffffff; --accent: #4f46e5; --ok: #15803d; --bad: #b91c1c;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1917; --fg: #f5f5f4; --muted: #a8a29e; --line: #44403c;
+      --panel: #292524; --accent: #a5b4fc; --ok: #86efac; --bad: #fca5a5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 system-ui, sans-serif;
+  }
+  main { max-width: 56rem; margin: 0 auto; padding: 2rem 1rem; }
+  h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+  p { margin: .5rem 0; }
+  a { color: var(--accent); }
+  code, kbd { font-family: ui-monospace, monospace; font-size: .9em; }
+  kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 .3em; }
+  .tip {
+    border-left: 3px solid var(--accent); background: var(--panel);
+    padding: .6rem .9rem; margin: 1rem 0 1.5rem;
+  }
+  label { display: block; font-weight: 600; margin: 1rem 0 .3rem; }
+  input, select, textarea {
+    width: 100%; font: inherit; color: inherit; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 6px; padding: .55rem .7rem;
+  }
+  input, textarea { font-family: ui-monospace, monospace; font-size: .9rem; }
+  textarea { height: 26rem; resize: vertical; white-space: pre; }
+  #status { color: var(--muted); font-size: .9rem; margin-top: .4rem; }
+  #status.error { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>margaui-css</h1>
+  <p>Type Tailwind or <a href="https://github.com/marianoguerra/margaui">margaui</a>
+    class names. The CSS they need is compiled in your browser by a single
+    WebAssembly function, <code>css(classes)</code>.</p>
+
+  <p class="tip">This page is its own documentation: <strong>view the source</strong>
+    (<kbd>Ctrl</kbd>+<kbd>U</kbd>, or <kbd>⌘</kbd>+<kbd>⌥</kbd>+<kbd>U</kbd> on a Mac)
+    to see the whole integration, about 10 lines. Open the <strong>console</strong>
+    (<kbd>F12</kbd>) to see the checks that show the module can do nothing but turn
+    class names into CSS.</p>
+
+  <label for="example">Load an example</label>
+  <select id="example"></select>
+
+  <label for="classes">Classes</label>
+  <input id="classes" spellcheck="false" autocomplete="off">
+
+  <label for="output">Compiled CSS</label>
+  <textarea id="output" readonly spellcheck="false"></textarea>
+  <div id="status">Loading margaui-css.wasm…</div>
+</main>
+
+<script type="module">
+// ---------------------------------------------------------------------------
+// 1. Load the module. This is all the integration there is.
+// ---------------------------------------------------------------------------
+//
+// The import object is EMPTY: the module asks the host for nothing, so there is
+// nothing to hand it. The third argument turns on JS String Builtins, which let
+// MoonBit strings be real JS strings, so `css` takes and returns strings
+// directly with no glue code:
+//   builtins: ['js-string']       -> string ops (length, concat, charCodeAt, …)
+//   importedStringConstants: '_'  -> the string literals compiled into the module
+
+const COMPILE_OPTIONS = { builtins: ['js-string'], importedStringConstants: '_' }
+
+const bytes = await (await fetch('margaui-css.wasm')).arrayBuffer()
+const module = await WebAssembly.compile(bytes, COMPILE_OPTIONS).catch(unsupported)
+const instance = await WebAssembly.instantiate(module, Object.freeze({}))
+const css = instance.exports.css
+
+// That's it: css('btn btn-primary') returns a string of CSS. Everything below is
+// the demo UI and the console checks.
+
+// ---------------------------------------------------------------------------
+// 2. Security checks, logged to the console.
+// ---------------------------------------------------------------------------
+//
+// A WebAssembly module can only affect the outside world through the functions
+// its host gives it as imports. This module imports none, so it cannot touch the
+// network, storage, the DOM, timers or randomness. These checks let you confirm
+// that yourself instead of taking it on trust.
+
+await securityChecks(bytes, module)
+
+// ---------------------------------------------------------------------------
+// 3. The demo UI.
+// ---------------------------------------------------------------------------
+
+const EXAMPLES = [
+  { label: 'Single class: btn', classes: 'btn' },
+  { label: 'A few classes: a primary button', classes: 'btn btn-primary btn-sm' },
+  { label: 'Tailwind utilities only', classes: 'flex items-center justify-between gap-4 p-6 rounded-xl shadow-md' },
+  { label: 'Variants: hover, focus, responsive, dark', classes: 'bg-primary hover:bg-secondary focus:outline-none md:flex lg:grid-cols-3 dark:text-white' },
+  { label: 'Arbitrary values', classes: 'w-[37px] bg-[#ff6600] grid-cols-[1fr_2fr] text-[clamp(1rem,2vw,2rem)]' },
+  { label: 'Component: alert', classes: 'alert alert-vertical sm:alert-horizontal w-full stroke-current text-info h-6 w-6 shrink-0 font-bold text-xs btn btn-sm' },
+  { label: 'Component: stats', classes: 'stats shadow stat stat-figure text-primary inline-block h-8 w-8 stroke-current stat-title stat-value stat-desc text-secondary avatar avatar-online w-16 rounded-full' },
+  { label: 'Component: pricing card', classes: 'card w-96 bg-base-100 shadow-sm card-body badge badge-xs badge-warning flex justify-between text-3xl font-bold text-xl mt-6 flex-col gap-2 text-xs size-4 me-2 inline-block text-success opacity-50 text-base-content/50 line-through btn btn-primary btn-block' },
+  { label: 'Page: navbar with dropdowns', classes: 'navbar bg-base-100 shadow-sm mb-40 flex-1 btn btn-ghost text-xl flex-none dropdown dropdown-end btn-circle indicator h-5 w-5 badge badge-sm indicator-item card card-sm dropdown-content z-1 mt-3 w-52 shadow card-body text-lg font-bold text-info card-actions btn-primary btn-block avatar w-10 rounded-full menu menu-sm rounded-box p-2 justify-between' },
+  { label: 'Unknown classes are ignored', classes: 'not-a-class btn also-not-a-class' },
+  { label: 'Empty: just the base styles', classes: '' },
+]
+
+const select = document.getElementById('example')
+const input = document.getElementById('classes')
+const output = document.getElementById('output')
+const status = document.getElementById('status')
+
+for (const [index, example] of EXAMPLES.entries()) {
+  select.add(new Option(example.label, index))
+}
+
+function compile() {
+  const started = performance.now()
+  const result = css(input.value)
+  const ms = performance.now() - started
+  output.value = result
+  status.textContent = `${result.length.toLocaleString()} characters in ${ms.toFixed(1)} ms`
+}
+
+select.addEventListener('change', () => {
+  input.value = EXAMPLES[select.value].classes
+  compile()
+})
+input.addEventListener('input', compile)
+
+input.value = EXAMPLES[1].classes
+select.value = 1
+compile()
+
+// Engines without JS String Builtins reject the compile options or the module.
+function unsupported(error) {
+  const status = document.getElementById('status')
+  status.className = 'error'
+  status.textContent = 'This browser cannot run margaui-css.wasm: it needs JS String ' +
+    'Builtins (Chrome 130+, Firefox 134+, Safari 18.4+). ' + error.message
+  throw error
+}
+
+// ---------------------------------------------------------------------------
+// The checks themselves.
+// ---------------------------------------------------------------------------
+
+async function securityChecks(bytes, module) {
+  console.group('%cmargaui-css.wasm security checks', 'font-weight: bold')
+  let failed = 0
+  const check = (label, ok, detail) => {
+    if (!ok) failed += 1
+    console.log(`${ok ? '✅' : '❌'} ${label}`, ...(detail === undefined ? [] : [detail]))
+  }
+
+  // The checksum to compare against margaui-css.wasm.sha256 from the release.
+  // Computed by the page, not by the module.
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  console.log(`🔑 SHA-256 ${hex}\n   compare with margaui-css.wasm.sha256 from the release`)
+
+  // What the module asks the host for, once the browser has supplied the
+  // built-in string functions. This is the list a host has to fill in.
+  const hostImports = WebAssembly.Module.imports(module)
+  check('imports nothing from the host (WebAssembly.Module.imports is empty)', hostImports.length === 0, hostImports)
+
+  // The same question answered from the raw bytes, without trusting the
+  // browser's filtering: every import must be a built-in string function or a
+  // string constant.
+  const raw = readImportSection(new Uint8Array(bytes))
+  const byModule = Object.groupBy(raw, (entry) => entry.module)
+  const builtins = (byModule['wasm:js-string'] ?? []).map((entry) => entry.name)
+  const constants = byModule['_'] ?? []
+  const others = raw.filter((entry) => entry.module !== 'wasm:js-string' && entry.module !== '_')
+  check(`raw import section: ${builtins.length} string built-ins, ${constants.length} string constants, nothing else`, others.length === 0, { builtins, others })
+  check('string constants are globals, not functions', constants.every((entry) => entry.kind === 'global'))
+
+  // What the module offers back: one function, no memory, tables or globals.
+  const exported = WebAssembly.Module.exports(module)
+  check('exports exactly one thing: the css function', exported.length === 1 && exported[0].name === 'css' && exported[0].kind === 'function', exported)
+
+  // Instantiated with a frozen, empty import object above: had the module
+  // needed anything, instantiation would have thrown a LinkError.
+  check('instantiated with an empty import object', true)
+
+  // A pure function: same input, same output, and no call leaks into another.
+  const first = css('btn underline')
+  css('flex hidden badge')
+  check('same input gives the same output', css('btn underline') === first)
+  check('earlier calls do not leak into later ones', !css('btn').includes('.underline {'))
+
+  console.log(failed === 0 ? 'All checks passed.' : `${failed} check(s) failed.`)
+  console.groupEnd()
+}
+
+// A minimal reader for the WebAssembly import section (section id 2), enough
+// to list every import's module, name and kind. See the binary format spec:
+// https://webassembly.github.io/spec/core/binary/modules.html#import-section
+function readImportSection(buf) {
+  let pos = 8 // skip the "\0asm" magic and the version
+  const u32 = () => {
+    let result = 0, shift = 0, byte
+    do {
+      byte = buf[pos++]
+      result |= (byte & 0x7f) << shift
+      shift += 7
+    } while (byte & 0x80)
+    return result >>> 0
+  }
+  const name = () => {
+    const length = u32()
+    const text = new TextDecoder().decode(buf.subarray(pos, pos + length))
+    pos += length
+    return text
+  }
+  // Reference types with the GC proposal: 0x63/0x64 are followed by a heap
+  // type (a signed LEB128); everything else is a single byte.
+  const valtype = () => {
+    const byte = buf[pos++]
+    if (byte === 0x63 || byte === 0x64) u32()
+  }
+  const limits = () => {
+    const flags = buf[pos++]
+    u32()
+    if (flags & 1) u32()
+  }
+  const KINDS = ['function', 'table', 'memory', 'global', 'tag']
+
+  while (pos < buf.length) {
+    const id = buf[pos++]
+    const size = u32()
+    if (id !== 2) {
+      pos += size
+      continue
+    }
+    const imports = []
+    for (let count = u32(); count > 0; count--) {
+      const entry = { module: name(), name: name() }
+      const kind = buf[pos++]
+      entry.kind = KINDS[kind]
+      if (kind === 0) u32()                       // function: type index
+      else if (kind === 1) { valtype(); limits() } // table: reftype + limits
+      else if (kind === 2) limits()                // memory: limits
+      else if (kind === 3) { valtype(); pos++ }    // global: type + mutability
+      else if (kind === 4) { pos++; u32() }        // tag: attribute + type index
+      imports.push(entry)
+    }
+    return imports
+  }
+  return []
+}
+</script>
+</body>
+</html>
