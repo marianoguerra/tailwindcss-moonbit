@@ -91,3 +91,39 @@ async test "incremental builds match a fresh build of every candidate" {
     assert_eq(latest, fresh)
   }
 }
+
+///|
+let render_stylesheet : String =
+  #|@theme {
+  #|  --color-black: #000;
+  #|  --color-white: #fff;
+  #|}
+  #|@tailwind utilities;
+
+///|
+test "render does not accumulate candidates" {
+  let compiler = @tailwindcss.compile_sync(render_stylesheet)
+  let first = compiler.render(["flex", "bg-black"])
+  let second = compiler.render(["hidden", "hover:bg-white"])
+  assert_false(second.contains("display: flex"))
+  assert_false(second.contains("var(--color-black)"))
+  assert_eq(compiler.render(["flex", "bg-black"]), first)
+  assert_eq(
+    second,
+    @tailwindcss.compile_sync(render_stylesheet).build([
+      "hidden", "hover:bg-white",
+    ]),
+  )
+}
+
+///|
+test "render leaves accumulated build state alone" {
+  let compiler = @tailwindcss.compile_sync(render_stylesheet)
+  let built = compiler.build(["flex"])
+  ignore(compiler.render(["hidden", "bg-black"]))
+  assert_eq(compiler.build([]), built)
+  assert_eq(
+    compiler.render([]),
+    @tailwindcss.compile_sync(render_stylesheet).build([]),
+  )
+}

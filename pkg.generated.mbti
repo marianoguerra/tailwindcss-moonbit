@@ -63,6 +63,7 @@ pub struct Compiler {
   has_utilities : Bool
 }
 pub fn Compiler::build(Self, ArrayView[String]) -> String
+pub fn Compiler::render(Self, ArrayView[String]) -> String
 pub fn Compiler::sources(Self) -> Array[Source]
 
 type CssNode derive(Eq, @debug.Debug)

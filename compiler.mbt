@@ -449,11 +449,38 @@ pub fn Compiler::build(
       self.candidates[candidate] = ()
     }
   }
+  self.render_candidates(self.candidates)
+}
+
+///|
+/// Build CSS for exactly `candidates`, without remembering them.
+///
+/// Unlike `build`, this leaves the compiler unchanged, so one parsed stylesheet
+/// can serve any number of independent builds: the output depends only on the
+/// argument, and deleting a class removes its rules from the next result.
+pub fn Compiler::render(
+  self : Compiler,
+  candidates : ArrayView[String],
+) -> String {
+  let selected : Map[String, Unit] = Map([])
+  for candidate in candidates {
+    if !self.excluded_candidates.contains(candidate) {
+      selected[candidate] = ()
+    }
+  }
+  self.render_candidates(selected)
+}
+
+///|
+fn Compiler::render_candidates(
+  self : Compiler,
+  candidates : Map[String, Unit],
+) -> String {
   if !self.has_utilities {
     return self.input
   }
   let rendered : Array[RenderedCandidate] = []
-  for candidate, _ in self.candidates {
+  for candidate, _ in candidates {
     match
       render_candidate(
         self.theme,
